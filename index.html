@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>게임 목록</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:#f4f6f8;color:#1c2430}
+main{max-width:960px;margin:0 auto;padding:32px 16px}
+h1{margin:0 0 24px;font-size:28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{display:block;background:#fff;border-radius:12px;overflow:hidden;text-decoration:none;color:inherit;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.card:hover{box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;background:#dde3ea;display:block}
+.body{padding:14px 16px 18px}
+.body h2{margin:0 0 6px;font-size:18px}
+.body p{margin:0 0 10px;font-size:14px;line-height:1.5;color:#4a5668}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:#e3edff;color:#2457b8}
+.msg{color:#4a5668}
+</style>
+</head>
+<body>
+<main>
+<h1>게임 목록</h1>
+<div id="list" class="grid"></div>
+<p id="msg" class="msg"></p>
+</main>
+<script>
+fetch('./games.json').then(r=>r.json()).then(games=>{
+  const list=document.getElementById('list');
+  games.forEach(g=>{
+    const a=document.createElement('a');a.className='card';a.href='./'+g.folder+'/';
+    if(g.thumbnail){const i=document.createElement('img');i.className='thumb';i.src='./'+g.thumbnail;i.alt='';i.loading='lazy';a.appendChild(i)}
+    const b=document.createElement('div');b.className='body';
+    const h=document.createElement('h2');h.textContent=g.title;
+    const p=document.createElement('p');p.textContent=g.description||'';
+    const t=document.createElement('span');t.className='tag';t.textContent=g.status||'';
+    b.append(h,p);if(g.status)b.appendChild(t);a.appendChild(b);list.appendChild(a);
+  });
+  if(!games.length)document.getElementById('msg').textContent='아직 게임이 없습니다.';
+}).catch(()=>{document.getElementById('msg').textContent='목록을 불러오지 못했습니다.'});
+</script>
+</body>
+</html>
