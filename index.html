@@ -50,10 +50,13 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 .tool:hover .ic,.tool.hot .ic{background:var(--panel)}
 .tool:hover::after{content:attr(data-tip);position:absolute;top:100%;margin-top:5px;right:0;white-space:nowrap;background:var(--ink);color:#fff;font-size:11px;padding:3px 8px;z-index:5}
 .pill.big{font-family:var(--sans);font-size:16px;font-weight:600;padding:11px 26px}
-#guide{display:flex;align-items:center;justify-content:center;gap:10px;min-height:30px;margin-top:14px;font-size:15px;visibility:hidden}
-#guide.on{visibility:visible}
-.chip{background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:3px 9px;border-radius:4px;flex:none}
-#mapWrap{display:flex;justify-content:center;margin:10px 0 20px}
+#prog{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;font-size:14px;color:#333}
+#pips{display:flex;gap:4px}#pips i{width:12px;height:12px;border:2px solid var(--ink);display:block}#pips i.on{background:var(--accent);border-color:var(--accent)}
+#cap{display:flex;align-items:center;gap:14px;background:var(--ink);color:#fff;width:918px;max-width:100%;margin:0 auto;padding:12px 16px;min-height:64px}
+#capFace{background:#fff;padding:3px;flex:none;display:flex}
+#capText{flex:1;font-size:16px;line-height:1.5}
+#capBtn{display:none;flex:none;font-family:var(--sans);font-size:14px;font-weight:600;background:var(--accent);border-color:var(--accent);color:#fff;padding:8px 16px}
+#mapWrap{display:flex;justify-content:center;margin:12px 0 0}
 #map{border:3px solid var(--ink);background:var(--paper);max-width:100%}
 h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px 0 0;border-bottom:1px solid var(--ink);padding-bottom:6px}
 #cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:16px 0 0}
@@ -145,9 +148,9 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
     </div>
     <p class="over">큰 서리의 밤</p>
     <h2>서리골</h2>
-    <div id="guide"><span class="chip">안내</span><span id="guideText"></span></div>
+    <div id="prog"><span id="pips"></span><span id="progText"></span></div>
     <div id="mapWrap"><canvas id="map"></canvas></div>
-    <div class="row"><button class="pill accent big" id="btnNext"></button></div>
+    <div id="cap"><span id="capFace"></span><span id="capText"></span><button class="pill" id="capBtn"></button></div>
   </section>
 
   <section id="s-play" class="screen">
@@ -176,7 +179,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
   <h2>배달 수첩</h2>
   <h3>주소록 · 배달한 집은 다시 찾아갈 수 있습니다</h3>
   <div id="cards"></div>
-  <h3>우표</h3>
+  <h3>우표 · 꼭 모으지 않아도 되는 덤입니다. 물음표 우표는 아래 실마리대로 해 보면 받을 수 있습니다</h3>
   <div id="quests"></div>
   <p class="keys">←↑↓→ 고르기 · Enter 찾아가기 · Q 또는 Esc 닫기</p>
 </div></div>
@@ -371,21 +374,21 @@ const END_HIDDEN=[nar("문을 여니 난로가 켜져 있고, 누군가 앉아 �
 const MAYOR={hair:0,eyes:4,mouth:2};
 const SPECIAL={'1:4,3':'fountain','6:4,8':'mayorBank','4:7,4':'hedgeSnow'};
 const QUESTS=[
- {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'눈사람은 관심받는 걸 좋아한다.',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',
+ {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'쌍둥이네(3번)에서 같은 눈사람에 계속 부딪혀 보세요.',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',
   scene:[r(2,"눈사람이 아저씨 좋대요. 코 하나 드릴게요."),nar("(우표 \"눈사람의 친구\"와 당근 코를 받았습니다.)")]},
- {id:'lost',t:'길치',hidden:true,hint:'문 앞에서 멈추는 건 생각보다 어렵다.',cond:'한 판에서 문 앞을 세 번 지나치기',item:'cap',
+ {id:'lost',t:'길치',hidden:true,hint:'문 앞에 멈추지 못하고 지나치기를 한 판에서 세 번 해 보세요.',cond:'한 판에서 문 앞을 세 번 지나치기',item:'cap',
   scene:[r(0,"문 앞을 세 번 지나쳤다고 소문이 났네. 이 모자라도 쓰게."),nar("(우표 \"길치\"와 삐뚤어진 모자를 받았습니다.)")]},
  {id:'short',t:'지름길',cond:'쌍둥이네부터, 한 판을 최소 이동 수로 깨기',item:'loupe',
   scene:[r(4,"그 길은 내 지도에도 없는데. 이거 쓰고 다시 보여 줘 봐."),nar("(우표 \"지름길\"과 돋보기 안경을 받았습니다.)")]},
  {id:'noundo',t:'뒤돌아보지 않기',cond:'쌍둥이네부터, 한 판을 되돌리기 없이 깨기',item:'bucket',
   scene:[r(6,"..."),nar("(낚시꾼이 말없이 모자를 씌워 줍니다. 우표 \"뒤돌아보지 않기\"와 낚시 모자를 받았습니다.)")]},
- {id:'fountain',t:'분수대의 전통',hidden:true,hint:'두루 씨는 첫날 분수대에 세 번 빠졌다.',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',
+ {id:'fountain',t:'분수대의 전통',hidden:true,hint:'빵집(2번) 한가운데 분수대에 세 번 부딪혀 보세요.',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',
   scene:[r(0,"자네도 분수대에 세 번 빠졌나. 전통이 이어지는군."),nar("(우표 \"분수대의 전통\"과 수건을 받았습니다.)")]},
- {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'쌍둥이의 눈사람 하나가 마을 어딘가로 굴러갔다.',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',
+ {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'언덕 집(5번)에 당근 코가 달린 덤불이 있습니다. 부딪혀 보세요.',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',
   scene:[r(2,"거봐, 서른세 개랬잖아!"),r(2,"...언덕까지 굴러간 거였네."),nar("(우표 \"서른세 번째 눈사람\"과 눈꽃 핀을 받았습니다.)")]},
- {id:'mayor',t:'이장님 발견',hidden:true,hint:'작년에 미끄러진 이장님은 정말 옆 마을까지 갔을까.',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',
+ {id:'mayor',t:'이장님 발견',hidden:true,hint:'호수(7번) 아래쪽 눈더미 하나에 누군가 박혀 있습니다.',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',
   scene:[{f:[MAYOR],n:'이장님',t:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가."},{f:[MAYOR],n:'이장님',t:"꺼내 주진 말게. 이제 정들었어. 대신 이거 받게."},nar("(우표 \"이장님 발견\"과 귀마개를 받았습니다.)")]},
- {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'두루 씨처럼 다녀 보기. 한 수도 낭비 없이, 모든 집을.',cond:'모든 판을 최소 이동 수로 깨기',item:'oldscarf',scene:END_HIDDEN},
+ {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'모든 집을 최소 이동 수로 배달하면 숨은 엔딩이 열립니다.',cond:'모든 판을 최소 이동 수로 깨기',item:'oldscarf',scene:END_HIDDEN},
 ];
 const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
@@ -405,8 +408,16 @@ const $=id=>document.getElementById(id);
 let mode='title';
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));mode=id;window.scrollTo(0,0)}
 let guideT=0,guideTmp='';
-function guide(t){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeout(()=>{guideTmp='';guide()},3600)}
- const base=S.loc===8&&S.best[0]&&S.best.slice(1).every(b=>!b)?'표지판을 누르거나 방향키로 길을 고르세요':'';const txt=guideTmp||base;$('guideText').textContent=txt;$('guide').classList.toggle('on',!!txt)}
+function guide(t){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeout(()=>{guideTmp='';guide()},4200)}
+ const left=S.best.filter(b=>!b).length,roads=[['빵집 길',[1,2]],['가로등 길',[3,4]],['호수 길',[5,6]]].filter(r=>r[1].some(k=>!S.best[k])).map(r=>r[0]);let txt,act=null;
+ if(!S.best[0]){txt='먼저 우체국 앞에서 연습 배달부터 해야 한다.';act=['연습하러 가기',()=>goTo(0)]}
+ else if(S.loc<8&&!S.best[S.loc]&&unlocked(S.loc)){txt=RES[S.loc].place+' 앞이다. 아직 소포를 전하지 못했다.';act=['들어가기',()=>goTo(S.loc)]}
+ else if(!left)txt='오늘 배달은 모두 끝났다. 지도에서 집을 누르면 다시 찾아갈 수 있다. 못 모은 우표는 수첩에 실마리가 적혀 있다.';
+ else if(!roads.length)txt='이제 주소 없는 소포 하나만 남았다. 우체국 뒤편 빈집으로 가는 길이 열렸다.';
+ else if(left===7)txt='소포는 여덟 개, 길은 세 갈래. 어느 길부터 가도 되지만 세 길을 다 돌아야 빈집 가는 길이 열린다. 표지판을 누르거나 방향키를 누르면 출발한다.';
+ else txt='소포가 '+left+'개 남았다. 아직 안 끝난 길은 '+roads.join(', ')+'. 다 돌면 빈집 가는 길이 열린다.';
+ $('capText').textContent=guideTmp||txt;const b=$('capBtn');CAPACT=guideTmp?null:act;b.style.display=CAPACT?'inline-flex':'none';if(CAPACT)b.textContent=CAPACT[0]}
+let CAPACT=null;
 let toastT;function toast(t){if(mode==='town'){guide(t);return}const el=$('toast');el.textContent=t;el.style.display='inline-flex';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',2600)}
 
 /* ---------- 대화 ---------- */
@@ -495,11 +506,12 @@ let HIT=[];
 const nodePos=n=>n===PLAZA?PL:HOUSE[n];
 function route(n){const r=ROUTE[n].slice();if(n===6&&S.best[5])r.splice(3,0,...DETOUR);return r}
 function mapPath(a,b){const A=route(a),B=route(b);let c=0;while(c<A.length&&c<B.length&&A[c][0]===B[c][0]&&A[c][1]===B[c][1])c++;return A.slice(c-1).reverse().concat(B.slice(c))}
-function recNext(){if(S.loc<8&&!S.best[S.loc]&&unlocked(S.loc))return S.loc;if(!S.best[0])return 0;for(const d of['ArrowUp','ArrowRight','ArrowDown','ArrowLeft']){const k=BR[d].find(k=>!S.best[k]);if(k!=null&&unlocked(k))return k}return -1}
 let CAM=null,TOK=null,BUB=[],mapMe=null,mapTok=0,chatAt=0,OVER=false;
 function overview(on){if(mode!=='town')return;OVER=on==null?!OVER:on;$('btnOver').classList.toggle('hot',OVER)}
 const camTarget=p=>[Math.max(0,Math.min(WW-VW,p[0]-VW/2)),Math.max(0,Math.min(WH-VH,p[1]-VH/2))];
-function bubble(k,now){const L=WINDOW[k];BUB=BUB.filter(b=>b.k!==k);BUB.push({k,t:L[Math.floor(Math.random()*L.length)],until:now+2400})}
+const TIPS={snowman:"쌍둥이네 눈사람은 자꾸 부딪히면 좋아한다더군.",lost:"문 앞을 세 번 지나친 배달부도 있었지. 소문이 났어.",short:"지도 할머니는 지름길 아는 배달부를 좋아하네.",noundo:"낚시꾼은 뒤돌아보지 않는 사람을 높이 치지.",
+ fountain:"빵집 앞 분수대 조심하게. 두루는 세 번 빠졌어.",thirtythree:"언덕 집 덤불 중에 코 달린 게 있다던데.",mayor:"이장님은 호수 아래쪽 눈더미 어디쯤 계실 걸세.",master:"두루는 어느 집에서도 한 수를 낭비하지 않았네."};
+function bubble(k,now){let L=WINDOW[k];if(k===0){const tips=QUESTS.filter(q=>!S.quests[q.id]).map(q=>TIPS[q.id]);if(tips.length&&Math.random()<0.75)L=tips}BUB=BUB.filter(b=>b.k!==k);BUB.push({k,t:L[Math.floor(Math.random()*L.length)],until:now+2400})}
 function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==VW*TS){c.width=VW*TS;c.height=VH*TS;c.style.width=c.width+'px'}
  const tp=TOK||nodePos(S.loc),ct=camTarget(tp);if(!CAM)CAM=ct.slice();CAM[0]+=(ct[0]-CAM[0])*0.1;CAM[1]+=(ct[1]-CAM[1])*0.1;
  x.imageSmoothingEnabled=false;x.fillStyle='#ebebeb';x.fillRect(0,0,c.width,c.height);x.save();const sc=OVER?Math.min(VW/WW,VH/WH):1;if(OVER){x.translate(Math.round((VW-WW*sc)*TS/2),Math.round((VH-WH*sc)*TS/2));x.scale(sc,sc)}else x.translate(-Math.round(CAM[0]*TS),-Math.round(CAM[1]*TS));
@@ -514,7 +526,7 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
  HOUSE.forEach(([hx,hy],k)=>{const open=!S.best[k]&&unlocked(k);paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
   x.fillStyle=open?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+(OVER?58:44));
   if(open){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}
-  HIT.push({x:hx*TS-50,y:hy*TS-24-90,w:100,h:140,fn:()=>{if(S.best[k]||unlocked(k))goTo(k);else toast(k===7?'빈집은 다른 집을 모두 돌고 나서 갈 수 있습니다':'아직 갈 수 없는 집입니다. 앞집 배달을 먼저 마쳐 주세요')}})});
+  HIT.push({x:hx*TS-50,y:hy*TS-24-90,w:100,h:140,fn:()=>{if(S.best[k]||unlocked(k))goTo(k);else toast(k===7?'빈집은 세 길을 모두 돌고 나서 갈 수 있다.':'아직 갈 수 없는 집이다. 같은 길의 앞집부터 배달해야 한다.')}})});
  if(!OVER&&S.best[0]){const F='"Pretendard Variable","Pretendard",sans-serif';SIGNS.forEach(g=>{const ks=BR[g.d],lock=!unlocked(ks[0])&&!S.best[ks[0]],w=168,h=58,cx=Math.round(g.x*TS),bx=cx-w/2,by=Math.round(g.y*TS)-h/2-12,col=lock?'#a8a8a8':COL['#'];
    x.fillStyle=col;x.fillRect(cx-3,by+h,6,24);x.fillRect(cx-10,by+h+22,20,4);x.fillRect(bx,by,w,h);x.beginPath();
    if(g.d==='ArrowRight'){x.moveTo(bx+w,by);x.lineTo(bx+w+20,by+h/2);x.lineTo(bx+w,by+h)}else if(g.d==='ArrowLeft'){x.moveTo(bx,by);x.lineTo(bx-20,by+h/2);x.lineTo(bx,by+h)}
@@ -535,7 +547,7 @@ function startMap(){const tok=++mapTok;const step=now=>{if(tok!==mapTok||!(mode=
   if(mode==='town'&&now>chatAt){chatAt=now+5000+Math.random()*4000;const vis=[0,1,2,3,4,5,6,7].filter(k=>(k<7?S.best[k]:S.quests.master)&&k!==S.loc&&Math.abs(HOUSE[k][0]-CAM[0]-VW/2)<VW/2-2&&Math.abs(HOUSE[k][1]-CAM[1]-VH/2)<VH/2-1);
    if(vis.length)bubble(vis[Math.floor(Math.random()*vis.length)],now)}
   drawMap(now);requestAnimationFrame(step)};requestAnimationFrame(step)}
-function townUI(){guide();$('btnOver').classList.toggle('hot',OVER);mapMe=toCanvas(face(S.courier),1);const k=recNext();$('btnNext').textContent=k<0?'배달 끝 · 집을 눌러 다시 찾아갈 수 있습니다':'다음 배달 가기 · '+(k+1)+' '+RES[k].place;
+function townUI(){guide();$('btnOver').classList.toggle('hot',OVER);mapMe=toCanvas(face(S.courier),1);const dn=S.best.filter(Boolean).length;$('pips').innerHTML=S.best.map(b=>'<i'+(b?' class="on"':'')+'></i>').join('');$('progText').textContent='소포 8개 중 '+dn+'개 배달';const cf=$('capFace');cf.innerHTML='';cf.appendChild(toCanvas(face(S.courier),2));
  $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;
  [['icBook',G.icBook],['icMe',face(S.courier)],['icMap',G.icMap]].forEach(([id,g])=>{const b=$(id);b.innerHTML='';b.appendChild(toCanvas(g,2))})}
 function mapHit(e){if(OVER||!CAM)return null;const c=$('map'),r=c.getBoundingClientRect(),q=c.width/r.width,wx=(e.clientX-r.left)*q+Math.round(CAM[0]*TS),wy=(e.clientY-r.top)*q+Math.round(CAM[1]*TS);
@@ -553,10 +565,9 @@ function travel(a,b,cb,over){OVER=false;show('town');townUI();const pts=mapPath(
   if(t<1)requestAnimationFrame(step);else{TOK=null;S.loc=b;save();mode='town';townUI();setTimeout(cb,280)}};requestAnimationFrame(step)}
 function enter(k){if(!S.best[k])say(PRE[k],()=>play(k));else play(k)}
 function goTo(k){if(S.loc===k)enter(k);else travel(S.loc,k,()=>enter(k))}
-function goNext(){if(mode!=='town')return;const k=recNext();if(k<0){book(true);return}goTo(k)}
-function goDir(d){if(mode!=='town')return;if(!S.best[0]){toast('우체국 앞 배달부터 마쳐야 합니다');return}const k=BR[d].find(k=>!S.best[k]);
- if(k==null){toast('이 길은 배달을 마쳤습니다. 다시 가려면 배달 수첩(Q)의 주소록에서 고르세요');return}
- if(!unlocked(k)){toast('빈집으로 가는 길은 아직 눈에 막혀 있습니다. 다른 집을 모두 돌고 오세요');return}goTo(k)}
+function goDir(d){if(mode!=='town')return;if(!S.best[0]){toast('우체국 앞 연습 배달부터 마쳐야 한다.');return}const k=BR[d].find(k=>!S.best[k]);
+ if(k==null){toast('이 길은 배달을 마쳤다. 다시 가려면 지도에서 그 집을 누르면 된다.');return}
+ if(!unlocked(k)){toast('빈집으로 가는 길은 아직 눈에 막혀 있다. 세 길을 모두 돌고 와야겠다.');return}goTo(k)}
 function renderTown(){const box=$('cards');box.innerHTML='';
  for(let i=0;i<10;i++){const d=document.createElement('div');let g,lab,meta='',mono=null,locked=false;
   if(i===0){g=face(S.courier);lab=name();meta='나'}
@@ -569,9 +580,9 @@ function renderTown(){const box=$('cards');box.innerHTML='';
   const m=document.createElement('span');m.className='meta';m.innerHTML=meta;d.appendChild(m);
   d.onclick=()=>{T.sel=i;renderTown();pick()};box.appendChild(d)}
 }
-function pick(){const i=T.sel;if(i===0){book(false);custom(false);return}if(i===9){if(allFaces())say([{f:[DURU],n:'두루 씨',t:"차 한잔하고 가게. 어차피 밖은 미끄러워."}],renderTown);return}const k=i-1;if(!unlocked(k)){toast('앞집 배달을 먼저 끝내야 합니다');return}
+function pick(){const i=T.sel;if(i===0){book(false);custom(false);return}if(i===9){if(allFaces())say([{f:[DURU],n:'두루 씨',t:"차 한잔하고 가게. 어차피 밖은 미끄러워."}],renderTown);return}const k=i-1;if(!unlocked(k)){toast('아직 갈 수 없는 집입니다. 같은 길의 앞집부터 배달해 주세요');return}
  book(false);goTo(k)}
-$('btnBook').onclick=()=>{$('btnBook').blur();if(mode==='town')book(true)};$('btnCustom').onclick=()=>{$('btnCustom').blur();if(mode==='town')custom(false)};$('btnNext').onclick=goNext;$('btnOver').onclick=()=>{$('btnOver').blur();overview()};
+$('btnBook').onclick=()=>{$('btnBook').blur();if(mode==='town')book(true)};$('btnCustom').onclick=()=>{$('btnCustom').blur();if(mode==='town')custom(false)};$('capBtn').onclick=()=>{$('capBtn').blur();if(mode==='town'&&CAPACT)CAPACT[1]()};$('btnOver').onclick=()=>{$('btnOver').blur();overview()};
 
 /* ---------- 배달 수첩 ---------- */
 function stampCanvas(done,idx){const c=document.createElement('canvas');c.width=c.height=64;c.className='stamp';const x=c.getContext('2d');
@@ -660,7 +671,7 @@ document.addEventListener('keydown',e=>{if(e.isComposing||e.metaKey||e.ctrlKey||
  if(mode==='book'){if(k==='Escape'||kl==='q'||kl==='ㅂ'){e.preventDefault();book(false);return}
   const mv={ArrowLeft:-1,ArrowRight:1,ArrowUp:-5,ArrowDown:5}[k];if(mv){e.preventDefault();const n=T.sel+mv;if(n>=0&&n<10){T.sel=n;renderTown()}return}
   if(ok){e.preventDefault();pick()}return}
- if(mode==='town'){if(BR[k]){e.preventDefault();goDir(k);return}if(ok){e.preventDefault();goNext();return}if(kl==='q'||kl==='ㅂ'){book(true);return}if(kl==='c'||kl==='ㅊ'){custom(false);return}if(kl==='m'||kl==='ㅡ'){overview();return}return}
+ if(mode==='town'){if(BR[k]){e.preventDefault();goDir(k);return}if(ok){e.preventDefault();if(CAPACT)CAPACT[1]();return}if(kl==='q'||kl==='ㅂ'){book(true);return}if(kl==='c'||kl==='ㅊ'){custom(false);return}if(kl==='m'||kl==='ㅡ'){overview();return}return}
  if(mode==='clear'){if(ok){e.preventDefault();afterClear()}return}
  if(mode==='play'){
   if(P.tut!=null&&P.tut<4){const want=TUT[P.tut].key,dk=DIRS[k]?k:(DIRS[kl]?kl:null);if(dk)e.preventDefault();if(k==='Escape'){town();return}if(P.anim)return;
