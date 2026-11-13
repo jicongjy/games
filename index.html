@@ -54,7 +54,9 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 #pips{display:flex;gap:4px}#pips i{width:12px;height:12px;border:2px solid var(--ink);display:block}#pips i.on{background:var(--accent);border-color:var(--accent)}
 #cap{display:flex;align-items:center;gap:14px;background:var(--ink);color:#fff;width:918px;max-width:100%;margin:0 auto;padding:12px 16px;min-height:64px}
 #capFace{background:#fff;padding:3px;flex:none;display:flex}
-#capText{flex:1;font-size:16px;line-height:1.5}
+#capBody{flex:1;display:flex;flex-direction:column;gap:3px}
+#capText{font-size:16px;line-height:1.5}
+#capHint{font-size:12px;color:#bdbdbd}
 #capBtn{display:none;flex:none;font-family:var(--sans);font-size:14px;font-weight:600;background:var(--accent);border-color:var(--accent);color:#fff;padding:8px 16px}
 #mapWrap{display:flex;justify-content:center;margin:12px 0 0}
 #map{border:3px solid var(--ink);background:var(--paper);max-width:100%}
@@ -150,7 +152,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
     <h2>서리골</h2>
     <div id="prog"><span id="pips"></span><span id="progText"></span></div>
     <div id="mapWrap"><canvas id="map"></canvas></div>
-    <div id="cap"><span id="capFace"></span><span id="capText"></span><button class="pill" id="capBtn"></button></div>
+    <div id="cap"><span id="capFace"></span><span id="capBody"><span id="capText"></span><span id="capHint"></span></span><button class="pill" id="capBtn"></button></div>
   </section>
 
   <section id="s-play" class="screen">
@@ -177,9 +179,9 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
 <div id="book"><div id="bookIn">
   <p class="over">서리골 우체국</p>
   <h2>배달 수첩</h2>
-  <h3>주소록 · 배달한 집은 다시 찾아갈 수 있습니다</h3>
+  <h3>주소록 · 두루 씨가 적어 둔 여덟 집. 소포를 전한 집은 다시 찾아갈 수 있습니다</h3>
   <div id="cards"></div>
-  <h3>우표 · 꼭 모으지 않아도 되는 덤입니다. 물음표 우표는 아래 실마리대로 해 보면 받을 수 있습니다</h3>
+  <h3>우표 · 두루 씨가 사십 년 동안 마을에서 겪은 일마다 자리를 만들어 두었습니다. 빈자리에는 두루 씨의 메모가 남아 있습니다</h3>
   <div id="quests"></div>
   <p class="keys">←↑↓→ 고르기 · Enter 찾아가기 · Q 또는 Esc 닫기</p>
 </div></div>
@@ -374,21 +376,21 @@ const END_HIDDEN=[nar("문을 여니 난로가 켜져 있고, 누군가 앉아 �
 const MAYOR={hair:0,eyes:4,mouth:2};
 const SPECIAL={'1:4,3':'fountain','6:4,8':'mayorBank','4:7,4':'hedgeSnow'};
 const QUESTS=[
- {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'쌍둥이네(3번)에서 같은 눈사람에 계속 부딪혀 보세요.',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',
+ {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'"쌍둥이네 눈사람은 열 번쯤 부딪혀 주면 웃는다."',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',
   scene:[r(2,"눈사람이 아저씨 좋대요. 코 하나 드릴게요."),nar("(우표 \"눈사람의 친구\"와 당근 코를 받았습니다.)")]},
- {id:'lost',t:'길치',hidden:true,hint:'문 앞에 멈추지 못하고 지나치기를 한 판에서 세 번 해 보세요.',cond:'한 판에서 문 앞을 세 번 지나치기',item:'cap',
+ {id:'lost',t:'길치',hidden:true,hint:'"문 앞을 세 번 지나치면 온 마을에 소문이 난다. 한 집에서 세 번."',cond:'한 판에서 문 앞을 세 번 지나치기',item:'cap',
   scene:[r(0,"문 앞을 세 번 지나쳤다고 소문이 났네. 이 모자라도 쓰게."),nar("(우표 \"길치\"와 삐뚤어진 모자를 받았습니다.)")]},
- {id:'short',t:'지름길',cond:'쌍둥이네부터, 한 판을 최소 이동 수로 깨기',item:'loupe',
+ {id:'short',t:'지름길',cond:'"쌍둥이네부터는 길이 여러 갈래다. 가장 짧은 길로 한 번 배달해 보게."',item:'loupe',
   scene:[r(4,"그 길은 내 지도에도 없는데. 이거 쓰고 다시 보여 줘 봐."),nar("(우표 \"지름길\"과 돋보기 안경을 받았습니다.)")]},
- {id:'noundo',t:'뒤돌아보지 않기',cond:'쌍둥이네부터, 한 판을 되돌리기 없이 깨기',item:'bucket',
+ {id:'noundo',t:'뒤돌아보지 않기',cond:'"쌍둥이네부터, 한 번도 물리지 않고 배달해 보게."',item:'bucket',
   scene:[r(6,"..."),nar("(낚시꾼이 말없이 모자를 씌워 줍니다. 우표 \"뒤돌아보지 않기\"와 낚시 모자를 받았습니다.)")]},
- {id:'fountain',t:'분수대의 전통',hidden:true,hint:'빵집(2번) 한가운데 분수대에 세 번 부딪혀 보세요.',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',
+ {id:'fountain',t:'분수대의 전통',hidden:true,hint:'"빵집 앞 분수대. 첫날 세 번 빠졌다. 자네도 해 보게."',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',
   scene:[r(0,"자네도 분수대에 세 번 빠졌나. 전통이 이어지는군."),nar("(우표 \"분수대의 전통\"과 수건을 받았습니다.)")]},
- {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'언덕 집(5번)에 당근 코가 달린 덤불이 있습니다. 부딪혀 보세요.',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',
+ {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'"언덕 집 덤불 중 하나는 덤불이 아니다. 코를 보면 안다."',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',
   scene:[r(2,"거봐, 서른세 개랬잖아!"),r(2,"...언덕까지 굴러간 거였네."),nar("(우표 \"서른세 번째 눈사람\"과 눈꽃 핀을 받았습니다.)")]},
- {id:'mayor',t:'이장님 발견',hidden:true,hint:'호수(7번) 아래쪽 눈더미 하나에 누군가 박혀 있습니다.',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',
+ {id:'mayor',t:'이장님 발견',hidden:true,hint:'"호수 아래쪽 눈더미에서 가끔 기침 소리가 난다. 부딪혀 보면 안다."',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',
   scene:[{f:[MAYOR],n:'이장님',t:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가."},{f:[MAYOR],n:'이장님',t:"꺼내 주진 말게. 이제 정들었어. 대신 이거 받게."},nar("(우표 \"이장님 발견\"과 귀마개를 받았습니다.)")]},
- {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'모든 집을 최소 이동 수로 배달하면 숨은 엔딩이 열립니다.',cond:'모든 판을 최소 이동 수로 깨기',item:'oldscarf',scene:END_HIDDEN},
+ {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'"어느 집에서도 한 수를 낭비하지 않으면, 차를 끓여 두겠네."',cond:'모든 판을 최소 이동 수로 깨기',item:'oldscarf',scene:END_HIDDEN},
 ];
 const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
@@ -409,14 +411,14 @@ let mode='title';
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));mode=id;window.scrollTo(0,0)}
 let guideT=0,guideTmp='';
 function guide(t){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeout(()=>{guideTmp='';guide()},4200)}
- const left=S.best.filter(b=>!b).length,roads=[['빵집 길',[1,2]],['가로등 길',[3,4]],['호수 길',[5,6]]].filter(r=>r[1].some(k=>!S.best[k])).map(r=>r[0]);let txt,act=null;
- if(!S.best[0]){txt='먼저 우체국 앞에서 연습 배달부터 해야 한다.';act=['연습하러 가기',()=>goTo(0)]}
- else if(S.loc<8&&!S.best[S.loc]&&unlocked(S.loc)){txt=RES[S.loc].place+' 앞이다. 아직 소포를 전하지 못했다.';act=['들어가기',()=>goTo(S.loc)]}
- else if(!left)txt='오늘 배달은 모두 끝났다. 지도에서 집을 누르면 다시 찾아갈 수 있다. 못 모은 우표는 수첩에 실마리가 적혀 있다.';
- else if(!roads.length)txt='이제 주소 없는 소포 하나만 남았다. 우체국 뒤편 빈집으로 가는 길이 열렸다.';
- else if(left===7)txt='소포는 여덟 개, 길은 세 갈래. 어느 길부터 가도 되지만 세 길을 다 돌아야 빈집 가는 길이 열린다. 표지판을 누르거나 방향키를 누르면 출발한다.';
- else txt='소포가 '+left+'개 남았다. 아직 안 끝난 길은 '+roads.join(', ')+'. 다 돌면 빈집 가는 길이 열린다.';
- $('capText').textContent=guideTmp||txt;const b=$('capBtn');CAPACT=guideTmp?null:act;b.style.display=CAPACT?'inline-flex':'none';if(CAPACT)b.textContent=CAPACT[0]}
+ const left=S.best.filter(b=>!b).length,roads=[['빵집 길',[1,2]],['가로등 길',[3,4]],['호수 길',[5,6]]].filter(r=>r[1].some(k=>!S.best[k])).map(r=>r[0]),NUM=['','한','두','세','네','다섯','여섯','일곱','여덟'];let txt,hint='',act=null;
+ if(!S.best[0]){txt='첫 출근인데 벌써 다리가 후들거린다. 일단 우체국 문 앞에서 연습부터 하자.';act=['연습하러 가기',()=>goTo(0)]}
+ else if(S.loc<8&&!S.best[S.loc]&&unlocked(S.loc)){txt=RES[S.loc].place+' 앞이다. 소포는 아직 가방 안에 있다.';act=['들어가기',()=>goTo(S.loc)]}
+ else if(!left){txt='가방이 비었다. 창문마다 불이 켜졌다. 수첩에는 아직 빈 우표 자리가 남았는데, 한 바퀴 더 돌아볼까.';hint='집을 누르면 다시 찾아갈 수 있습니다'}
+ else if(!roads.length){txt='주소 없는 소포 하나만 남았다. "다음 배달부에게"라니, 누구일까. 우체국 뒤편 눈더미가 치워져 있다.';hint='빈집 표지판을 누르거나 왼쪽 방향키'}
+ else if(left===7){txt='가방에 소포가 일곱 개 남았다. 국장님 말로는 빵집 길, 가로등 길, 호수 길을 다 돌아야 한다는데. 주소 없는 소포는 맨 마지막에 생각하자. 어느 표지판부터 따라가 볼까.';hint='표지판을 누르거나 방향키를 누르면 출발합니다'}
+ else{txt='소포가 '+NUM[left]+' 개 남았다. '+roads.join(', ')+'이 아직이다. 가방이 가벼워지는 만큼 마을이 밝아진다.';hint='표지판을 누르거나 방향키를 누르면 출발합니다'}
+ $('capText').textContent=guideTmp||txt;$('capHint').textContent=guideTmp?'':hint;const b=$('capBtn');CAPACT=guideTmp?null:act;b.style.display=CAPACT?'inline-flex':'none';if(CAPACT)b.textContent=CAPACT[0]}
 let CAPACT=null;
 let toastT;function toast(t){if(mode==='town'){guide(t);return}const el=$('toast');el.textContent=t;el.style.display='inline-flex';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',2600)}
 
@@ -526,7 +528,7 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
  HOUSE.forEach(([hx,hy],k)=>{const open=!S.best[k]&&unlocked(k);paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
   x.fillStyle=open?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+(OVER?58:44));
   if(open){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}
-  HIT.push({x:hx*TS-50,y:hy*TS-24-90,w:100,h:140,fn:()=>{if(S.best[k]||unlocked(k))goTo(k);else toast(k===7?'빈집은 세 길을 모두 돌고 나서 갈 수 있다.':'아직 갈 수 없는 집이다. 같은 길의 앞집부터 배달해야 한다.')}})});
+  HIT.push({x:hx*TS-50,y:hy*TS-24-90,w:100,h:140,fn:()=>{if(S.best[k]||unlocked(k))goTo(k);else toast(k===7?'빈집은 맨 마지막이다. 다른 소포부터 다 돌리고 오자.':'저 집은 아직 차례가 아니다. 같은 길 앞집부터 가자.')}})});
  if(!OVER&&S.best[0]){const F='"Pretendard Variable","Pretendard",sans-serif';SIGNS.forEach(g=>{const ks=BR[g.d],lock=!unlocked(ks[0])&&!S.best[ks[0]],w=168,h=58,cx=Math.round(g.x*TS),bx=cx-w/2,by=Math.round(g.y*TS)-h/2-12,col=lock?'#a8a8a8':COL['#'];
    x.fillStyle=col;x.fillRect(cx-3,by+h,6,24);x.fillRect(cx-10,by+h+22,20,4);x.fillRect(bx,by,w,h);x.beginPath();
    if(g.d==='ArrowRight'){x.moveTo(bx+w,by);x.lineTo(bx+w+20,by+h/2);x.lineTo(bx+w,by+h)}else if(g.d==='ArrowLeft'){x.moveTo(bx,by);x.lineTo(bx-20,by+h/2);x.lineTo(bx,by+h)}
@@ -565,9 +567,9 @@ function travel(a,b,cb,over){OVER=false;show('town');townUI();const pts=mapPath(
   if(t<1)requestAnimationFrame(step);else{TOK=null;S.loc=b;save();mode='town';townUI();setTimeout(cb,280)}};requestAnimationFrame(step)}
 function enter(k){if(!S.best[k])say(PRE[k],()=>play(k));else play(k)}
 function goTo(k){if(S.loc===k)enter(k);else travel(S.loc,k,()=>enter(k))}
-function goDir(d){if(mode!=='town')return;if(!S.best[0]){toast('우체국 앞 연습 배달부터 마쳐야 한다.');return}const k=BR[d].find(k=>!S.best[k]);
- if(k==null){toast('이 길은 배달을 마쳤다. 다시 가려면 지도에서 그 집을 누르면 된다.');return}
- if(!unlocked(k)){toast('빈집으로 가는 길은 아직 눈에 막혀 있다. 세 길을 모두 돌고 와야겠다.');return}goTo(k)}
+function goDir(d){if(mode!=='town')return;if(!S.best[0]){toast('아직 연습도 안 했다. 우체국 앞 배달부터 하자.');return}const k=BR[d].find(k=>!S.best[k]);
+ if(k==null){toast('이 길은 다 돌았다. 인사하러 다시 가려면 그 집을 누르면 된다.');return}
+ if(!unlocked(k)){toast('빈집 가는 길은 눈더미에 막혀 있다. 다른 소포부터 다 돌리고 오자.');return}goTo(k)}
 function renderTown(){const box=$('cards');box.innerHTML='';
  for(let i=0;i<10;i++){const d=document.createElement('div');let g,lab,meta='',mono=null,locked=false;
   if(i===0){g=face(S.courier);lab=name();meta='나'}
