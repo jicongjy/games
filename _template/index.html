@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>새 게임</title>
+<style>body{margin:0;font-family:system-ui,sans-serif}</style>
+</head>
+<body>
+<main id="app"><h1>새 게임</h1></main>
+<script>
+// 저장 키는 반드시 '게임이름:키' 형식으로 쓴다. 예: 'my-game:best'
+const PREFIX='my-game:';
+const store={
+  get(k){try{return localStorage.getItem(PREFIX+k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(PREFIX+k,v)}catch(e){}}
+};
+// 파일 경로는 모두 상대 경로(./style.css)로 쓴다.
+</script>
+</body>
+</html>
