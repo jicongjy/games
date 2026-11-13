@@ -50,7 +50,10 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 .tool:hover .ic,.tool.hot .ic{background:var(--panel)}
 .tool:hover::after{content:attr(data-tip);position:absolute;top:100%;margin-top:5px;right:0;white-space:nowrap;background:var(--ink);color:#fff;font-size:11px;padding:3px 8px;z-index:5}
 .pill.big{font-family:var(--sans);font-size:16px;font-weight:600;padding:11px 26px}
-#mapWrap{display:flex;justify-content:center;margin:24px 0 20px}
+#guide{display:flex;align-items:center;justify-content:center;gap:10px;min-height:30px;margin-top:14px;font-size:15px;visibility:hidden}
+#guide.on{visibility:visible}
+.chip{background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:3px 9px;border-radius:4px;flex:none}
+#mapWrap{display:flex;justify-content:center;margin:10px 0 20px}
 #map{border:3px solid var(--ink);background:var(--paper);max-width:100%}
 h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px 0 0;border-bottom:1px solid var(--ink);padding-bottom:6px}
 #cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:16px 0 0}
@@ -142,6 +145,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
     </div>
     <p class="over">큰 서리의 밤</p>
     <h2>서리골</h2>
+    <div id="guide"><span class="chip">안내</span><span id="guideText"></span></div>
     <div id="mapWrap"><canvas id="map"></canvas></div>
     <div class="row"><button class="pill accent big" id="btnNext"></button></div>
   </section>
@@ -400,7 +404,10 @@ const unlocked=k=>k===0||(k===7?S.best.slice(0,7).every(Boolean):(k===1||k===3||
 const $=id=>document.getElementById(id);
 let mode='title';
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));mode=id;window.scrollTo(0,0)}
-let toastT;function toast(t){const el=$('toast');el.textContent=t;el.style.display='inline-flex';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',2600)}
+let guideT=0,guideTmp='';
+function guide(t){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeout(()=>{guideTmp='';guide()},3600)}
+ const base=S.loc===8&&S.best[0]&&S.best.slice(1).every(b=>!b)?'표지판을 누르거나 방향키로 길을 고르세요':'';const txt=guideTmp||base;$('guideText').textContent=txt;$('guide').classList.toggle('on',!!txt)}
+let toastT;function toast(t){if(mode==='town'){guide(t);return}const el=$('toast');el.textContent=t;el.style.display='inline-flex';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',2600)}
 
 /* ---------- 대화 ---------- */
 let D=null;
@@ -480,10 +487,10 @@ const ROUTE=[[PL,[10,11]],[PL,[16,5],[20,5]],[PL,[16,5],[20,5],[26,5]],[PL,[22,1
 const DETOUR=[[22.1,17],[22.1,17.7],[23.8,17.7],[23.8,17]];
 const BR={ArrowUp:[1,2],ArrowRight:[3,4],ArrowDown:[5,6],ArrowLeft:[7]},BRNAME={ArrowUp:'↑ 빵집 길',ArrowRight:'→ 가로등 길',ArrowDown:'↓ 호수 길',ArrowLeft:'← 빈집'},DIFF={ArrowUp:'쉬움',ArrowRight:'보통',ArrowDown:'어려움',ArrowLeft:'가장 어려움'};
 const houseOff=G.house.map(r=>r.map(c=>c==='r'?'#':c)),houseOn=G.house.map(r=>r.slice());[[4,8],[5,8],[4,9],[5,9]].forEach(([x,y])=>houseOn[y][x]='r');
-const DECOR=[[20.5,10,'lamp'],[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13.6,9.6,'lamp'],[11.8,10,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[28.6,4.1,'snowman'],[29.4,4.6,'snowman'],[27.5,6.3,'snowman'],
+const DECOR=[[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13.6,9.6,'lamp'],[11.6,9.3,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[28.6,4.1,'snowman'],[29.4,4.6,'snowman'],[27.5,6.3,'snowman'],
  [30.2,9.6,'hedge'],[30.6,12.3,'hedge'],[25.4,12.4,'hedge'],[18,16,'machine'],[28.6,16,'icerock'],[29.4,18.2,'icerock'],[27,19.3,'icerock'],[24.4,19.4,'icerock'],[30.5,19.8,'icerock'],
  [5,5,'hedge'],[9,6.3,'hedge'],[12.4,3.2,'hedge'],[2.5,7.6,'snowman'],[6,17,'icerock'],[11,18.4,'hedge'],[3,15,'hedge'],[12.3,15,'snowman'],[13.2,7.6,'lamp'],[22,1.6,'hedge'],[30,1.8,'icerock'],[8,20,'lamp'],[21,20.3,'hedge'],[16,9.7,'fountain']];
-const SIGNS=[{d:'ArrowUp',x:16,y:8.2,n:'빵집 길',a:'▲',lv:1},{d:'ArrowRight',x:19.3,y:11,n:'가로등 길',a:'▶',lv:2},{d:'ArrowDown',x:16,y:13.8,n:'호수 길',a:'▼',lv:3},{d:'ArrowLeft',x:12.7,y:11,n:'빈집',a:'◀',lv:3}];
+const SIGNS=[{d:'ArrowUp',x:16,y:8.2,n:'빵집 길',lv:1,t:'쉬움'},{d:'ArrowRight',x:19.05,y:11,n:'가로등 길',lv:2,t:'보통'},{d:'ArrowDown',x:16,y:13.8,n:'호수 길',lv:3,t:'어려움'},{d:'ArrowLeft',x:13.2,y:11,n:'빈집',lv:3,t:'가장 어려움'}];
 let HIT=[];
 const nodePos=n=>n===PLAZA?PL:HOUSE[n];
 function route(n){const r=ROUTE[n].slice();if(n===6&&S.best[5])r.splice(3,0,...DETOUR);return r}
@@ -508,24 +515,27 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
   x.fillStyle=open?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+(OVER?58:44));
   if(open){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}
   HIT.push({x:hx*TS-50,y:hy*TS-24-90,w:100,h:140,fn:()=>{if(S.best[k]||unlocked(k))goTo(k);else toast(k===7?'빈집은 다른 집을 모두 돌고 나서 갈 수 있습니다':'아직 갈 수 없는 집입니다. 앞집 배달을 먼저 마쳐 주세요')}})});
- if(!OVER&&S.best[0]){SIGNS.forEach(g=>{const ks=BR[g.d],lock=!unlocked(ks[0])&&!S.best[ks[0]],w=134,h=52,bx=Math.round(g.x*TS-w/2),by=Math.round(g.y*TS-h/2);
-   x.fillStyle=lock?'#bdbdbd':COL['#'];x.fillRect(bx-3,by-3,w+6,h+6);x.fillStyle='#fff';x.fillRect(bx,by,w,h);
-   x.textAlign='left';x.fillStyle=lock?'#999':COL['#'];x.font='600 15px "Pretendard Variable","Pretendard",sans-serif';x.fillText(g.a+'  '+g.n,bx+10,by+21);
-   for(let i=0;i<3;i++){x.fillStyle=i<g.lv?(lock?'#bdbdbd':COL.r):'#e2e2e2';x.fillRect(bx+10+i*12,by+32,8,8)}
-   ks.forEach((k,i)=>{const px=bx+w-10-(ks.length-i)*17,on=S.best[k]>0;x.fillStyle=on?COL['#']:'#bdbdbd';x.fillRect(px+3,by+28,6,2);x.fillRect(px+1,by+30,10,2);x.fillRect(px,by+32,12,9);x.fillStyle=on?COL.r:'#fff';x.fillRect(px+3,by+34,4,4)});
-   HIT.push({x:bx-3,y:by-3,w:w+6,h:h+6,fn:()=>goDir(g.d)})});x.textAlign='center';
-  if(mode==='town'&&S.loc===PLAZA&&S.best.slice(1).every(b=>!b)){const t='표지판을 누르거나 방향키로 길을 고르세요';x.font='500 14px "Pretendard Variable","Pretendard",sans-serif';const w=x.measureText(t).width+24,bx=Math.round(PL[0]*TS-w/2),by=PL[1]*TS+34;
-   x.fillStyle=COL.r;x.fillRect(bx,by,w,30);x.fillRect(PL[0]*TS-4,by-6,8,6);x.fillStyle='#fff';x.fillText(t,PL[0]*TS,by+20)}}
+ if(!OVER&&S.best[0]){const F='"Pretendard Variable","Pretendard",sans-serif';SIGNS.forEach(g=>{const ks=BR[g.d],lock=!unlocked(ks[0])&&!S.best[ks[0]],w=168,h=58,cx=Math.round(g.x*TS),bx=cx-w/2,by=Math.round(g.y*TS)-h/2-12,col=lock?'#a8a8a8':COL['#'];
+   x.fillStyle=col;x.fillRect(cx-3,by+h,6,24);x.fillRect(cx-10,by+h+22,20,4);x.fillRect(bx,by,w,h);x.beginPath();
+   if(g.d==='ArrowRight'){x.moveTo(bx+w,by);x.lineTo(bx+w+20,by+h/2);x.lineTo(bx+w,by+h)}else if(g.d==='ArrowLeft'){x.moveTo(bx,by);x.lineTo(bx-20,by+h/2);x.lineTo(bx,by+h)}
+   else if(g.d==='ArrowUp'){x.moveTo(cx-22,by);x.lineTo(cx,by-16);x.lineTo(cx+22,by)}else{x.moveTo(cx-22,by+h);x.lineTo(cx,by+h+16);x.lineTo(cx+22,by+h)}x.fill();
+   x.strokeStyle='#fff';x.lineWidth=2;x.strokeRect(bx+5,by+5,w-10,h-10);
+   x.fillStyle='#fff';x.textAlign='left';x.font='700 16px '+F;x.fillText(g.n,bx+15,by+26);
+   x.textAlign='right';x.font='500 12px '+F;x.fillText(lock?'마지막에 열림':'배달 '+ks.filter(k=>S.best[k]).length+'/'+ks.length,bx+w-15,by+25);
+   x.textAlign='left';x.fillText('난이도',bx+15,by+45);for(let i=0;i<3;i++){x.fillStyle=i<g.lv?(lock?'#fff':COL.r):'#555';x.fillRect(bx+56+i*13,by+36,9,9)}
+   x.fillStyle='#fff';x.fillText(g.t,bx+100,by+45);
+   HIT.push({x:bx-20,y:by-16,w:w+40,h:h+44,fn:()=>goDir(g.d)})});x.textAlign='center'}
  x.drawImage(mapMe,Math.round(tp[0]*TS-24),Math.round(tp[1]*TS-24),TS,TS);
  x.font='500 14px "Pretendard Variable","Pretendard",sans-serif';BUB=BUB.filter(b=>b.until>now);
  if(!OVER)BUB.forEach(b=>{const[hx,hy]=HOUSE[b.k],w=x.measureText(b.t).width+20,bx=Math.round(hx*TS-w/2),by=Math.round(hy*TS-24-84-38);
-  x.fillStyle=COL['#'];x.fillRect(bx-3,by-3,w+6,34);x.fillRect(hx*TS-4,by+31,8,6);x.fillStyle='#fff';x.fillRect(bx,by,w,28);x.fillStyle=COL['#'];x.fillText(b.t,hx*TS,by+19)});
+  const rr=(a,b2,c2,d,r)=>{x.beginPath();if(x.roundRect)x.roundRect(a,b2,c2,d,r);else x.rect(a,b2,c2,d);x.fill()};
+  x.fillStyle=COL['#'];rr(bx-3,by-3,w+6,34,17);x.beginPath();x.moveTo(hx*TS-7,by+29);x.lineTo(hx*TS,by+40);x.lineTo(hx*TS+7,by+29);x.fill();x.fillStyle='#fff';rr(bx,by,w,28,14);x.fillStyle=COL['#'];x.fillText(b.t,hx*TS,by+19)});
  x.restore()}
 function startMap(){const tok=++mapTok;const step=now=>{if(tok!==mapTok||!(mode==='town'||mode==='travel'||(mode==='dlg'&&D&&D.back==='town')))return;
   if(mode==='town'&&now>chatAt){chatAt=now+5000+Math.random()*4000;const vis=[0,1,2,3,4,5,6,7].filter(k=>(k<7?S.best[k]:S.quests.master)&&k!==S.loc&&Math.abs(HOUSE[k][0]-CAM[0]-VW/2)<VW/2-2&&Math.abs(HOUSE[k][1]-CAM[1]-VH/2)<VH/2-1);
    if(vis.length)bubble(vis[Math.floor(Math.random()*vis.length)],now)}
   drawMap(now);requestAnimationFrame(step)};requestAnimationFrame(step)}
-function townUI(){$('btnOver').classList.toggle('hot',OVER);mapMe=toCanvas(face(S.courier),1);const k=recNext();$('btnNext').textContent=k<0?'배달 끝 · 집을 눌러 다시 찾아갈 수 있습니다':'다음 배달 가기 · '+(k+1)+' '+RES[k].place;
+function townUI(){guide();$('btnOver').classList.toggle('hot',OVER);mapMe=toCanvas(face(S.courier),1);const k=recNext();$('btnNext').textContent=k<0?'배달 끝 · 집을 눌러 다시 찾아갈 수 있습니다':'다음 배달 가기 · '+(k+1)+' '+RES[k].place;
  $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;
  [['icBook',G.icBook],['icMe',face(S.courier)],['icMap',G.icMap]].forEach(([id,g])=>{const b=$(id);b.innerHTML='';b.appendChild(toCanvas(g,2))})}
 function mapHit(e){if(OVER||!CAM)return null;const c=$('map'),r=c.getBoundingClientRect(),q=c.width/r.width,wx=(e.clientX-r.left)*q+Math.round(CAM[0]*TS),wy=(e.clientY-r.top)*q+Math.round(CAM[1]*TS);
