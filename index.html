@@ -85,7 +85,13 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
 #hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 #boardWrap{display:flex;justify-content:center}
 #board{border:3px solid var(--ink);background:var(--paper)}
-#clearBar{text-align:center;margin-top:16px;min-height:34px}
+#clearBar{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px}
+#acts{margin-top:16px}#acts.off{display:none}
+.act{font-family:var(--sans);font-size:14px;padding:8px 16px;position:relative}
+.act:disabled{opacity:.35;cursor:default;background:var(--paper);color:var(--ink)}
+.act:hover::after{content:attr(data-tip);position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:5px;white-space:nowrap;background:var(--ink);color:#fff;font-size:11px;padding:3px 8px;z-index:5}
+.act.pulse{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
+#board{cursor:pointer}
 #toast{position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:30;display:none}
 
 /* dialogue */
@@ -163,7 +169,11 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
     <div id="coach"><span id="coachFace"></span><span id="coachText"></span></div>
     <div id="boardWrap"><canvas id="board"></canvas></div>
     <div id="clearBar"></div>
-    <p class="keys">←↑↓→ 미끄러지기 · Z 되돌리기 · R 처음부터 · Esc 마을로</p>
+    <div class="row" id="acts">
+      <button class="pill act" id="aUndo" data-tip="단축키 Z">↶ 한 수 물리기</button>
+      <button class="pill act" id="aRe" data-tip="단축키 R">⟲ 처음부터</button>
+      <button class="pill act" id="aTown" data-tip="단축키 Esc">마을로 나가기</button>
+    </div>
   </section>
 </div>
 
@@ -319,11 +329,11 @@ const PRO=["서리골에는 해마다 하룻밤, 큰 서리가 내립니다.",
 const OFFICE=[r(0,"자네가 새 배달부인가. 하필 오늘 오다니, 운도 좋군."),r(0,"두루 씨가 사십 년 메던 가방일세. 소포 여덟 개가 들어 있어."),
  r(0,"큰 서리 날에는 배달부만 밖에 나가네. 나는 안 나가. 국장이니까."),r(0,"그나저나 이름이 뭐라고 했지?")];
 const OFFICE2=[r(0,"{name}. 좋은 이름이군."),r(0,"요령은 문밖에서 알려 주지. 우체국 문 앞까지만 갔다 와 보게.")];
-const TUT=[{key:'ArrowRight',t:"→ 방향키를 눌러 보게."},
- {key:'ArrowDown',t:"봤지? 한번 미끄러지면 못 멈춰. 멈추려면 부딪혀야 하네. 이번엔 ↓."},
- {key:'ArrowLeft',t:"저기 다홍색이 문 앞일세. ← 로 가 보게."},
- {key:'z',t:"지나가는 건 배달이 아니야. 문 앞에 서야지. Z를 눌러 한 수 물리게."},
- {key:null,t:"이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 R로 처음부터."}];
+const TUT=[{key:'ArrowRight',t:"오른쪽으로 가 보게. 가고 싶은 쪽을 누르거나 방향키를 누르면 되네."},
+ {key:'ArrowDown',t:"봤지? 한번 미끄러지면 못 멈춰. 멈추려면 부딪혀야 하네. 이번엔 아래쪽."},
+ {key:'ArrowLeft',t:"저기 다홍색이 문 앞일세. 왼쪽으로 가 보게."},
+ {key:'z',t:"지나가는 건 배달이 아니야. 문 앞에 서야지. 아래의 '한 수 물리기'를 누르게."},
+ {key:null,t:"이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 '처음부터'를 누르고."}];
 const PUSH=[
  [r(0,"광장까지 밀어 주지. 어느 길로 갈지는 자네가 정하게. 하나, 둘.")],
  [r(1,"다음은 쌍둥이네예요. 살살 밀게요. ...어머, 세게 밀었네.")],
@@ -611,7 +621,14 @@ function play(k){const L=parse(k);P={k,L,x:L.sx,y:L.sy,dx:L.sx,dy:L.sy,moves:0,h
  cv.width=L.w*TS;cv.height=L.h*TS;cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
  S.loc=k;save();P.tut=(k===0&&!S.best[0])?0:null;coach();$('hudStage').textContent=(k+1)+' '+RES[k].place;$('clearBar').innerHTML='';show('play');hud();requestAnimationFrame(loop)}
 function coach(){const on=P.tut!=null;$('coach').classList.toggle('on',on);if(!on)return;const f=$('coachFace');f.innerHTML='';f.appendChild(toCanvas(face(RES[0].f[0]),3));$('coachText').textContent=TUT[P.tut].t}
-function hud(){$('hudMoves').textContent='이동 '+P.moves+' · 최소 '+MIN[P.k]}
+function hud(){$('hudMoves').textContent='이동 '+P.moves+' · 가장 짧은 길 '+MIN[P.k];const g=P.tut!=null&&P.tut<4;$('aUndo').disabled=g?P.tut!==3:!P.hist.length;$('aRe').disabled=g||!P.hist.length;
+ $('aUndo').classList.toggle('pulse',P.tut===3);$('acts').classList.toggle('off',!!P.done)}
+function actMove(dk){if(mode!=='play'||P.done)return;if(P.tut!=null&&P.tut<4){const w=TUT[P.tut].key;if(P.anim||w==='z'||DIRS[dk][0]!==DIRS[w][0]||DIRS[dk][1]!==DIRS[w][1])return;move(dk);P.tut++;coach();hud();return}move(dk)}
+function actUndo(){if(mode!=='play'||P.done)return;if(P.tut!=null&&P.tut<4){if(TUT[P.tut].key!=='z'||P.anim)return;undo();P.tut++;coach();hud();return}undo()}
+function actRestart(){if(mode!=='play'||P.done||(P.tut!=null&&P.tut<4))return;restart()}
+$('aUndo').onclick=()=>{$('aUndo').blur();actUndo()};$('aRe').onclick=()=>{$('aRe').blur();actRestart()};$('aTown').onclick=()=>{$('aTown').blur();if(mode==='play'||mode==='clear')town()};
+$('board').onclick=e=>{if(mode!=='play'||!P||P.anim)return;const c=$('board'),r=c.getBoundingClientRect(),dx=(e.clientX-r.left)*c.width/r.width/TS-(P.x+.5),dy=(e.clientY-r.top)*c.height/r.height/TS-(P.y+.5);
+ if(Math.abs(dx)<.5&&Math.abs(dy)<.5)return;actMove(Math.abs(dx)>Math.abs(dy)?(dx>0?'ArrowRight':'ArrowLeft'):(dy>0?'ArrowDown':'ArrowUp'))};
 function bump(bx,by,dx,dy){P.shake={dx,dy,t:performance.now()};const L=P.L;
  if(L.g[by][bx]==='o'&&!P.demo){const sp=SPECIAL[P.k+':'+bx+','+by];
   if(sp==='fountain'){P.fh=(P.fh||0)+1;if(P.fh===3){award('fountain');toast('풍덩. 두루 씨의 첫날 기록과 같습니다.')}}
@@ -633,7 +650,7 @@ function restart(){if(P.done||P.anim)return;const L=P.L;P.x=P.dx=L.sx;P.y=P.dy=L
 function cleared(){P.done=true;const k=P.k;P.first=!S.best[k];S.best[k]=S.best[k]?Math.min(S.best[k],P.moves):P.moves;
  if(k>=2&&P.moves===MIN[k])award('short');if(k>=2&&!P.undo)award('noundo');
  if(S.best.every((b,i)=>b===MIN[i]))award('master');save();mode='clear';
- $('clearBar').innerHTML='<span class="pill accent">배달 완료 · '+P.moves+'수'+(P.moves===MIN[k]?' · 최소 이동!':'')+'</span> <span class="pill">Enter 계속</span>'}
+ hud();$('clearBar').innerHTML='<span class="pill">배달 완료 · '+P.moves+'번 만에'+(P.moves===MIN[k]?' · 가장 짧은 길!':'')+'</span><button class="pill accent big" id="btnCont">계속</button>';$('btnCont').onclick=()=>{if(mode==='clear')afterClear()}}
 function afterClear(){const k=P.k,first=P.first;const sc=[];mode='play';
  if(first){sc.push(...POST[k]);if(EVENTS[k])sc.push(...EVENTS[k]);if(k===0)sc.push(nar(OUTRO))}
  let pend=S.pending.splice(0);
@@ -658,6 +675,9 @@ function drawBoard(cv,cx,P,now){const L=P.L;cx.imageSmoothingEnabled=false;cx.fi
  for(let y=0;y<L.h;y++)for(let x=0;x<L.w;x++){const c=L.g[y][x];if(c==='#')cx.drawImage(P.demo&&y===0&&x>0&&x<L.w-1&&x%2?tiles.house:tiles.wall,x*TS,y*TS,TS,TS);
   else if(c==='o'){let t=obstType(P.k,x,y);if(t==='snowman'&&P.happy[x+','+y])t='snowmanHappy';cx.drawImage(tiles[t],x*TS,y*TS,TS,TS)}}
  let ox=0,oy=0;if(P.shake){const t=(now-P.shake.t)/140;if(t>=1)P.shake=null;else{const m=Math.sin(t*Math.PI)*6;ox=P.shake.dx*m;oy=P.shake.dy*m}}
+ if(!P.demo&&mode==='play'&&!P.anim&&!P.done&&P.hist){const g=P.tut!=null&&P.tut<4?TUT[P.tut].key:null;
+  for(const n of['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']){const[dx,dy]=DIRS[n];if(blocked(L,P.x+dx,P.y+dy))continue;if(g&&(g==='z'||DIRS[g][0]!==dx||DIRS[g][1]!==dy))continue;
+   const px=(P.x+.5+dx*.86)*TS,py=(P.y+.5+dy*.86)*TS;cx.fillStyle=g?COL.r:'#a8a8a8';for(let i=0;i<3;i++){const w=14-i*5,o=i*4-4;if(dx)cx.fillRect(Math.round(px+dx*o-2),Math.round(py-w/2),4,w);else cx.fillRect(Math.round(px-w/2),Math.round(py+dy*o-2),w,4)}}}
  if(P.me)cx.drawImage(P.me,Math.round(P.dx*TS+ox),Math.round(P.dy*TS+oy),TS,TS)}
 
 /* ---------- 키 ---------- */
@@ -676,11 +696,8 @@ document.addEventListener('keydown',e=>{if(e.isComposing||e.metaKey||e.ctrlKey||
  if(mode==='town'){if(BR[k]){e.preventDefault();goDir(k);return}if(ok){e.preventDefault();if(CAPACT)CAPACT[1]();return}if(kl==='q'||kl==='ㅂ'){book(true);return}if(kl==='c'||kl==='ㅊ'){custom(false);return}if(kl==='m'||kl==='ㅡ'){overview();return}return}
  if(mode==='clear'){if(ok){e.preventDefault();afterClear()}return}
  if(mode==='play'){
-  if(P.tut!=null&&P.tut<4){const want=TUT[P.tut].key,dk=DIRS[k]?k:(DIRS[kl]?kl:null);if(dk)e.preventDefault();if(k==='Escape'){town();return}if(P.anim)return;
-   if(want==='z'){if(kl==='z'||kl==='ㅋ'){undo();P.tut++;coach()}}
-   else if(dk&&DIRS[dk][0]===DIRS[want][0]&&DIRS[dk][1]===DIRS[want][1]){move(dk);P.tut++;coach()}return}
-  if(DIRS[kl]||DIRS[k]){e.preventDefault();move(DIRS[k]?k:kl);return}
-  if(kl==='z'||kl==='ㅋ'){undo();return}if(kl==='r'||kl==='ㄱ'){restart();return}
+  const dk=DIRS[k]?k:(DIRS[kl]?kl:null);if(dk){e.preventDefault();actMove(dk);return}
+  if(kl==='z'||kl==='ㅋ'){actUndo();return}if(kl==='r'||kl==='ㄱ'){actRestart();return}
   if(k==='Escape'){town();return}}
 });
 
