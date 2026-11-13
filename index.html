@@ -42,7 +42,10 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 #coach.on{display:flex}
 #coachFace{background:var(--panel);padding:4px;flex:none}
 /* town */
-#cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:32px 0 20px}
+#mapWrap{display:flex;justify-content:center;margin:24px 0 20px}
+#map{border:3px solid var(--ink);background:var(--paper);max-width:100%}
+h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px 0 0;border-bottom:1px solid var(--ink);padding-bottom:6px}
+#cards{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:16px 0 0}
 .card{background:var(--panel);padding:22px 8px 14px;display:flex;flex-direction:column;align-items:center;gap:12px;
   cursor:pointer;outline:3px solid transparent;outline-offset:-3px;position:relative;min-height:190px}
 .card.sel{outline-color:var(--ink)}
@@ -85,7 +88,7 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 /* notebook */
 #book{position:fixed;inset:0;background:var(--paper);z-index:15;display:none;overflow:auto;padding:36px 24px}
 #book.on{display:block}
-#bookIn{width:760px;max-width:100%;margin:0 auto}
+#bookIn{width:912px;max-width:100%;margin:0 auto}
 .quest{display:grid;grid-template-columns:72px 1fr auto;gap:18px;align-items:center;padding:14px 0;border-bottom:1px solid var(--panel)}
 .quest .qt{font-family:var(--sans);font-weight:600;font-size:19px}
 .quest .qd{font-size:14px;color:#555;margin-top:2px}
@@ -126,12 +129,12 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
   <section id="s-town" class="screen">
     <p class="over">큰 서리의 밤</p>
     <h2>서리골</h2>
-    <div id="cards"></div>
+    <div id="mapWrap"><canvas id="map"></canvas></div>
     <div class="row">
+      <button class="pill accent" id="btnNext"></button>
       <button class="pill" id="btnBook">Q 배달 수첩 <span id="stampCount"></span></button>
       <button class="pill" id="btnCustom">C 꾸미기</button>
     </div>
-    <p class="keys">←↑↓→ 고르기 · Enter 배달 가기</p>
   </section>
 
   <section id="s-play" class="screen">
@@ -156,10 +159,13 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
   </div>
 </div>
 <div id="book"><div id="bookIn">
-  <p class="over">우표 모음</p>
+  <p class="over">서리골 우체국</p>
   <h2>배달 수첩</h2>
-  <div id="quests" style="margin-top:28px"></div>
-  <p class="keys">Q 또는 Esc 닫기</p>
+  <h3>주소록 · 배달한 집은 다시 찾아갈 수 있습니다</h3>
+  <div id="cards"></div>
+  <h3>우표</h3>
+  <div id="quests"></div>
+  <p class="keys">←↑↓→ 고르기 · Enter 찾아가기 · Q 또는 Esc 닫기</p>
 </div></div>
 <div id="toast" class="pill accent"></div>
 
@@ -292,6 +298,15 @@ const TUT=[{key:'ArrowRight',t:"→ 방향키를 눌러 보게."},
  {key:'ArrowLeft',t:"저기 다홍색이 문 앞일세. ← 로 가 보게."},
  {key:'z',t:"지나가는 건 배달이 아니야. 문 앞에 서야지. Z를 눌러 한 수 물리게."},
  {key:null,t:"이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 R로 처음부터."}];
+const PUSH=[
+ [r(0,"다음은 빵집일세. 밀어 주지. 하나, 둘.")],
+ [r(1,"다음은 쌍둥이네예요. 살살 밀게요. ...어머, 세게 밀었네.")],
+ [r(2,"우리가 밀어 줄게요!"),r(2,"둘이 같이!"),nar("(둘이 밀면 두 배로 멀리 갑니다.)")],
+ [r(3,"언덕 집은 저 아래일세. 가로등은 치지 말고.")],
+ [r(4,"지도대로 가면 금방이야. 내 지도 말고, 두루 지도대로.")],
+ [r(5,"제설기가 뚫어 놓은 길로 가요. 내가 밀... 아니, 제설기가 밀 거예요.")],
+ [r(6,"..."),nar("(낚시꾼이 말없이 낚싯대로 밀어 줍니다.)")],
+];
 const OUTRO="소포 여덟 개, 집 여덟 채.\n서리골의 긴 하루가 시작됩니다.";
 const PRE=[
  [r(0,"우체국 문 앞까지만 갔다 와 보게. 요령은 나가서 알려 주지.")],
@@ -346,7 +361,7 @@ const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 /* ---------- 저장 ---------- */
 const KEY='ice-slide-v1';
 function fresh(){return{courier:{name:'',hair:1,eyes:0,mouth:1,item:'scarf'},best:Array(8).fill(0),quests:{},
- items:{none:1,scarf:1,blush:1,glasses:1},events:{},intro:false,pending:[]}}
+ items:{none:1,scarf:1,blush:1,glasses:1},events:{},intro:false,pending:[],loc:0}}
 let S=fresh();
 try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);if(o&&o.best&&o.best.length===8)S=Object.assign(fresh(),o)}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -397,9 +412,7 @@ function proLoop(){const c=$('pro'),x=c.getContext('2d'),tok=++proTok;
   requestAnimationFrame(step)};requestAnimationFrame(step)}
 function prologue(){PR={i:0,target:.45,auto:false,st:scene(PROMAP,null),mayor:toCanvas(face(MAYOR),1),mayorT:0};PR.st.frost=0;
  show('pro');fit($('pro'),PR.st);$('proText').textContent=PRO[0];proLoop()}
-function outro(){PR={auto:true,target:1,st:scene(PROMAP,toCanvas(face(S.courier),1)),mayorT:0};PR.st.frost=1;PR.st.x=PR.st.dx=1;
- show('pro');fit($('pro'),PR.st);$('proText').textContent=OUTRO;proLoop()}
-function proNext(){if(mode!=='pro')return;if(PR.auto){town();return}PR.i++;if(PR.i>=PRO.length){say(OFFICE,()=>custom(true));return}
+function proNext(){if(mode!=='pro')return;PR.i++;if(PR.i>=PRO.length){say(OFFICE,()=>custom(true));return}
  PR.target=1.05;if(PR.i===2)PR.mayorT=performance.now();$('proText').textContent=PRO[PR.i]}
 $('btnPro').onclick=proNext;
 function title(){const started=S.intro;$('startLab').textContent=started?'Enter 이어하기':'Enter 시작';$('btnReset').style.display=started?'':'none';show('title');demoInit()}
@@ -434,7 +447,36 @@ $('btnCustomDone').onclick=customDone;
 /* ---------- 마을 ---------- */
 let T={sel:1};
 const allFaces=()=>S.quests.master;
-function town(){show('town');if(S.pending.length){const p=S.pending.splice(0);save();const sc=[];p.forEach(id=>sc.push(...QBY[id].scene));say(sc,renderTown)}renderTown()}
+const NODES=[[2.5,3.6],[7,3.6],[11.5,3.6],[16,3.6],[16,7.6],[11.5,7.6],[7,7.6],[2.5,7.6]],CORNER=[[17.9,3.6],[17.9,7.6]];
+const houseOff=G.house.map(r=>r.map(c=>c==='r'?'#':c)),houseOn=G.house.map(r=>r.slice());[[4,8],[5,8],[4,9],[5,9]].forEach(([x,y])=>houseOn[y][x]='r');
+const DECOR=[[4.75,2.6,'lamp'],[9.25,2.6,'lamp'],[13.75,2.6,'lamp'],[13.75,6.6,'hedge'],[9.25,6.6,'machine'],[4.75,6.6,'icerock'],[5.3,5.2,'icerock'],[9.6,1.2,'snowman'],[10.4,1.5,'snowman'],[0.9,5.6,'mailbox']];
+const nextStop=()=>S.best.findIndex(b=>!b);
+function mapPath(a,b){const pts=[NODES[a]],st=a<b?1:-1;for(let i=a;i!==b;i+=st){const j=i+st;if(i===3&&j===4)pts.push(CORNER[0],CORNER[1]);if(i===4&&j===3)pts.push(CORNER[1],CORNER[0]);pts.push(NODES[j])}return pts}
+function drawMap(tx,ty){const c=$('map'),x=c.getContext('2d');if(c.width!==19*TS){c.width=19*TS;c.height=9*TS;c.style.width=c.width+'px'}
+ x.imageSmoothingEnabled=false;x.fillStyle='#ebebeb';x.fillRect(0,0,c.width,c.height);
+ x.fillStyle='#fff';const road=(x1,y1,x2,y2)=>x.fillRect(Math.min(x1,x2)*TS-24,Math.min(y1,y2)*TS-24,Math.abs(x2-x1)*TS+48,Math.abs(y2-y1)*TS+48);
+ road(1.2,3.6,17.9,3.6);road(17.9,3.6,17.9,7.6);road(17.9,7.6,1.2,7.6);
+ x.fillStyle='#e2e2e2';for(let i=0;i<34;i++){const px=(1.6+i*0.48)*TS;[3.6,7.6].forEach((ry,n)=>{if((i+n)%3===0){x.fillRect(px,ry*TS-8,3,3);x.fillRect(px+3,ry*TS-11,3,3);x.fillRect(px+6,ry*TS-14,3,3)}})}
+ DECOR.forEach(([dx,dy,t])=>x.drawImage(tiles[t],Math.round(dx*TS-24),Math.round(dy*TS-24),TS,TS));
+ const nx=nextStop();x.textAlign='center';x.font='500 13px "DM Mono","Pretendard Variable",sans-serif';
+ NODES.forEach(([hx,hy],k)=>{paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
+  x.fillStyle=k===nx?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+44);
+  if(k===nx){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}});
+ if(tx==null){tx=NODES[S.loc][0];ty=NODES[S.loc][1]}
+ x.drawImage(mapMe,Math.round(tx*TS-24),Math.round(ty*TS-24),TS,TS)}
+let mapMe=null;
+function townUI(){mapMe=toCanvas(face(S.courier),1);const nx=nextStop();$('btnNext').textContent=nx<0?'배달 끝 · 주소록에서 다시 찾아가기':'Enter 다음 배달 · '+(nx+1)+' '+RES[nx].place;
+ $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;drawMap()}
+function town(){show('town');townUI();if(S.pending.length){const p=S.pending.splice(0);save();const sc=[];p.forEach(id=>sc.push(...QBY[id].scene));say(sc,townUI)}}
+function travel(a,b,cb,over){show('town');townUI();mode='travel';const pts=mapPath(a,b).map(p=>p.slice());
+ if(over){const e=pts[pts.length-1],q=pts[pts.length-2],d=Math.sign(e[0]-q[0]);pts.push([e[0]+d*1.5,e[1]],[e[0],e[1]])}
+ const seg=[];let len=0;for(let i=1;i<pts.length;i++){const l=Math.abs(pts[i][0]-pts[i-1][0])+Math.abs(pts[i][1]-pts[i-1][1]);seg.push(l);len+=l}
+ const dur=Math.max(750,len*120),t0=performance.now();
+ const step=now=>{let t=Math.min(1,(now-t0)/dur);let d=(t*(2-t))*len,i=0;while(i<seg.length-1&&d>seg[i]){d-=seg[i];i++}const f=seg[i]?Math.min(1,d/seg[i]):1;
+  drawMap(pts[i][0]+(pts[i+1][0]-pts[i][0])*f,pts[i][1]+(pts[i+1][1]-pts[i][1])*f);
+  if(t<1)requestAnimationFrame(step);else{S.loc=b;save();mode='town';townUI();setTimeout(cb,260)}};requestAnimationFrame(step)}
+function enter(k){if(!S.best[k])say(PRE[k],()=>play(k));else play(k)}
+function goNext(){if(mode!=='town')return;const nx=nextStop();if(nx<0){book(true);return}if(S.loc!==nx)travel(S.loc,nx,()=>enter(nx));else enter(nx)}
 function renderTown(){const box=$('cards');box.innerHTML='';
  for(let i=0;i<10;i++){const d=document.createElement('div');let g,lab,meta='',mono=null,locked=false;
   if(i===0){g=face(S.courier);lab=name();meta='나'}
@@ -446,10 +488,10 @@ function renderTown(){const box=$('cards');box.innerHTML='';
   const p=document.createElement('span');p.className='pill';p.textContent=lab;d.appendChild(p);
   const m=document.createElement('span');m.className='meta';m.innerHTML=meta;d.appendChild(m);
   d.onclick=()=>{T.sel=i;renderTown();pick()};box.appendChild(d)}
- const n=Object.keys(S.quests).length;$('stampCount').textContent=n+'/'+QUESTS.length}
-function pick(){const i=T.sel;if(i===0){custom(false);return}if(i===9){if(allFaces())say([{f:[DURU],n:'두루 씨',t:"차 한잔하고 가게. 어차피 밖은 미끄러워."}],renderTown);return}const k=i-1;if(!unlocked(k)){toast('앞집 배달을 먼저 끝내야 합니다');return}
- if(!S.best[k])say(PRE[k],()=>play(k));else play(k)}
-$('btnBook').onclick=()=>book(true);$('btnCustom').onclick=()=>custom(false);
+}
+function pick(){const i=T.sel;if(i===0){book(false);custom(false);return}if(i===9){if(allFaces())say([{f:[DURU],n:'두루 씨',t:"차 한잔하고 가게. 어차피 밖은 미끄러워."}],renderTown);return}const k=i-1;if(!unlocked(k)){toast('앞집 배달을 먼저 끝내야 합니다');return}
+ book(false);if(S.loc!==k)travel(S.loc,k,()=>enter(k));else enter(k)}
+$('btnBook').onclick=()=>{if(mode==='town')book(true)};$('btnCustom').onclick=()=>{if(mode==='town')custom(false)};$('btnNext').onclick=goNext;
 
 /* ---------- 배달 수첩 ---------- */
 function stampCanvas(done,idx){const c=document.createElement('canvas');c.width=c.height=64;c.className='stamp';const x=c.getContext('2d');
@@ -458,7 +500,7 @@ function stampCanvas(done,idx){const c=document.createElement('canvas');c.width=
  if(done){const g=[G.snowman,G.goal,G.hedge,G.icerock,face(DURU)][idx];x.fillStyle='#fff';x.fillRect(6,6,52,52);paint(x,g,8,8,3)}
  else{x.strokeStyle='#bdbdbd';x.setLineDash([4,4]);x.lineWidth=2;x.strokeRect(5,5,54,54);x.fillStyle='#bdbdbd';x.font='500 26px "DM Mono",monospace';x.textAlign='center';x.fillText('?',32,41)}
  return c}
-function book(on){$('book').classList.toggle('on',on);if(on){mode='book';const box=$('quests');box.innerHTML='';
+function book(on){$('book').classList.toggle('on',on);if(on){mode='book';renderTown();const box=$('quests');box.innerHTML='';
   QUESTS.forEach((q,i)=>{const done=!!S.quests[q.id];const d=document.createElement('div');d.className='quest';d.appendChild(stampCanvas(done,i));
    const m=document.createElement('div');const secret=q.hidden&&!done;
    m.innerHTML='<div class="qt">'+(secret?'???':q.t)+'</div><div class="qd">'+(secret?q.hint:q.cond)+'</div>';d.appendChild(m);
@@ -474,7 +516,7 @@ function obstType(k,x,y){const t=OBST[k];return t==='mix'?['snowman','lamp','mai
 function play(k){const L=parse(k);P={k,L,x:L.sx,y:L.sy,dx:L.sx,dy:L.sy,moves:0,hist:[],undo:false,pass:0,hits:{},happy:{},marks:[],anim:null,queue:null,shake:null,done:false,
   me:toCanvas(face(S.courier),1)};
  cv.width=L.w*TS;cv.height=L.h*TS;cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
- P.tut=(k===0&&!S.best[0])?0:null;coach();$('hudStage').textContent=(k+1)+' '+RES[k].place;$('clearBar').innerHTML='';show('play');hud();requestAnimationFrame(loop)}
+ S.loc=k;save();P.tut=(k===0&&!S.best[0])?0:null;coach();$('hudStage').textContent=(k+1)+' '+RES[k].place;$('clearBar').innerHTML='';show('play');hud();requestAnimationFrame(loop)}
 function coach(){const on=P.tut!=null;$('coach').classList.toggle('on',on);if(!on)return;const f=$('coachFace');f.innerHTML='';f.appendChild(toCanvas(face(RES[0].f[0]),3));$('coachText').textContent=TUT[P.tut].t}
 function hud(){$('hudMoves').textContent='이동 '+P.moves+' · 최소 '+MIN[P.k]}
 function bump(bx,by,dx,dy){P.shake={dx,dy,t:performance.now()};const L=P.L;
@@ -496,13 +538,16 @@ function cleared(){P.done=true;const k=P.k;P.first=!S.best[k];S.best[k]=S.best[k
  if(S.best.every((b,i)=>b===MIN[i]))award('master');save();mode='clear';
  $('clearBar').innerHTML='<span class="pill accent">배달 완료 · '+P.moves+'수'+(P.moves===MIN[k]?' · 최소 이동!':'')+'</span> <span class="pill">Enter 계속</span>'}
 function afterClear(){const k=P.k,first=P.first;const sc=[];mode='play';
- if(first){sc.push(...POST[k]);if(EVENTS[k])sc.push(...EVENTS[k])}
+ if(first){sc.push(...POST[k]);if(EVENTS[k])sc.push(...EVENTS[k]);if(k===0)sc.push(nar(OUTRO))}
  let pend=S.pending.splice(0);
  if(first&&k===7){if(pend.includes('master')){pend=pend.filter(x=>x!=='master');pend.forEach(id=>sc.push(...QBY[id].scene));sc.push(...END_HIDDEN)}
   else{pend.forEach(id=>sc.push(...QBY[id].scene));sc.push(...END_BASIC)}}
  else pend.forEach(id=>sc.push(...QBY[id].scene));
- save();say(sc,()=>{if(first&&k<7)T.sel=k+2;if(first&&k===0)outro();else town()})}
-function loop(now){if(mode!=='play'&&mode!=='clear'&&!(mode==='dlg'&&D&&D.back==='play')){return}
+ if(first&&k<7)sc.push(...PUSH[k]);
+ save();say(sc,()=>{if(first&&k<7){T.sel=k+2;pushOut(k,()=>travel(k,k+1,()=>enter(k+1),k===2))}else town()})}
+function pushOut(k,cb){const d=[[1,0],[1,0],[1,0],[0,1],[-1,0],[-1,0],[-1,0]][k];mode='push';P.out={t:performance.now(),d,fx:P.x,fy:P.y,cb}}
+function loop(now){if(mode!=='play'&&mode!=='clear'&&mode!=='push'&&!(mode==='dlg'&&D&&D.back==='play')){return}
+ if(P.out){const o=P.out,t=(now-o.t)/560,far=Math.max(P.L.w,P.L.h)+1;P.dx=o.fx+o.d[0]*t*t*far;P.dy=o.fy+o.d[1]*t*t*far;draw(now);if(t>=1){P.out=null;o.cb();return}requestAnimationFrame(loop);return}
  if(P.anim){const a=P.anim;let t=Math.min(1,(now-a.t)/a.dur);const e=t*(2-t);P.dx=a.fx+(a.tx-a.fx)*e;P.dy=a.fy+(a.ty-a.fy)*e;if(t>=1){P.anim=null;P.dx=a.tx;P.dy=a.ty;arrive(a)}}
  draw(now);requestAnimationFrame(loop)}
 function draw(now){drawBoard(cv,cx,P,now)}
@@ -528,10 +573,10 @@ document.addEventListener('keydown',e=>{if(e.isComposing||e.metaKey||e.ctrlKey||
   if(k==='ArrowDown'||k==='ArrowUp'){e.preventDefault();CU.row=(CU.row+(k==='ArrowDown'?1:4))%5;if(CU.row===0)$('nameInput').focus();else $('nameInput').blur();markRow();return}
   if(k==='Enter'){e.preventDefault();customDone();return}
   if(inName)return;if(k==='ArrowLeft'||k==='ArrowRight'){e.preventDefault();change(k==='ArrowLeft'?-1:1)}return}
- if(mode==='book'){if(k==='Escape'||kl==='q'||kl==='ㅂ'||ok){e.preventDefault();book(false)}return}
- if(mode==='town'){
+ if(mode==='book'){if(k==='Escape'||kl==='q'||kl==='ㅂ'){e.preventDefault();book(false);return}
   const mv={ArrowLeft:-1,ArrowRight:1,ArrowUp:-5,ArrowDown:5}[k];if(mv){e.preventDefault();const n=T.sel+mv;if(n>=0&&n<10){T.sel=n;renderTown()}return}
-  if(ok){e.preventDefault();pick();return}if(kl==='q'||kl==='ㅂ'){book(true);return}if(kl==='c'||kl==='ㅊ'){custom(false);return}return}
+  if(ok){e.preventDefault();pick()}return}
+ if(mode==='town'){if(ok){e.preventDefault();goNext();return}if(kl==='q'||kl==='ㅂ'){book(true);return}if(kl==='c'||kl==='ㅊ'){custom(false);return}return}
  if(mode==='clear'){if(ok){e.preventDefault();afterClear()}return}
  if(mode==='play'){
   if(P.tut!=null&&P.tut<4){const want=TUT[P.tut].key,dk=DIRS[k]?k:(DIRS[kl]?kl:null);if(dk)e.preventDefault();if(k==='Escape'){town();return}if(P.anim)return;
