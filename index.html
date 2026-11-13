@@ -43,6 +43,13 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 #coach.on{display:flex}
 #coachFace{background:var(--panel);padding:4px;flex:none}
 /* town */
+#s-town{position:relative}
+#tools{position:absolute;right:0;top:0;display:flex;gap:10px}
+.tool{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;cursor:pointer;font-family:var(--sans);font-size:11px;color:#555;padding:0;position:relative}
+.tool .ic{width:46px;height:46px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;background:var(--paper)}
+.tool:hover .ic,.tool.hot .ic{background:var(--panel)}
+.tool:hover::after{content:attr(data-tip);position:absolute;top:100%;margin-top:5px;right:0;white-space:nowrap;background:var(--ink);color:#fff;font-size:11px;padding:3px 8px;z-index:5}
+.pill.big{font-family:var(--sans);font-size:16px;font-weight:600;padding:11px 26px}
 #mapWrap{display:flex;justify-content:center;margin:24px 0 20px}
 #map{border:3px solid var(--ink);background:var(--paper);max-width:100%}
 h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px 0 0;border-bottom:1px solid var(--ink);padding-bottom:6px}
@@ -128,17 +135,15 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
   </section>
 
   <section id="s-town" class="screen">
+    <div id="tools">
+      <button class="tool" id="btnBook" data-tip="배달 수첩 (Q)"><span class="ic" id="icBook"></span><span>수첩 <span id="stampCount"></span></span></button>
+      <button class="tool" id="btnCustom" data-tip="배달부 꾸미기 (C)"><span class="ic" id="icMe"></span><span>꾸미기</span></button>
+      <button class="tool" id="btnOver" data-tip="마을 전체 보기 (M)"><span class="ic" id="icMap"></span><span>지도</span></button>
+    </div>
     <p class="over">큰 서리의 밤</p>
     <h2>서리골</h2>
     <div id="mapWrap"><canvas id="map"></canvas></div>
-    <div class="row" id="roads" style="margin-bottom:10px"></div>
-    <div class="row">
-      <button class="pill accent" id="btnNext"></button>
-      <button class="pill" id="btnBook">Q 배달 수첩 <span id="stampCount"></span></button>
-      <button class="pill" id="btnCustom">C 꾸미기</button>
-      <button class="pill" id="btnOver">M 전체 지도</button>
-    </div>
-    <p class="keys">방향키 길 고르기 · Enter 다음 배달 · Q 배달 수첩 · C 꾸미기 · M 전체 지도</p>
+    <div class="row"><button class="pill accent big" id="btnNext"></button></div>
   </section>
 
   <section id="s-play" class="screen">
@@ -249,6 +254,8 @@ const SPR={
  crate:["","","..############..","..#oo#oooo#oo#..","..#o#oooooo#o#..","..##oooooooo##..","..#oooo##oooo#..","..#oooo##oooo#..","..##oooooooo##..","..#o#oooooo#o#..","..#oo#oooo#oo#..","..############.."],
  fountain:["",".......gg.......","......g..g......",".......##.......","......####......",".......##.......","....########....","...#oooooooo#...","....########....",".......##.......","..############..",".#ogogogogogoo#.",".#oooooooooooo#.","..############.."],
  mayorBank:["","","......####......","....##oooo##....","...#oooooooo#...","..#oo######oo#..","..#o#oooooo#o#..",".#oo#o#oo#o#oo#.",".#oo#oooooo#oo#.",".#oo#oo##oo#oo#.",".#ooo######ooo#.",".#oooooooooooo#.",".##############."],
+ icBook:["","...##########...","..#oooooooooo#..","..#o#######oo#..","..#oooooooooo#..","..#o#####oooo#..","..#oooooooooo#..","..#o###oooooo#..","..#oooooooooo#..","..#oooooorrro#..","..#oooooorrro#..","..#oooooooooo#..","...##########..."],
+ icMap:["","","..###...###.....","..#oo###ooo###..","..#ooo#oooo#oo#.","..#ooo#oooo#oo#.","..#ooo#orro#oo#.","..#ooo#orro#oo#.","..#ooo#oooo#oo#.","..#ooo#oooo#oo#.","..#o###oooo#oo#.","..##...####ooo#.","...........####."],
  wall:["oooooooooooooooo","ooo#oooooooo#ooo","################","#######g########","################","###g########g###","################","################","#########g######","################","##g#############","################","#############g##","################","######g#########","################"],
  goal:["",".rrrrrrrrrrrrrr.",".r............r.",".r.rrrrrrrrrr.r.",".r.r........r.r.",".r.r.rrrrrr.r.r.",".r.r.r....r.r.r.",".r.r.r.rr.r.r.r.",".r.r.r.rr.r.r.r.",".r.r.r....r.r.r.",".r.r.rrrrrr.r.r.",".r.r........r.r.",".r.rrrrrrrrrr.r.",".r............r.",".rrrrrrrrrrrrrr."],
  house:["","......##........",".....####..##...","....######.##...","...########.#...","..##########....",".############...","..#oooooooo#....","..#o##oooo#o....","..#o##oooooo#...","..#oooo###oo#...","..#oooo#r#oo#...","..#oooo#r#oo#...","..##########...."],
@@ -473,18 +480,20 @@ const ROUTE=[[PL,[10,11]],[PL,[16,5],[20,5]],[PL,[16,5],[20,5],[26,5]],[PL,[22,1
 const DETOUR=[[22.1,17],[22.1,17.7],[23.8,17.7],[23.8,17]];
 const BR={ArrowUp:[1,2],ArrowRight:[3,4],ArrowDown:[5,6],ArrowLeft:[7]},BRNAME={ArrowUp:'↑ 빵집 길',ArrowRight:'→ 가로등 길',ArrowDown:'↓ 호수 길',ArrowLeft:'← 빈집'},DIFF={ArrowUp:'쉬움',ArrowRight:'보통',ArrowDown:'어려움',ArrowLeft:'가장 어려움'};
 const houseOff=G.house.map(r=>r.map(c=>c==='r'?'#':c)),houseOn=G.house.map(r=>r.slice());[[4,8],[5,8],[4,9],[5,9]].forEach(([x,y])=>houseOn[y][x]='r');
-const DECOR=[[19,10,'lamp'],[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13,10,'lamp'],[11.8,10,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[28.6,4.1,'snowman'],[29.4,4.6,'snowman'],[27.5,6.3,'snowman'],
- [30.2,9.6,'hedge'],[30.6,12.3,'hedge'],[25.4,12.4,'hedge'],[19.5,12.5,'hedge'],[18,16,'machine'],[28.6,16,'icerock'],[29.4,18.2,'icerock'],[27,19.3,'icerock'],[24.4,19.4,'icerock'],[30.5,19.8,'icerock'],
+const DECOR=[[20.5,10,'lamp'],[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13.6,9.6,'lamp'],[11.8,10,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[28.6,4.1,'snowman'],[29.4,4.6,'snowman'],[27.5,6.3,'snowman'],
+ [30.2,9.6,'hedge'],[30.6,12.3,'hedge'],[25.4,12.4,'hedge'],[18,16,'machine'],[28.6,16,'icerock'],[29.4,18.2,'icerock'],[27,19.3,'icerock'],[24.4,19.4,'icerock'],[30.5,19.8,'icerock'],
  [5,5,'hedge'],[9,6.3,'hedge'],[12.4,3.2,'hedge'],[2.5,7.6,'snowman'],[6,17,'icerock'],[11,18.4,'hedge'],[3,15,'hedge'],[12.3,15,'snowman'],[13.2,7.6,'lamp'],[22,1.6,'hedge'],[30,1.8,'icerock'],[8,20,'lamp'],[21,20.3,'hedge'],[16,9.7,'fountain']];
+const SIGNS=[{d:'ArrowUp',x:16,y:8.2,n:'빵집 길',a:'▲',lv:1},{d:'ArrowRight',x:19.3,y:11,n:'가로등 길',a:'▶',lv:2},{d:'ArrowDown',x:16,y:13.8,n:'호수 길',a:'▼',lv:3},{d:'ArrowLeft',x:12.7,y:11,n:'빈집',a:'◀',lv:3}];
+let HIT=[];
 const nodePos=n=>n===PLAZA?PL:HOUSE[n];
 function route(n){const r=ROUTE[n].slice();if(n===6&&S.best[5])r.splice(3,0,...DETOUR);return r}
 function mapPath(a,b){const A=route(a),B=route(b);let c=0;while(c<A.length&&c<B.length&&A[c][0]===B[c][0]&&A[c][1]===B[c][1])c++;return A.slice(c-1).reverse().concat(B.slice(c))}
 function recNext(){if(S.loc<8&&!S.best[S.loc]&&unlocked(S.loc))return S.loc;if(!S.best[0])return 0;for(const d of['ArrowUp','ArrowRight','ArrowDown','ArrowLeft']){const k=BR[d].find(k=>!S.best[k]);if(k!=null&&unlocked(k))return k}return -1}
 let CAM=null,TOK=null,BUB=[],mapMe=null,mapTok=0,chatAt=0,OVER=false;
-function overview(on){if(mode!=='town')return;OVER=on==null?!OVER:on;$('btnOver').textContent=OVER?'M 가까이 보기':'M 전체 지도'}
+function overview(on){if(mode!=='town')return;OVER=on==null?!OVER:on;$('btnOver').classList.toggle('hot',OVER)}
 const camTarget=p=>[Math.max(0,Math.min(WW-VW,p[0]-VW/2)),Math.max(0,Math.min(WH-VH,p[1]-VH/2))];
 function bubble(k,now){const L=WINDOW[k];BUB=BUB.filter(b=>b.k!==k);BUB.push({k,t:L[Math.floor(Math.random()*L.length)],until:now+2400})}
-function drawMap(now){const c=$('map'),x=c.getContext('2d');if(c.width!==VW*TS){c.width=VW*TS;c.height=VH*TS;c.style.width=c.width+'px'}
+function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==VW*TS){c.width=VW*TS;c.height=VH*TS;c.style.width=c.width+'px'}
  const tp=TOK||nodePos(S.loc),ct=camTarget(tp);if(!CAM)CAM=ct.slice();CAM[0]+=(ct[0]-CAM[0])*0.1;CAM[1]+=(ct[1]-CAM[1])*0.1;
  x.imageSmoothingEnabled=false;x.fillStyle='#ebebeb';x.fillRect(0,0,c.width,c.height);x.save();const sc=OVER?Math.min(VW/WW,VH/WH):1;if(OVER){x.translate(Math.round((VW-WW*sc)*TS/2),Math.round((VH-WH*sc)*TS/2));x.scale(sc,sc)}else x.translate(-Math.round(CAM[0]*TS),-Math.round(CAM[1]*TS));
  x.fillStyle='#fff';const road=(p,q)=>x.fillRect(Math.min(p[0],q[0])*TS-24,Math.min(p[1],q[1])*TS-24,Math.abs(q[0]-p[0])*TS+48,Math.abs(q[1]-p[1])*TS+48);
@@ -497,7 +506,16 @@ function drawMap(now){const c=$('map'),x=c.getContext('2d');if(c.width!==VW*TS){
  x.textAlign='center';x.font='500 '+Math.round(13/sc)+'px "DM Mono","Pretendard Variable",sans-serif';
  HOUSE.forEach(([hx,hy],k)=>{const open=!S.best[k]&&unlocked(k);paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
   x.fillStyle=open?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+(OVER?58:44));
-  if(open){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}});
+  if(open){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}
+  HIT.push({x:hx*TS-50,y:hy*TS-24-90,w:100,h:140,fn:()=>{if(S.best[k]||unlocked(k))goTo(k);else toast(k===7?'빈집은 다른 집을 모두 돌고 나서 갈 수 있습니다':'아직 갈 수 없는 집입니다. 앞집 배달을 먼저 마쳐 주세요')}})});
+ if(!OVER&&S.best[0]){SIGNS.forEach(g=>{const ks=BR[g.d],lock=!unlocked(ks[0])&&!S.best[ks[0]],w=134,h=52,bx=Math.round(g.x*TS-w/2),by=Math.round(g.y*TS-h/2);
+   x.fillStyle=lock?'#bdbdbd':COL['#'];x.fillRect(bx-3,by-3,w+6,h+6);x.fillStyle='#fff';x.fillRect(bx,by,w,h);
+   x.textAlign='left';x.fillStyle=lock?'#999':COL['#'];x.font='600 15px "Pretendard Variable","Pretendard",sans-serif';x.fillText(g.a+'  '+g.n,bx+10,by+21);
+   for(let i=0;i<3;i++){x.fillStyle=i<g.lv?(lock?'#bdbdbd':COL.r):'#e2e2e2';x.fillRect(bx+10+i*12,by+32,8,8)}
+   ks.forEach((k,i)=>{const px=bx+w-10-(ks.length-i)*17,on=S.best[k]>0;x.fillStyle=on?COL['#']:'#bdbdbd';x.fillRect(px+3,by+28,6,2);x.fillRect(px+1,by+30,10,2);x.fillRect(px,by+32,12,9);x.fillStyle=on?COL.r:'#fff';x.fillRect(px+3,by+34,4,4)});
+   HIT.push({x:bx-3,y:by-3,w:w+6,h:h+6,fn:()=>goDir(g.d)})});x.textAlign='center';
+  if(mode==='town'&&S.loc===PLAZA&&S.best.slice(1).every(b=>!b)){const t='표지판을 누르거나 방향키로 길을 고르세요';x.font='500 14px "Pretendard Variable","Pretendard",sans-serif';const w=x.measureText(t).width+24,bx=Math.round(PL[0]*TS-w/2),by=PL[1]*TS+34;
+   x.fillStyle=COL.r;x.fillRect(bx,by,w,30);x.fillRect(PL[0]*TS-4,by-6,8,6);x.fillStyle='#fff';x.fillText(t,PL[0]*TS,by+20)}}
  x.drawImage(mapMe,Math.round(tp[0]*TS-24),Math.round(tp[1]*TS-24),TS,TS);
  x.font='500 14px "Pretendard Variable","Pretendard",sans-serif';BUB=BUB.filter(b=>b.until>now);
  if(!OVER)BUB.forEach(b=>{const[hx,hy]=HOUSE[b.k],w=x.measureText(b.t).width+20,bx=Math.round(hx*TS-w/2),by=Math.round(hy*TS-24-84-38);
@@ -507,10 +525,13 @@ function startMap(){const tok=++mapTok;const step=now=>{if(tok!==mapTok||!(mode=
   if(mode==='town'&&now>chatAt){chatAt=now+5000+Math.random()*4000;const vis=[0,1,2,3,4,5,6,7].filter(k=>(k<7?S.best[k]:S.quests.master)&&k!==S.loc&&Math.abs(HOUSE[k][0]-CAM[0]-VW/2)<VW/2-2&&Math.abs(HOUSE[k][1]-CAM[1]-VH/2)<VH/2-1);
    if(vis.length)bubble(vis[Math.floor(Math.random()*vis.length)],now)}
   drawMap(now);requestAnimationFrame(step)};requestAnimationFrame(step)}
-function townUI(){$('btnOver').textContent=OVER?'M 가까이 보기':'M 전체 지도';mapMe=toCanvas(face(S.courier),1);const k=recNext();$('btnNext').textContent=k<0?'배달 끝 · 주소록에서 다시 찾아가기':'Enter 다음 배달 · '+(k+1)+' '+RES[k].place;
- $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;const box=$('roads');box.innerHTML='';
- for(const d in BR){const ks=BR[d],b=document.createElement('button');b.className='pill';const lock=!unlocked(ks[0])&&!S.best[ks[0]];
-  b.textContent=BRNAME[d]+' · '+DIFF[d]+' · '+(d==='ArrowLeft'&&lock?'마지막에':ks.filter(k=>S.best[k]).length+'/'+ks.length);if(lock)b.style.color='#999',b.style.borderColor='#bdbdbd';b.onclick=()=>{b.blur();goDir(d)};box.appendChild(b)}}
+function townUI(){$('btnOver').classList.toggle('hot',OVER);mapMe=toCanvas(face(S.courier),1);const k=recNext();$('btnNext').textContent=k<0?'배달 끝 · 집을 눌러 다시 찾아갈 수 있습니다':'다음 배달 가기 · '+(k+1)+' '+RES[k].place;
+ $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;
+ [['icBook',G.icBook],['icMe',face(S.courier)],['icMap',G.icMap]].forEach(([id,g])=>{const b=$(id);b.innerHTML='';b.appendChild(toCanvas(g,2))})}
+function mapHit(e){if(OVER||!CAM)return null;const c=$('map'),r=c.getBoundingClientRect(),q=c.width/r.width,wx=(e.clientX-r.left)*q+Math.round(CAM[0]*TS),wy=(e.clientY-r.top)*q+Math.round(CAM[1]*TS);
+ for(let i=HIT.length-1;i>=0;i--){const h=HIT[i];if(wx>=h.x&&wx<=h.x+h.w&&wy>=h.y&&wy<=h.y+h.h)return h}return null}
+$('map').onclick=e=>{if(mode!=='town')return;if(OVER){overview(false);return}const h=mapHit(e);if(h)h.fn()};
+$('map').onmousemove=e=>{$('map').style.cursor=mode==='town'&&(OVER||mapHit(e))?'pointer':'default'};
 function town(){show('town');townUI();chatAt=performance.now()+2500;startMap();if(S.pending.length){const p=S.pending.splice(0);save();const sc=[];p.forEach(id=>sc.push(...QBY[id].scene));say(sc,townUI)}}
 function travel(a,b,cb,over){OVER=false;show('town');townUI();const pts=mapPath(a,b).map(p=>p.slice());if(pts.length<2){S.loc=b;save();startMap();cb();return}mode='travel';startMap();
  if(over){const e=pts[pts.length-1],q=pts[pts.length-2];pts.push([e[0]+Math.sign(e[0]-q[0])*1.6,e[1]+Math.sign(e[1]-q[1])*1.6],[e[0],e[1]])}
@@ -540,7 +561,7 @@ function renderTown(){const box=$('cards');box.innerHTML='';
 }
 function pick(){const i=T.sel;if(i===0){book(false);custom(false);return}if(i===9){if(allFaces())say([{f:[DURU],n:'두루 씨',t:"차 한잔하고 가게. 어차피 밖은 미끄러워."}],renderTown);return}const k=i-1;if(!unlocked(k)){toast('앞집 배달을 먼저 끝내야 합니다');return}
  book(false);goTo(k)}
-$('btnBook').onclick=()=>{if(mode==='town')book(true)};$('btnCustom').onclick=()=>{if(mode==='town')custom(false)};$('btnNext').onclick=goNext;$('btnOver').onclick=()=>{$('btnOver').blur();overview()};
+$('btnBook').onclick=()=>{$('btnBook').blur();if(mode==='town')book(true)};$('btnCustom').onclick=()=>{$('btnCustom').blur();if(mode==='town')custom(false)};$('btnNext').onclick=goNext;$('btnOver').onclick=()=>{$('btnOver').blur();overview()};
 
 /* ---------- 배달 수첩 ---------- */
 function stampCanvas(done,idx){const c=document.createElement('canvas');c.width=c.height=64;c.className='stamp';const x=c.getContext('2d');
@@ -659,7 +680,7 @@ if(ADMIN){const st=document.createElement('style');st.textContent='#adm{position
  btn('기본 엔딩',scene(END_BASIC));btn('숨은 엔딩',scene(END_HIDDEN));
  sec('화면');btn('마을 지도',()=>{clean();S.intro=true;town()});btn('꾸미기',()=>{clean();custom(false)});btn('첫 화면',()=>{clean();title()})}
 
-window.ICE={LEVELS,MIN,solve,get S(){return S},get P(){return P},get mode(){return mode}};
+window.ICE={get HIT(){return HIT},get CAM(){return CAM},LEVELS,MIN,solve,get S(){return S},get P(){return P},get mode(){return mode}};
 title();
 </script>
 </body>
