@@ -92,7 +92,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
 .act:hover::after{content:attr(data-tip);position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:5px;white-space:nowrap;background:var(--ink);color:#fff;font-size:11px;padding:3px 8px;z-index:5}
 .act.pulse{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent)}
 #board{cursor:pointer}
-#toast{position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:30;display:none}
+#toast{font-family:var(--sans);font-size:14px;position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:30;display:none}
 
 /* dialogue */
 #dlg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:820px;max-width:calc(100% - 32px);
@@ -103,10 +103,22 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
 #dlgName{margin-bottom:8px}
 #dlgText{font-size:18px;line-height:1.65;white-space:pre-line;font-family:var(--sans)}
 #dlgText.narr{font-family:var(--sans)}
-#dlgNext{font-family:var(--mono);font-size:11px;color:#777;margin-top:8px;text-align:right}
+#dlgNext{font-family:var(--sans);font-size:12px;color:#777;margin-top:8px;text-align:right}
 #veil{position:fixed;inset:0;background:rgba(255,255,255,.72);display:none;z-index:10}
 #veil.on{display:block}
 
+#modal{position:fixed;inset:0;background:rgba(255,255,255,.86);z-index:25;display:none;align-items:center;justify-content:center;padding:20px}
+#modal.on{display:flex}
+#modalIn{width:520px;max-width:100%;background:var(--paper);border:3px solid var(--ink);padding:26px 26px 24px;display:flex;flex-direction:column;gap:20px}
+#mTop{display:flex;align-items:center;gap:18px}#mStamp canvas{width:96px;height:96px}
+#mKick{font-size:13px;color:var(--accent);font-weight:600}#mTitle{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+#mStory{display:flex;gap:14px;align-items:flex-start;background:var(--panel);padding:14px}#mFace{flex:none;display:flex;gap:4px}
+#mLine{font-size:16px;line-height:1.6;margin-top:8px}#mNote{font-size:13px;color:#555;margin-top:4px}
+#mGift{display:flex;align-items:center;gap:14px}#mWear{flex:none;background:var(--panel);padding:6px;display:flex}
+#mGiftK{font-size:12px;color:#555}#mGiftN{font-size:17px;font-weight:600;margin-top:2px}
+#mUse{background:var(--paper)}
+#bookClose{position:absolute;right:0;top:0;font-family:var(--sans);font-size:14px;padding:8px 16px}
+#bookIn{position:relative}
 /* notebook */
 #book{position:fixed;inset:0;background:var(--paper);z-index:15;display:none;overflow:auto;padding:36px 24px}
 #book.on{display:block}
@@ -126,7 +138,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
     <p class="sub">한번 미끄러지면, 부딪혀야 멈춘다</p>
     <div id="demoWrap"><canvas id="demo"></canvas></div>
     <div class="row">
-      <button class="pill accent" id="btnStart"><span id="press">▸</span> <span id="startLab">Enter 시작</span></button>
+      <button class="pill accent" id="btnStart"><span id="press">▸</span> <span id="startLab">시작하기</span></button>
       <button class="pill" id="btnReset" style="display:none">처음부터 다시</button>
     </div>
   </section>
@@ -134,7 +146,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
   <section id="s-pro" class="screen">
     <div id="proWrap"><canvas id="pro"></canvas></div>
     <p id="proText"></p>
-    <div class="row"><button class="pill" id="btnPro">Enter ▸</button></div>
+    <div class="row"><button class="pill big" id="btnPro">다음 ▸</button></div>
   </section>
 
   <section id="s-custom" class="screen">
@@ -144,8 +156,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
       <div id="facePanel"><canvas id="faceBig" width="256" height="256" style="width:256px;height:256px"></canvas></div>
       <div id="opts"></div>
     </div>
-    <p class="keys">↑↓ 항목 · ←→ 바꾸기 · Enter 완료</p>
-    <div class="row" style="margin-top:14px"><button class="pill" id="btnCustomDone">완료</button></div>
+    <div class="row" style="margin-top:14px"><button class="pill accent big" id="btnCustomDone">완료</button></div>
   </section>
 
   <section id="s-town" class="screen">
@@ -183,17 +194,24 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
   <div id="dlgBody">
     <div id="dlgName"></div>
     <div id="dlgText"></div>
-    <div id="dlgNext">Enter ▸</div>
+    <div id="dlgNext">눌러서 계속 ▸</div>
   </div>
 </div>
 <div id="book"><div id="bookIn">
+  <button class="pill" id="bookClose">수첩 덮기 ✕</button>
   <p class="over">서리골 우체국</p>
   <h2>배달 수첩</h2>
   <h3>주소록 · 두루 씨가 적어 둔 여덟 집. 소포를 전한 집은 다시 찾아갈 수 있습니다</h3>
   <div id="cards"></div>
   <h3>우표 · 두루 씨가 사십 년 동안 마을에서 겪은 일마다 자리를 만들어 두었습니다. 빈자리에는 두루 씨의 메모가 남아 있습니다</h3>
   <div id="quests"></div>
-  <p class="keys">←↑↓→ 고르기 · Enter 찾아가기 · Q 또는 Esc 닫기</p>
+  <div class="row" style="margin-top:28px"><button class="pill big" id="bookClose2">수첩 덮기</button></div>
+</div></div>
+<div id="modal"><div id="modalIn">
+  <div id="mTop"><span id="mStamp"></span><div><div id="mKick">새 우표를 받았습니다</div><div id="mTitle"></div></div></div>
+  <div id="mStory"><span id="mFace"></span><div><span class="pill" id="mName"></span><div id="mLine"></div><div id="mNote"></div></div></div>
+  <div id="mGift"><span id="mWear"></span><div><div id="mGiftK">함께 받은 소품</div><div id="mGiftN"></div></div></div>
+  <div class="row"><button class="pill accent big" id="mOk">계속하기</button><button class="pill big" id="mUse">바로 써 보기</button></div>
 </div></div>
 <div id="toast" class="pill accent"></div>
 
@@ -381,26 +399,18 @@ const END_HIDDEN=[nar("문을 여니 난로가 켜져 있고, 누군가 앉아 �
  {f:[DURU],n:'두루 씨',t:"생각보다 빨리 왔군. 차가 아직 안 식었어."},
  {f:[DURU],n:'두루 씨',t:"은퇴는 했는데 갈 데가 없더라고. 미끄러워서."},
  {f:[DURU],n:'두루 씨',t:"이건 자네가 매게. 나는 이제 안 나가니까."},
- nar("(우표 \"사십 년의 솜씨\"와 낡은 목도리를 받았습니다. 아홉 번째 얼굴이 열렸습니다.)"),
  nar("당신은 처음으로, 아무 데도 부딪히지 않고 멈춥니다.\n이번에는 둘이서.")];
 const MAYOR={hair:0,eyes:4,mouth:2};
 const SPECIAL={'1:4,3':'fountain','6:4,8':'mayorBank','4:7,4':'hedgeSnow'};
 const QUESTS=[
- {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'"쌍둥이네 눈사람은 열 번쯤 부딪혀 주면 웃는다."',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',
-  scene:[r(2,"눈사람이 아저씨 좋대요. 코 하나 드릴게요."),nar("(우표 \"눈사람의 친구\"와 당근 코를 받았습니다.)")]},
- {id:'lost',t:'길치',hidden:true,hint:'"문 앞을 세 번 지나치면 온 마을에 소문이 난다. 한 집에서 세 번."',cond:'한 판에서 문 앞을 세 번 지나치기',item:'cap',
-  scene:[r(0,"문 앞을 세 번 지나쳤다고 소문이 났네. 이 모자라도 쓰게."),nar("(우표 \"길치\"와 삐뚤어진 모자를 받았습니다.)")]},
- {id:'short',t:'지름길',cond:'"쌍둥이네부터는 길이 여러 갈래다. 가장 짧은 길로 한 번 배달해 보게."',item:'loupe',
-  scene:[r(4,"그 길은 내 지도에도 없는데. 이거 쓰고 다시 보여 줘 봐."),nar("(우표 \"지름길\"과 돋보기 안경을 받았습니다.)")]},
- {id:'noundo',t:'뒤돌아보지 않기',cond:'"쌍둥이네부터, 한 번도 물리지 않고 배달해 보게."',item:'bucket',
-  scene:[r(6,"..."),nar("(낚시꾼이 말없이 모자를 씌워 줍니다. 우표 \"뒤돌아보지 않기\"와 낚시 모자를 받았습니다.)")]},
- {id:'fountain',t:'분수대의 전통',hidden:true,hint:'"빵집 앞 분수대. 첫날 세 번 빠졌다. 자네도 해 보게."',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',
-  scene:[r(0,"자네도 분수대에 세 번 빠졌나. 전통이 이어지는군."),nar("(우표 \"분수대의 전통\"과 수건을 받았습니다.)")]},
- {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'"언덕 집 덤불 중 하나는 덤불이 아니다. 코를 보면 안다."',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',
-  scene:[r(2,"거봐, 서른세 개랬잖아!"),r(2,"...언덕까지 굴러간 거였네."),nar("(우표 \"서른세 번째 눈사람\"과 눈꽃 핀을 받았습니다.)")]},
- {id:'mayor',t:'이장님 발견',hidden:true,hint:'"호수 아래쪽 눈더미에서 가끔 기침 소리가 난다. 부딪혀 보면 안다."',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',
-  scene:[{f:[MAYOR],n:'이장님',t:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가."},{f:[MAYOR],n:'이장님',t:"꺼내 주진 말게. 이제 정들었어. 대신 이거 받게."},nar("(우표 \"이장님 발견\"과 귀마개를 받았습니다.)")]},
- {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'"어느 집에서도 한 수를 낭비하지 않으면, 차를 끓여 두겠네."',cond:'모든 판을 최소 이동 수로 깨기',item:'oldscarf',scene:END_HIDDEN},
+ {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'"쌍둥이네 눈사람은 열 번쯤 부딪혀 주면 웃는다."',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',g:2,line:"눈사람이 배달부님 좋대요. 코 하나 드릴게요."},
+ {id:'lost',t:'길치',hidden:true,hint:'"문 앞을 세 번 지나치면 온 마을에 소문이 난다. 한 집에서 세 번."',cond:'한 집에서 문 앞을 세 번 지나치기',item:'cap',g:0,line:"문 앞을 세 번 지나쳤다고 소문이 났네. 이 모자라도 쓰게."},
+ {id:'short',t:'지름길',cond:'"쌍둥이네부터는 길이 여러 갈래다. 가장 짧은 길로 한 번 배달해 보게."',item:'loupe',g:4,line:"그 길은 내 지도에도 없는데. 이거 쓰고 다시 보여 줘 봐."},
+ {id:'noundo',t:'뒤돌아보지 않기',cond:'"쌍둥이네부터, 한 번도 물리지 않고 배달해 보게."',item:'bucket',g:6,line:"...",note:"낚시꾼이 말없이 모자를 씌워 줍니다."},
+ {id:'fountain',t:'분수대의 전통',hidden:true,hint:'"빵집 앞 분수대. 첫날 세 번 빠졌다. 자네도 해 보게."',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',g:0,line:"자네도 분수대에 세 번 빠졌나. 전통이 이어지는군."},
+ {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'"언덕 집 덤불 중 하나는 덤불이 아니다. 코를 보면 안다."',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',g:2,line:"거봐, 서른세 개랬잖아! ...언덕까지 굴러간 거였네."},
+ {id:'mayor',t:'이장님 발견',hidden:true,hint:'"호수 아래쪽 눈더미에서 가끔 기침 소리가 난다. 부딪혀 보면 안다."',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',gf:[MAYOR],gn:'이장님',line:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가. 꺼내 주진 말게, 이제 정들었어."},
+ {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'"어느 집에서도 한 수를 낭비하지 않으면, 차를 끓여 두겠네."',cond:'모든 집을 가장 짧은 길로 배달하기',item:'oldscarf',gf:[DURU],gn:'두루 씨',line:"이건 자네가 매게. 나는 이제 안 나가니까.",pre:END_HIDDEN,note:"아홉 번째 얼굴이 주소록에 열렸습니다."},
 ];
 const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
@@ -472,7 +482,7 @@ function prologue(){PR={i:0,target:.45,auto:false,st:scene(PROMAP,null),mayor:to
 function proNext(){if(mode!=='pro')return;PR.i++;if(PR.i>=PRO.length){say(OFFICE,()=>custom(true));return}
  PR.target=1.05;if(PR.i===2)PR.mayorT=performance.now();$('proText').textContent=PRO[PR.i]}
 $('btnPro').onclick=proNext;
-function title(){const started=S.intro;$('startLab').textContent=started?'Enter 이어하기':'Enter 시작';$('btnReset').style.display=started?'':'none';show('title');demoInit()}
+function title(){const started=S.intro;$('startLab').textContent=started?'이어하기':'시작하기';$('btnReset').style.display=started?'':'none';show('title');demoInit()}
 function start(){if(!S.intro)prologue();else town()}
 $('btnStart').onclick=start;
 $('btnReset').onclick=()=>{if(confirm('모은 얼굴과 우표가 모두 지워집니다. 처음부터 다시 할까요?')){S=fresh();save();title()}};
@@ -480,7 +490,7 @@ $('btnReset').onclick=()=>{if(confirm('모은 얼굴과 우표가 모두 지워�
 /* ---------- 꾸미기 ---------- */
 let CU={row:0,first:false};
 const myItems=()=>ITEM_ORDER.filter(k=>S.items[k]);
-function custom(first){CU={row:first?0:1,first};show('custom');renderCustom();if(CU.row===0)setTimeout(()=>$('nameInput')&&$('nameInput').focus(),0)}
+function custom(first){CU={row:first?0:1,first};$('btnCustomDone').textContent=first?'이 모습으로 출근하기':'완료';show('custom');renderCustom();if(CU.row===0)setTimeout(()=>$('nameInput')&&$('nameInput').focus(),0)}
 function renderCustom(){const c=S.courier,it=myItems();
  const rows=[['이름',null],['머리',HAIRS[c.hair].n,(c.hair+1)+'/6'],['눈',EYES[c.eyes].n,(c.eyes+1)+'/'+EYES.length],['입',MOUTHS[c.mouth].n,(c.mouth+1)+'/'+MOUTHS.length],
   ['소품',ITEMS[c.item].n,(it.indexOf(c.item)+1)+'/'+it.length+' ('+ITEM_ORDER.length+')']];
@@ -499,7 +509,7 @@ function change(dl){const c=S.courier;const cyc=(v,n)=>(v+dl+n)%n;
  if(CU.row===4){const it=myItems();c.item=it[cyc(Math.max(0,it.indexOf(c.item)),it.length)]}
  save();if(document.activeElement&&document.activeElement.blur&&CU.row!==0)document.activeElement.blur();renderCustom()}
 function customDone(){if(CU.first){CU.first=false;S.intro=true;save();say(OFFICE2,()=>play(0))}else{save();town()}}
-$('btnCustomDone').onclick=customDone;
+$('btnCustomDone').onclick=customDone;$('bookClose').onclick=$('bookClose2').onclick=()=>{if(mode==='book')book(false)};
 
 /* ---------- 마을 ---------- */
 let T={sel:1};
@@ -555,7 +565,7 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
   const rr=(a,b2,c2,d,r)=>{x.beginPath();if(x.roundRect)x.roundRect(a,b2,c2,d,r);else x.rect(a,b2,c2,d);x.fill()};
   x.fillStyle=COL['#'];rr(bx-3,by-3,w+6,34,17);x.beginPath();x.moveTo(hx*TS-7,by+29);x.lineTo(hx*TS,by+40);x.lineTo(hx*TS+7,by+29);x.fill();x.fillStyle='#fff';rr(bx,by,w,28,14);x.fillStyle=COL['#'];x.fillText(b.t,hx*TS,by+19)});
  x.restore()}
-function startMap(){const tok=++mapTok;const step=now=>{if(tok!==mapTok||!(mode==='town'||mode==='travel'||(mode==='dlg'&&D&&D.back==='town')))return;
+function startMap(){const tok=++mapTok;const step=now=>{if(tok!==mapTok||!(mode==='town'||mode==='travel'||(mode==='dlg'&&D&&D.back==='town')||(mode==='modal'&&MD&&MD.back==='town')))return;
   if(mode==='town'&&now>chatAt){chatAt=now+5000+Math.random()*4000;const vis=[0,1,2,3,4,5,6,7].filter(k=>(k<7?S.best[k]:S.quests.master)&&k!==S.loc&&Math.abs(HOUSE[k][0]-CAM[0]-VW/2)<VW/2-2&&Math.abs(HOUSE[k][1]-CAM[1]-VH/2)<VH/2-1);
    if(vis.length)bubble(vis[Math.floor(Math.random()*vis.length)],now)}
   drawMap(now);requestAnimationFrame(step)};requestAnimationFrame(step)}
@@ -566,7 +576,7 @@ function mapHit(e){if(OVER||!CAM)return null;const c=$('map'),r=c.getBoundingCli
  for(let i=HIT.length-1;i>=0;i--){const h=HIT[i];if(wx>=h.x&&wx<=h.x+h.w&&wy>=h.y&&wy<=h.y+h.h)return h}return null}
 $('map').onclick=e=>{if(mode!=='town')return;if(OVER){overview(false);return}const h=mapHit(e);if(h)h.fn()};
 $('map').onmousemove=e=>{$('map').style.cursor=mode==='town'&&(OVER||mapHit(e))?'pointer':'default'};
-function town(){show('town');townUI();chatAt=performance.now()+2500;startMap();if(S.pending.length){const p=S.pending.splice(0);save();const sc=[];p.forEach(id=>sc.push(...QBY[id].scene));say(sc,townUI)}}
+function town(){show('town');townUI();chatAt=performance.now()+2500;startMap();if(S.pending.length){const p=S.pending.splice(0);save();showAwards(p,townUI)}}
 function travel(a,b,cb,over){OVER=false;show('town');townUI();const pts=mapPath(a,b).map(p=>p.slice());if(pts.length<2){S.loc=b;save();startMap();cb();return}mode='travel';startMap();
  if(over){const e=pts[pts.length-1],q=pts[pts.length-2];pts.push([e[0]+Math.sign(e[0]-q[0])*1.6,e[1]+Math.sign(e[1]-q[1])*1.6],[e[0],e[1]])}
  const seg=[];let len=0;for(let i=1;i<pts.length;i++){const l=Math.abs(pts[i][0]-pts[i-1][0])+Math.abs(pts[i][1]-pts[i-1][1]);seg.push(l);len+=l}
@@ -609,7 +619,16 @@ function book(on){$('book').classList.toggle('on',on);if(on){mode='book';renderT
    m.innerHTML='<div class="qt">'+(secret?'???':q.t)+'</div><div class="qd">'+(secret?q.hint:q.cond)+'</div>';d.appendChild(m);
    const p=document.createElement('span');p.className='pill'+(done?' accent':'');p.textContent=done?ITEMS[q.item].n:(secret?'보상 ???':'보상 '+ITEMS[q.item].n);d.appendChild(p);box.appendChild(d)})}
  else{mode='town';startMap()}}
-function award(id){if(S.quests[id])return false;S.quests[id]=1;S.items[QBY[id].item]=1;S.pending.push(id);save();toast('새 우표 · '+QBY[id].t);return true}
+function award(id){if(S.quests[id])return false;S.quests[id]=1;S.items[QBY[id].item]=1;S.pending.push(id);save();toast('수첩에 붙일 우표가 생긴 것 같다. 배달을 마치고 보자.');return true}
+let MD=null;
+function showAwards(ids,done){ids=ids.slice().sort((a,b)=>(a==='master')-(b==='master'));const next=()=>{if(!ids.length){done();return}const q=QBY[ids.shift()];const open=()=>{
+   MD={q,back:mode,next};mode='modal';$('modal').classList.add('on');$('toast').style.display='none';const st=$('mStamp');st.innerHTML='';st.appendChild(stampCanvas(true,QUESTS.indexOf(q)));$('mTitle').textContent=q.t;
+   const fs=q.gf||RES[q.g].f,mf=$('mFace');mf.innerHTML='';fs.forEach(sp=>mf.appendChild(toCanvas(face(sp),fs.length>1?3:4)));$('mName').textContent=q.gn||RES[q.g].n;$('mLine').textContent=q.line;$('mNote').textContent=q.note||'';
+   const w=$('mWear');w.innerHTML='';w.appendChild(toCanvas(face(Object.assign({},S.courier,{item:q.item})),4));$('mGiftN').textContent=ITEMS[q.item].n;
+   const u=$('mUse');u.disabled=S.courier.item===q.item;u.textContent=u.disabled?'지금 쓰고 있습니다':'바로 써 보기'};
+  if(q.pre)say(q.pre,open);else open()};next()}
+function modalOk(){if(!MD)return;const m=MD;MD=null;$('modal').classList.remove('on');mode=m.back;m.next()}
+$('mOk').onclick=modalOk;$('mUse').onclick=()=>{if(!MD)return;S.courier.item=MD.q.item;save();const u=$('mUse');u.disabled=true;u.textContent='지금 쓰고 있습니다';if(P&&P.me)P.me=toCanvas(face(S.courier),1);mapMe=toCanvas(face(S.courier),1)};
 
 /* ---------- 플레이 ---------- */
 const TS=48,cv=$('board'),cx=cv.getContext('2d');
@@ -653,14 +672,11 @@ function cleared(){P.done=true;const k=P.k;P.first=!S.best[k];S.best[k]=S.best[k
  hud();$('clearBar').innerHTML='<span class="pill">배달 완료 · '+P.moves+'번 만에'+(P.moves===MIN[k]?' · 가장 짧은 길!':'')+'</span><button class="pill accent big" id="btnCont">계속</button>';$('btnCont').onclick=()=>{if(mode==='clear')afterClear()}}
 function afterClear(){const k=P.k,first=P.first;const sc=[];mode='play';
  if(first){sc.push(...POST[k]);if(EVENTS[k])sc.push(...EVENTS[k]);if(k===0)sc.push(nar(OUTRO))}
- let pend=S.pending.splice(0);
- if(first&&k===7){if(pend.includes('master')){pend=pend.filter(x=>x!=='master');pend.forEach(id=>sc.push(...QBY[id].scene));sc.push(...END_HIDDEN)}
-  else{pend.forEach(id=>sc.push(...QBY[id].scene));sc.push(...END_BASIC)}}
- else pend.forEach(id=>sc.push(...QBY[id].scene));
- if(first&&k<7)sc.push(...PUSH[k]);
- save();say(sc,()=>{if(first&&k<7){const nx=(k===1||k===3||k===5)?k+1:PLAZA;T.sel=k+2;pushOut(k,()=>travel(k,nx,nx===PLAZA?town:()=>enter(nx),k===2))}else town()})}
+ const pend=S.pending.splice(0);if(first&&k===7&&!pend.includes('master'))sc.push(...END_BASIC);
+ const go=()=>{if(first&&k<7){const nx=(k===1||k===3||k===5)?k+1:PLAZA;T.sel=k+2;say(PUSH[k],()=>pushOut(k,()=>travel(k,nx,nx===PLAZA?town:()=>enter(nx),k===2)))}else town()};
+ save();say(sc,()=>showAwards(pend,go))}
 function pushOut(k,cb){const d=[[1,0],[1,0],[-1,0],[1,0],[-1,0],[1,0],[-1,0]][k];mode='push';P.out={t:performance.now(),d,fx:P.x,fy:P.y,cb}}
-function loop(now){if(mode!=='play'&&mode!=='clear'&&mode!=='push'&&!(mode==='dlg'&&D&&D.back==='play')){return}
+function loop(now){if(mode!=='play'&&mode!=='clear'&&mode!=='push'&&!(mode==='dlg'&&D&&D.back==='play')&&!(mode==='modal'&&MD&&MD.back==='play')){return}
  if(P.out){const o=P.out,t=(now-o.t)/560,far=Math.max(P.L.w,P.L.h)+1;P.dx=o.fx+o.d[0]*t*t*far;P.dy=o.fy+o.d[1]*t*t*far;draw(now);if(t>=1){P.out=null;o.cb();return}requestAnimationFrame(loop);return}
  if(P.anim){const a=P.anim;let t=Math.min(1,(now-a.t)/a.dur);const e=t*(2-t);P.dx=a.fx+(a.tx-a.fx)*e;P.dy=a.fy+(a.ty-a.fy)*e;if(t>=1){P.anim=null;P.dx=a.tx;P.dy=a.ty;arrive(a)}}
  draw(now);requestAnimationFrame(loop)}
@@ -683,6 +699,7 @@ function drawBoard(cv,cx,P,now){const L=P.L;cx.imageSmoothingEnabled=false;cx.fi
 /* ---------- 키 ---------- */
 document.addEventListener('keydown',e=>{if(e.isComposing||e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key,kl=k.length===1?k.toLowerCase():k;const ok=k==='Enter'||k===' ';
  const inName=document.activeElement&&document.activeElement.id==='nameInput';
+ if(mode==='modal'){if(ok){e.preventDefault();modalOk()}return}
  if(mode==='dlg'){if(ok){e.preventDefault();nextLine()}return}
  if(mode==='title'){if(ok){e.preventDefault();start()}return}
  if(mode==='pro'){if(ok){e.preventDefault();proNext()}return}
