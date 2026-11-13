@@ -129,7 +129,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
 #bookIn{width:912px;max-width:100%;margin:0 auto}
 .quest{display:grid;grid-template-columns:72px 1fr auto;gap:18px;align-items:center;padding:14px 0;border-bottom:1px solid var(--panel)}
 .quest .qt{font-family:var(--sans);font-weight:600;font-size:19px}
-.quest .qd{font-size:14px;color:#555;margin-top:2px}
+.quest .qd{font-size:14px;color:#333;margin-top:6px}
 .stamp{width:64px;height:64px}
 </style>
 </head>
@@ -205,9 +205,9 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
   <button class="pill" id="bookClose">수첩 덮기 ✕</button>
   <p class="over">서리골 우체국</p>
   <h2>배달 수첩</h2>
-  <h3>주소록 · 두루 씨가 적어 둔 여덟 집. 소포를 전한 집은 다시 찾아갈 수 있습니다</h3>
+  <h3>주소록 · 배달한 집을 누르면 다시 찾아갑니다</h3>
   <div id="cards"></div>
-  <h3>우표 · 두루 씨가 사십 년 동안 마을에서 겪은 일마다 자리를 만들어 두었습니다. 빈자리에는 두루 씨의 메모가 남아 있습니다</h3>
+  <h3>우표 · 두루 씨가 남긴 숙제입니다. 집에 배달하러 들어가서, 적힌 대로 해 보면 받습니다</h3>
   <div id="quests"></div>
   <div class="row" style="margin-top:28px"><button class="pill big" id="bookClose2">수첩 덮기</button></div>
 </div></div>
@@ -416,6 +416,8 @@ const QUESTS=[
  {id:'mayor',t:'이장님 발견',hidden:true,hint:'"호수 아래쪽 눈더미에서 가끔 기침 소리가 난다. 부딪혀 보면 안다."',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',gf:[MAYOR],gn:'이장님',line:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가. 꺼내 주진 말게, 이제 정들었어."},
  {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'"어느 집에서도 한 수를 낭비하지 않으면, 차를 끓여 두겠네."',cond:'모든 집을 가장 짧은 길로 배달하기',item:'oldscarf',gf:[DURU],gn:'두루 씨',line:"이건 자네가 매게. 나는 이제 안 나가니까.",pre:END_HIDDEN,note:"아홉 번째 얼굴이 주소록에 열렸습니다."},
 ];
+const HOW={snowman:['3 쌍둥이네','눈사람 하나를 골라 열 번 부딪히기'],lost:['아무 집','문 앞에 멈추지 않고 세 번 지나가기 (한 집에서)'],short:['3번 집부터','가장 짧은 길로 배달하기 (오른쪽 위 숫자와 같게)'],noundo:['3번 집부터','한 수 물리기를 쓰지 않고 배달하기'],
+ fountain:['2 빵집','가운데 분수대에 세 번 부딪히기'],thirtythree:['5 언덕 집','코가 다홍색인 덤불에 부딪히기'],mayor:['7 호수','맨 아랫줄, 얼굴이 보이는 눈더미에 부딪히기'],master:['모든 집','여덟 집 모두 가장 짧은 길로 배달하기']};
 const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
 /* ---------- 저장 ---------- */
@@ -436,7 +438,7 @@ const $=id=>document.getElementById(id);
 let mode='title';
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));mode=id;window.scrollTo(0,0)}
 let guideT=0,guideTmp='';
-function guide(t){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeout(()=>{guideTmp='';guide()},4200)}
+function guide(t,ms){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeout(()=>{guideTmp='';guide()},ms||4200)}
  const left=S.best.filter(b=>!b).length,roads=[['빵집 길',[1,2]],['가로등 길',[3,4]],['호수 길',[5,6]]].filter(r=>r[1].some(k=>!S.best[k])).map(r=>r[0]),NUM=['','한','두','세','네','다섯','여섯','일곱','여덟'];let txt,hint='',act=null;
  if(!S.best[0]){txt='첫 출근인데 벌써 다리가 후들거린다. 일단 우체국 문 앞에서 연습부터 하자.';act=['연습하러 가기',()=>goTo(0)]}
  else if(S.loc<8&&!S.best[S.loc]&&unlocked(S.loc)){txt=RES[S.loc].place+' 앞이다. 소포는 아직 가방 안에 있다.';act=['들어가기',()=>goTo(S.loc)]}
@@ -532,8 +534,14 @@ const houseOff=G.house.map(r=>r.map(c=>c==='r'?'#':c)),houseOn=G.house.map(r=>r.
 const DECOR=[[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13.6,9.6,'lamp'],[11.6,9.3,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[28.6,4.1,'snowman'],[29.4,4.6,'snowman'],[27.5,6.3,'snowman'],
  [30.2,9.6,'hedge'],[30.6,12.3,'hedge'],[25.4,12.4,'hedge'],[18,16,'machine'],[28.6,16,'icerock'],[29.4,18.2,'icerock'],[27,19.3,'icerock'],[24.4,19.4,'icerock'],[30.5,19.8,'icerock'],
  [5,5,'hedge'],[9,6.3,'hedge'],[12.4,3.2,'hedge'],[2.5,7.6,'snowman'],[6,17,'icerock'],[11,18.4,'hedge'],[3,15,'hedge'],[12.3,15,'snowman'],[13.2,7.6,'lamp'],[22,1.6,'hedge'],[30,1.8,'icerock'],[8,20,'lamp'],[21,20.3,'hedge'],[16,9.7,'fountain']];
-const SIGNS=[{d:'ArrowUp',x:16,y:8.2,n:'빵집 길',lv:1,t:'쉬움'},{d:'ArrowRight',x:19.05,y:11,n:'가로등 길',lv:2,t:'보통'},{d:'ArrowDown',x:16,y:13.8,n:'호수 길',lv:3,t:'어려움'},{d:'ArrowLeft',x:13.2,y:11,n:'빈집',lv:3,t:'가장 어려움'}];
+const SIGNS=[{d:'ArrowUp',x:16,y:7.55,n:'빵집 길',lv:1,t:'쉬움'},{d:'ArrowRight',x:19.05,y:11,n:'가로등 길',lv:2,t:'보통'},{d:'ArrowDown',x:16,y:13.8,n:'호수 길',lv:3,t:'어려움'},{d:'ArrowLeft',x:13.2,y:11,n:'빈집',lv:3,t:'가장 어려움'}];
 let HIT=[];
+function decorInfo(dx,dy,t){
+ if(t==='fountain')return{q:'fountain',txt:'광장 분수대는 꽁꽁 얼어 얌전하다. 두루 씨가 세 번 빠졌다는 분수대는 빵집 마당에 있다. 빵집에 배달하러 들어가서 세 번 부딪혀 보자.'};
+ if(t==='snowman'&&dx>22&&dy<7)return{q:'snowman',txt:'쌍둥이네 눈사람들이다. 쌍둥이네에 배달하러 들어가서, 마당 눈사람 하나를 열 번쯤 부딪혀 주면 좋아한다던데.'};
+ if(t==='hedge'&&dx>25&&dy>9&&dy<13)return{q:'thirtythree',txt:'언덕 집 덤불이다. 언덕 집에 배달하러 들어가면 마당 덤불 중에 코가 다홍색인 게 하나 있다던데. 부딪혀 보자.'};
+ if(t==='icerock'&&dx>24&&dy>15)return{q:'mayor',txt:'호수 근처 눈더미다. 호수에 배달하러 들어가면 맨 아랫줄 눈더미 하나에 얼굴이 보인다던데. 부딪혀 보자.'};
+ return{txt:{lamp:'가로등이다. 치지 말라고 했는데, 좋은 브레이크처럼 생겼다.',mailbox:'우체통이다. 부딪혀서 멈추기 딱 좋다.',crate:'빵 상자다. 냄새가 좋다.',machine:'발명가의 제설기다. 건드리지 말자.',snowman:'길가의 눈사람이다. 쌍둥이가 서른두 개 만들었다던가, 서른세 개라던가.',hedge:'그냥 덤불이다. 아마도.',icerock:'눈더미다. 누가 박혀 있지는 않은 것 같다.'}[t]}}
 const nodePos=n=>n===PLAZA?PL:HOUSE[n];
 function route(n){const r=ROUTE[n].slice();if(n===6&&S.best[5])r.splice(3,0,...DETOUR);return r}
 function mapPath(a,b){const A=route(a),B=route(b);let c=0;while(c<A.length&&c<B.length&&A[c][0]===B[c][0]&&A[c][1]===B[c][1])c++;return A.slice(c-1).reverse().concat(B.slice(c))}
@@ -552,7 +560,9 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
  x.fillRect((PL[0]-1.5)*TS,(PL[1]-1.5)*TS,3*TS,3*TS);
  if(plow){x.fillStyle='#ebebeb';x.fillRect(22.62*TS,17*TS-24,0.66*TS,48);x.fillStyle='#fff';road(DETOUR[0],DETOUR[1]);road(DETOUR[1],DETOUR[2]);road(DETOUR[2],DETOUR[3]);x.drawImage(tiles.machine,Math.round(22.95*TS-24),17*TS-24,TS,TS)}
  if(!west){x.drawImage(tiles.icerock,Math.round(8.7*TS-24),11*TS-24,TS,TS);x.drawImage(tiles.icerock,Math.round(7.9*TS-24),11*TS-18,TS,TS)}
- DECOR.forEach(([dx,dy,t])=>{if(plow&&t==='machine')return;x.drawImage(tiles[t],Math.round(dx*TS-24),Math.round(dy*TS-24),TS,TS)});
+ DECOR.forEach(([dx,dy,t])=>{if(plow&&t==='machine')return;const px=Math.round(dx*TS-24),py=Math.round(dy*TS-24);x.drawImage(tiles[t],px,py,TS,TS);if(OVER)return;const inf=decorInfo(dx,dy,t),mark=inf.q&&!S.quests[inf.q]&&S.best[0];
+  if(mark){x.fillStyle=COL.r;x.fillRect(px+15,py-22,18,18);x.fillStyle='#fff';x.fillRect(px+21,py-18,6,2);x.fillRect(px+25,py-16,2,4);x.fillRect(px+23,py-13,2,3);x.fillRect(px+23,py-8,2,2)}
+  HIT.push({x:px,y:py-(mark?24:0),w:TS,h:TS+(mark?24:0),fn:()=>guide(inf.txt,inf.q?8000:4200)})});
  x.textAlign='center';x.font='500 '+Math.round(13/sc)+'px "DM Mono","Pretendard Variable",sans-serif';
  HOUSE.forEach(([hx,hy],k)=>{const open=!S.best[k]&&unlocked(k);paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
   x.fillStyle=open?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+(OVER?58:44));
@@ -604,7 +614,7 @@ function renderTown(){const box=$('cards');box.innerHTML='';
   if(i===0){g=face(S.courier);lab=name();meta='나'}
   else if(i<=8){const k=i-1,R=RES[k];locked=!unlocked(k);g=R.f?face(R.f[0]):G.house;lab=i+' '+R.place;
    if(!S.best[k])mono=locked?'#d4d4d4':'#bdbdbd';
-   meta=locked?'잠김':S.best[k]?'<span class="'+(S.best[k]===MIN[k]?'best':'')+'">'+S.best[k]+'수</span> · 최소 '+MIN[k]:'배달 전'}
+   meta=locked?'잠김':S.best[k]?'<span class="'+(S.best[k]===MIN[k]?'best':'')+'">'+S.best[k]+'번</span> · 가장 짧은 길 '+MIN[k]:'배달 전'}
   else{const open=allFaces();g=open?face(DURU):G.house;mono=open?null:'#d4d4d4';lab=open?'두루 씨':'???';meta=open?'옛 배달부':'';locked=!open}
   d.className='card'+(i===T.sel?' sel':'')+(locked?' locked':'');d.appendChild(toCanvas(g,6,mono));
   const p=document.createElement('span');p.className='pill';p.textContent=lab;d.appendChild(p);
@@ -624,9 +634,9 @@ function stampCanvas(done,idx){const c=document.createElement('canvas');c.width=
  return c}
 function book(on){$('book').classList.toggle('on',on);if(on){mode='book';renderTown();const box=$('quests');box.innerHTML='';
   QUESTS.forEach((q,i)=>{const done=!!S.quests[q.id];const d=document.createElement('div');d.className='quest';d.appendChild(stampCanvas(done,i));
-   const m=document.createElement('div');const secret=q.hidden&&!done;
-   m.innerHTML='<div class="qt">'+(secret?'???':q.t)+'</div><div class="qd">'+(secret?q.hint:q.cond)+'</div>';d.appendChild(m);
-   const p=document.createElement('span');p.className='pill'+(done?' accent':'');p.textContent=done?ITEMS[q.item].n:(secret?'보상 ???':'보상 '+ITEMS[q.item].n);d.appendChild(p);box.appendChild(d)})}
+   const m=document.createElement('div');
+   m.innerHTML='<div class="qt">'+q.t+'</div><div class="qd"><span class="chip gift">'+HOW[q.id][0]+'</span> '+HOW[q.id][1]+'</div>';d.appendChild(m);
+   const p=document.createElement('span');p.className='pill'+(done?' accent':'');p.textContent=(done?'받음 · ':'선물 · ')+ITEMS[q.item].n;d.appendChild(p);box.appendChild(d)})}
  else{mode='town';startMap()}}
 function award(id){if(S.quests[id])return false;S.quests[id]=1;S.items[QBY[id].item]=1;S.pending.push(id);save();toast('수첩에 붙일 우표가 생긴 것 같다. 배달을 마치고 보자.');return true}
 let MD=null;
