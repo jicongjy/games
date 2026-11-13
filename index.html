@@ -218,9 +218,12 @@ const ITEMS={
  loupe:{n:'돋보기 안경',d(g){span(g,6,9,11,'r');span(g,10,9,11,'r');pts(g,[[8,7],[8,8],[8,9],[12,7],[12,8],[12,9],[13,10],[14,11],[15,12]],'r')}},
  bucket:{n:'낚시 모자',d(g){span(g,1,5,10,'#');[2,3].forEach(y=>{span(g,y,5,10,'o');pts(g,[[4,y],[11,y]],'#')});span(g,4,1,14,'#')}},
  oldscarf:{n:'낡은 목도리',d(g){for(let x=3;x<=12;x++)pts(g,[[x,14]],x%2?'r':'#');pts(g,[[9,15],[11,15]],'r');pts(g,[[10,15]],'#')}},
+ earmuffs:{n:'귀마개',d(g){span(g,1,4,11,'#');[[1,7],[1,8],[1,9],[14,7],[14,8],[14,9]].forEach(q=>pts(g,[q],'r'));pts(g,[[2,2],[3,2],[12,2],[13,2],[1,3],[1,4],[1,5],[1,6],[14,3],[14,4],[14,5],[14,6]],'#')}},
+ towel:{n:'수건',d(g){span(g,1,4,11,'#');[2,3].forEach(y=>{span(g,y,4,11,'o');pts(g,[[3,y],[12,y]],'#')});span(g,4,3,12,'#');[5,6,7].forEach(y=>pts(g,[[12,y],[13,y]],'o'));pts(g,[[14,5],[14,6],[14,7],[12,8],[13,8],[11,5],[11,6],[11,7]],'#')}},
+ pin:{n:'눈꽃 핀',d(g){pts(g,[[11,4],[10,5],[11,5],[12,5],[11,6]],'r')}},
  capStraight:{n:'우체국 모자',d(g){span(g,1,5,10,'#');span(g,2,4,11,'#');span(g,3,3,12,'#');span(g,4,2,13,'#');pts(g,[[7,2],[8,2]],'r')}},
 };
-const ITEM_ORDER=['none','scarf','blush','glasses','baguette','goggles','carrot','cap','loupe','bucket','oldscarf'];
+const ITEM_ORDER=['none','scarf','blush','glasses','baguette','goggles','carrot','cap','loupe','bucket','oldscarf','earmuffs','towel','pin'];
 const EXTRA={
  mustache(g){span(g,10,5,10,'#');pts(g,[[4,11],[11,11]],'#')},
  beard(g){span(g,11,3,12,'#');span(g,12,3,12,'#');span(g,13,4,11,'#');pts(g,[[7,11],[8,11]],'o')},
@@ -240,11 +243,14 @@ const SPR={
  machine:["","..############..","..#oooooooooo#..","..#o##oooo##o#..","..#o##oooo##o#..","..#oooooooooo#..","..#o########o#..","..#o#o#o#o#o##..","..#o########o#..","..#oooooooooo#..","..############..","...##......##...","..####....####..","...##......##..."],
  icerock:["","","","......###.......",".....#ooo#......","....#oo#oo##....","...#oo#ooooo#...","..#oooooooogg#..","..#oo#oooogg#...",".#ooooooogggg#..",".#oooooooggggg#.",".##############."],
  crate:["","","..############..","..#oo#oooo#oo#..","..#o#oooooo#o#..","..##oooooooo##..","..#oooo##oooo#..","..#oooo##oooo#..","..##oooooooo##..","..#o#oooooo#o#..","..#oo#oooo#oo#..","..############.."],
+ fountain:["",".......gg.......","......g..g......",".......##.......","......####......",".......##.......","....########....","...#oooooooo#...","....########....",".......##.......","..############..",".#ogogogogogoo#.",".#oooooooooooo#.","..############.."],
+ mayorBank:["","","......####......","....##oooo##....","...#oooooooo#...","..#oo######oo#..","..#o#oooooo#o#..",".#oo#o#oo#o#oo#.",".#oo#oooooo#oo#.",".#oo#oo##oo#oo#.",".#ooo######ooo#.",".#oooooooooooo#.",".##############."],
  wall:["oooooooooooooooo","ooo#oooooooo#ooo","################","#######g########","################","###g########g###","################","################","#########g######","################","##g#############","################","#############g##","################","######g#########","################"],
  goal:["",".rrrrrrrrrrrrrr.",".r............r.",".r.rrrrrrrrrr.r.",".r.r........r.r.",".r.r.rrrrrr.r.r.",".r.r.r....r.r.r.",".r.r.r.rr.r.r.r.",".r.r.r.rr.r.r.r.",".r.r.r....r.r.r.",".r.r.rrrrrr.r.r.",".r.r........r.r.",".r.rrrrrrrrrr.r.",".r............r.",".rrrrrrrrrrrrrr."],
  house:["","......##........",".....####..##...","....######.##...","...########.#...","..##########....",".############...","..#oooooooo#....","..#o##oooo#o....","..#o##oooooo#...","..#oooo###oo#...","..#oooo#r#oo#...","..#oooo#r#oo#...","..##########...."],
 };
 const G={};for(const k in SPR)G[k]=put(blank(),SPR[k]);
+G.hedgeSnow=G.hedge.map(r=>r.slice());pts(G.hedgeSnow,[[5,5],[10,5]],'#');pts(G.hedgeSnow,[[7,7],[8,7],[9,7]],'r');
 
 /* ---------- 판 ---------- */
 const LEVELS=[
@@ -264,7 +270,7 @@ function parse(i){const L=LEVELS[i];const o={w:L[0].length,h:L.length,g:L.map(r=
  for(let y=0;y<o.h;y++)for(let x=0;x<o.w;x++){if(o.g[y][x]==='S'){o.sx=x;o.sy=y;o.g[y][x]='.'}if(o.g[y][x]==='G'){o.gx=x;o.gy=y;o.g[y][x]='.'}}return o}
 function blocked(L,x,y){const c=L.g[y][x];return c==='#'||c==='o'}
 function slide(L,x,y,dx,dy){let nx=x,ny=y;while(!blocked(L,nx+dx,ny+dy)){nx+=dx;ny+=dy}return[nx,ny]}
-function solve(i){const L=parse(i);const key=(x,y)=>y*L.w+x;const prev=new Map([[key(L.sx,L.sy),null]]);const q=[[L.sx,L.sy]];
+function solve(i,sx,sy){const L=parse(i);if(sx!=null){L.sx=sx;L.sy=sy}const key=(x,y)=>y*L.w+x;const prev=new Map([[key(L.sx,L.sy),null]]);const q=[[L.sx,L.sy]];
  while(q.length){const[x,y]=q.shift();if(x===L.gx&&y===L.gy){const path=[];let k=key(x,y);while(prev.get(k)){const p=prev.get(k);path.unshift(p.d);k=p.k}return path}
   for(const d of['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']){const[nx,ny]=slide(L,x,y,...DIRS[d]);
    if((nx!==x||ny!==y)&&!prev.has(key(nx,ny))){prev.set(key(nx,ny),{k:key(x,y),d});q.push([nx,ny])}}}return null}
@@ -331,7 +337,7 @@ const POST=[
 const EVENTS={
  1:[r(1,"빈속으로 미끄러지면 더 멀리 가요. 이거 물고 가요."),nar("(바게트를 받았습니다. 꾸미기에서 쓸 수 있습니다.)",{gift:'baguette'})],
  3:[r(3,"가방 좀 보세. ...전부 두루 글씨구먼."),r(3,"말도 없이 그만두더니, 인사를 이렇게 하나.")],
- 5:[r(5,"설명서대로 고쳤어요! 이제 완벽..."),nar("(제설기가 마을을 한 바퀴 돕니다. 호수로 가는 길이 사라졌습니다.)"),
+ 5:[r(5,"설명서대로 고쳤어요! 이제 완벽..."),nar("(제설기가 마을을 한 바퀴 돌더니, 호수로 가는 길 한가운데에서 멈췄습니다.)"),
     r(5,"...하게 망했네. 미안하니까 이거라도 가져가요."),nar("(고글을 받았습니다. 꾸미기에서 쓸 수 있습니다.)",{gift:'goggles'})],
 };
 const END_BASIC=[nar("소포 안에는 낡은 슬리퍼 한 켤레와 쪽지가 들어 있습니다."),
@@ -345,6 +351,8 @@ const END_HIDDEN=[nar("문을 여니 난로가 켜져 있고, 누군가 앉아 �
  {f:[DURU],n:'두루 씨',t:"이건 자네가 매게. 나는 이제 안 나가니까."},
  nar("(우표 \"사십 년의 솜씨\"와 낡은 목도리를 받았습니다. 아홉 번째 얼굴이 열렸습니다.)"),
  nar("당신은 처음으로, 아무 데도 부딪히지 않고 멈춥니다.\n이번에는 둘이서.")];
+const MAYOR={hair:0,eyes:4,mouth:2};
+const SPECIAL={'1:4,3':'fountain','6:4,8':'mayorBank','4:7,4':'hedgeSnow'};
 const QUESTS=[
  {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'눈사람은 관심받는 걸 좋아한다.',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',
   scene:[r(2,"눈사람이 아저씨 좋대요. 코 하나 드릴게요."),nar("(우표 \"눈사람의 친구\"와 당근 코를 받았습니다.)")]},
@@ -354,12 +362,19 @@ const QUESTS=[
   scene:[r(4,"그 길은 내 지도에도 없는데. 이거 쓰고 다시 보여 줘 봐."),nar("(우표 \"지름길\"과 돋보기 안경을 받았습니다.)")]},
  {id:'noundo',t:'뒤돌아보지 않기',cond:'쌍둥이네부터, 한 판을 되돌리기 없이 깨기',item:'bucket',
   scene:[r(6,"..."),nar("(낚시꾼이 말없이 모자를 씌워 줍니다. 우표 \"뒤돌아보지 않기\"와 낚시 모자를 받았습니다.)")]},
+ {id:'fountain',t:'분수대의 전통',hidden:true,hint:'두루 씨는 첫날 분수대에 세 번 빠졌다.',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',
+  scene:[r(0,"자네도 분수대에 세 번 빠졌나. 전통이 이어지는군."),nar("(우표 \"분수대의 전통\"과 수건을 받았습니다.)")]},
+ {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'쌍둥이의 눈사람 하나가 마을 어딘가로 굴러갔다.',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',
+  scene:[r(2,"거봐, 서른세 개랬잖아!"),r(2,"...언덕까지 굴러간 거였네."),nar("(우표 \"서른세 번째 눈사람\"과 눈꽃 핀을 받았습니다.)")]},
+ {id:'mayor',t:'이장님 발견',hidden:true,hint:'작년에 미끄러진 이장님은 정말 옆 마을까지 갔을까.',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',
+  scene:[{f:[MAYOR],n:'이장님',t:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가."},{f:[MAYOR],n:'이장님',t:"꺼내 주진 말게. 이제 정들었어. 대신 이거 받게."},nar("(우표 \"이장님 발견\"과 귀마개를 받았습니다.)")]},
  {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'두루 씨처럼 다녀 보기. 한 수도 낭비 없이, 모든 집을.',cond:'모든 판을 최소 이동 수로 깨기',item:'oldscarf',scene:END_HIDDEN},
 ];
 const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
 /* ---------- 저장 ---------- */
-const KEY='ice-slide-v1';
+const ADMIN=new URLSearchParams(location.search).has('admin');
+const KEY=ADMIN?'ice-slide-admin':'ice-slide-v1';
 function fresh(){return{courier:{name:'',hair:1,eyes:0,mouth:1,item:'scarf'},best:Array(8).fill(0),quests:{},
  items:{none:1,scarf:1,blush:1,glasses:1},events:{},intro:false,pending:[],loc:0}}
 let S=fresh();
@@ -403,7 +418,6 @@ function demoInit(){DM=scene(DEMO,toCanvas(face(S.courier),1));const c=$('demo')
  const step=now=>{if(tok!==demoTok||mode!=='title')return;tick(DM,now);drawBoard(c,c.getContext('2d'),DM,now);requestAnimationFrame(step)};requestAnimationFrame(step)}
 
 /* ---------- 프롤로그 ---------- */
-const MAYOR={hair:0,eyes:4,mouth:2};
 let PR=null,proTok=0;
 function proLoop(){const c=$('pro'),x=c.getContext('2d'),tok=++proTok;
  const step=now=>{if(tok!==proTok||!(mode==='pro'||(mode==='dlg'&&D&&D.back==='pro')))return;const st=PR.st;
@@ -451,13 +465,15 @@ const NODES=[[2.5,3.6],[7,3.6],[11.5,3.6],[16,3.6],[16,7.6],[11.5,7.6],[7,7.6],[
 const houseOff=G.house.map(r=>r.map(c=>c==='r'?'#':c)),houseOn=G.house.map(r=>r.slice());[[4,8],[5,8],[4,9],[5,9]].forEach(([x,y])=>houseOn[y][x]='r');
 const DECOR=[[4.75,2.6,'lamp'],[9.25,2.6,'lamp'],[13.75,2.6,'lamp'],[13.75,6.6,'hedge'],[9.25,6.6,'machine'],[4.75,6.6,'icerock'],[5.3,5.2,'icerock'],[9.6,1.2,'snowman'],[10.4,1.5,'snowman'],[0.9,5.6,'mailbox']];
 const nextStop=()=>S.best.findIndex(b=>!b);
-function mapPath(a,b){const pts=[NODES[a]],st=a<b?1:-1;for(let i=a;i!==b;i+=st){const j=i+st;if(i===3&&j===4)pts.push(CORNER[0],CORNER[1]);if(i===4&&j===3)pts.push(CORNER[1],CORNER[0]);pts.push(NODES[j])}return pts}
+const DETOUR=[[10.3,7.6],[10.3,8.3],[8.6,8.3],[8.6,7.6]];
+function mapPath(a,b){const pts=[NODES[a]],st=a<b?1:-1;for(let i=a;i!==b;i+=st){const j=i+st;if(S.best[5]&&i===5&&j===6)pts.push(...DETOUR);if(S.best[5]&&i===6&&j===5)pts.push(...DETOUR.slice().reverse());if(i===3&&j===4)pts.push(CORNER[0],CORNER[1]);if(i===4&&j===3)pts.push(CORNER[1],CORNER[0]);pts.push(NODES[j])}return pts}
 function drawMap(tx,ty){const c=$('map'),x=c.getContext('2d');if(c.width!==19*TS){c.width=19*TS;c.height=9*TS;c.style.width=c.width+'px'}
  x.imageSmoothingEnabled=false;x.fillStyle='#ebebeb';x.fillRect(0,0,c.width,c.height);
  x.fillStyle='#fff';const road=(x1,y1,x2,y2)=>x.fillRect(Math.min(x1,x2)*TS-24,Math.min(y1,y2)*TS-24,Math.abs(x2-x1)*TS+48,Math.abs(y2-y1)*TS+48);
  road(1.2,3.6,17.9,3.6);road(17.9,3.6,17.9,7.6);road(17.9,7.6,1.2,7.6);
  x.fillStyle='#e2e2e2';for(let i=0;i<34;i++){const px=(1.6+i*0.48)*TS;[3.6,7.6].forEach((ry,n)=>{if((i+n)%3===0){x.fillRect(px,ry*TS-8,3,3);x.fillRect(px+3,ry*TS-11,3,3);x.fillRect(px+6,ry*TS-14,3,3)}})}
- DECOR.forEach(([dx,dy,t])=>x.drawImage(tiles[t],Math.round(dx*TS-24),Math.round(dy*TS-24),TS,TS));
+ const plow=S.best[5]>0;if(plow){x.fillStyle='#ebebeb';x.fillRect(9.12*TS,7.6*TS-24,0.66*TS,48);x.fillStyle='#fff';road(10.3,7.6,10.3,8.3);road(10.3,8.3,8.6,8.3);road(8.6,8.3,8.6,7.6);x.drawImage(tiles.machine,Math.round(9.45*TS-24),Math.round(7.6*TS-24),TS,TS)}
+ DECOR.forEach(([dx,dy,t])=>{if(plow&&t==='machine')return;x.drawImage(tiles[t],Math.round(dx*TS-24),Math.round(dy*TS-24),TS,TS)});
  const nx=nextStop();x.textAlign='center';x.font='500 13px "DM Mono","Pretendard Variable",sans-serif';
  NODES.forEach(([hx,hy],k)=>{paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
   x.fillStyle=k===nx?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+44);
@@ -497,7 +513,7 @@ $('btnBook').onclick=()=>{if(mode==='town')book(true)};$('btnCustom').onclick=()
 function stampCanvas(done,idx){const c=document.createElement('canvas');c.width=c.height=64;c.className='stamp';const x=c.getContext('2d');
  x.fillStyle=done?COL.r:'#fff';x.fillRect(0,0,64,64);x.fillStyle='#fff';
  for(let i=0;i<8;i++){[[i*8+2,-2],[i*8+2,62],[-2,i*8+2],[62,i*8+2]].forEach(([a,b])=>x.fillRect(a,b,4,4))}
- if(done){const g=[G.snowman,G.goal,G.hedge,G.icerock,face(DURU)][idx];x.fillStyle='#fff';x.fillRect(6,6,52,52);paint(x,g,8,8,3)}
+ if(done){const g=[G.snowman,G.goal,G.hedge,G.icerock,G.fountain,G.hedgeSnow,G.mayorBank,face(DURU)][idx];x.fillStyle='#fff';x.fillRect(6,6,52,52);paint(x,g,8,8,3)}
  else{x.strokeStyle='#bdbdbd';x.setLineDash([4,4]);x.lineWidth=2;x.strokeRect(5,5,54,54);x.fillStyle='#bdbdbd';x.font='500 26px "DM Mono",monospace';x.textAlign='center';x.fillText('?',32,41)}
  return c}
 function book(on){$('book').classList.toggle('on',on);if(on){mode='book';renderTown();const box=$('quests');box.innerHTML='';
@@ -512,7 +528,7 @@ function award(id){if(S.quests[id])return false;S.quests[id]=1;S.items[QBY[id].i
 const TS=48,cv=$('board'),cx=cv.getContext('2d');
 const tiles={};for(const k in G)tiles[k]=toCanvas(G[k],1);
 let P=null;
-function obstType(k,x,y){const t=OBST[k];return t==='mix'?['snowman','lamp','mailbox'][(x*3+y)%3]:t}
+function obstType(k,x,y){const sp=SPECIAL[k+':'+x+','+y];if(sp)return sp;const t=OBST[k];return t==='mix'?['snowman','lamp','mailbox'][(x*3+y)%3]:t}
 function play(k){const L=parse(k);P={k,L,x:L.sx,y:L.sy,dx:L.sx,dy:L.sy,moves:0,hist:[],undo:false,pass:0,hits:{},happy:{},marks:[],anim:null,queue:null,shake:null,done:false,
   me:toCanvas(face(S.courier),1)};
  cv.width=L.w*TS;cv.height=L.h*TS;cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
@@ -520,6 +536,10 @@ function play(k){const L=parse(k);P={k,L,x:L.sx,y:L.sy,dx:L.sx,dy:L.sy,moves:0,h
 function coach(){const on=P.tut!=null;$('coach').classList.toggle('on',on);if(!on)return;const f=$('coachFace');f.innerHTML='';f.appendChild(toCanvas(face(RES[0].f[0]),3));$('coachText').textContent=TUT[P.tut].t}
 function hud(){$('hudMoves').textContent='이동 '+P.moves+' · 최소 '+MIN[P.k]}
 function bump(bx,by,dx,dy){P.shake={dx,dy,t:performance.now()};const L=P.L;
+ if(L.g[by][bx]==='o'&&!P.demo){const sp=SPECIAL[P.k+':'+bx+','+by];
+  if(sp==='fountain'){P.fh=(P.fh||0)+1;if(P.fh===3){award('fountain');toast('풍덩. 두루 씨의 첫날 기록과 같습니다.')}}
+  if(sp==='mayorBank'&&!P.mh){P.mh=1;award('mayor');toast('"...여기가 옆 마을인가?"')}
+  if(sp==='hedgeSnow'&&!P.sh){P.sh=1;award('thirtythree');toast('덤불인 줄 알았는데, 눈사람입니다.')}}
  if(L.g[by][bx]==='o'&&obstType(P.k,bx,by)==='snowman'){const key=bx+','+by;P.hits[key]=(P.hits[key]||0)+1;
   if(P.hits[key]===10){P.happy[key]=1;if(!award('snowman'))toast('눈사람이 웃습니다')}}}
 function move(dir){if(P.done)return;if(P.anim){P.queue=dir;return}const[dx,dy]=DIRS[dir];const[nx,ny]=slide(P.L,P.x,P.y,dx,dy);
@@ -586,6 +606,24 @@ document.addEventListener('keydown',e=>{if(e.isComposing||e.metaKey||e.ctrlKey||
   if(kl==='z'||kl==='ㅋ'){undo();return}if(kl==='r'||kl==='ㄱ'){restart();return}
   if(k==='Escape'){town();return}}
 });
+
+/* ---------- 관리자 모드: 주소 끝에 ?admin 을 붙였을 때만 켜진다. 저장도 따로 쓴다. ---------- */
+if(ADMIN){const st=document.createElement('style');st.textContent='#adm{position:fixed;right:12px;bottom:12px;z-index:40;background:#fff;border:3px solid #111;padding:10px;width:250px;font-family:var(--mono);font-size:12px}#adm b{display:block;margin:8px 0 4px;font-weight:500;color:#555}#adm button{font:inherit;margin:0 4px 4px 0;padding:3px 7px;border:1px solid #111;background:#fff;cursor:pointer;border-radius:999px}#adm button:hover{background:#111;color:#fff}#adm.min>div{display:none}#admHead{cursor:pointer;color:#ff3b1f}';document.head.appendChild(st);
+ const box=document.createElement('div');box.id='adm';box.innerHTML='<span id="admHead">관리자 모드 (누르면 접기)</span><div></div>';document.body.appendChild(box);const body=box.lastChild;
+ box.firstChild.onclick=()=>box.classList.toggle('min');
+ const clean=()=>{if(D){D=null;$('dlg').classList.remove('on');$('veil').classList.remove('on')}$('book').classList.remove('on');if(P){P.anim=null;P.out=null}clearInterval(auto)};
+ let auto=0;const sec=t=>{const b=document.createElement('b');b.textContent=t;body.appendChild(b)};
+ const btn=(t,fn)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{b.blur();fn()};body.appendChild(b)};
+ const scene=list=>()=>{clean();S.intro=true;show('town');townUI();say(list,townUI)};
+ sec('판 바로 가기');for(let k=0;k<8;k++)btn((k+1)+' '+RES[k].place,()=>{clean();S.intro=true;play(k)});
+ sec('지금 판');btn('정답 재생',()=>{if(mode!=='play'||P.done)return;clearInterval(auto);P.tut=null;coach();const path=solve(P.k,P.x,P.y)||[];auto=setInterval(()=>{if(mode!=='play'||!path.length){clearInterval(auto);return}if(!P.anim)move(path.shift())},60)});
+ sec('진행 상태');btn('전부 배달 (보통)',()=>{clean();S.intro=true;S.best=MIN.map(m=>m+2);S.loc=7;save();town()});
+ btn('전부 최소 이동',()=>{clean();S.intro=true;S.best=MIN.slice();S.loc=7;save();town()});
+ btn('우표와 소품 전부',()=>{clean();QUESTS.forEach(q=>S.quests[q.id]=1);ITEM_ORDER.forEach(k=>S.items[k]=1);S.pending=[];save();if(S.intro)town()});
+ btn('처음 상태로',()=>{clean();S=fresh();save();title()});
+ sec('장면 보기');btn('프롤로그',()=>{clean();prologue()});btn('빵집 이벤트',scene(EVENTS[1]));btn('가로등 이벤트',scene(EVENTS[3]));btn('제설기 이벤트',scene(EVENTS[5]));
+ btn('기본 엔딩',scene(END_BASIC));btn('숨은 엔딩',scene(END_HIDDEN));
+ sec('화면');btn('마을 지도',()=>{clean();S.intro=true;town()});btn('꾸미기',()=>{clean();custom(false)});btn('첫 화면',()=>{clean();title()})}
 
 window.ICE={LEVELS,MIN,solve,get S(){return S},get P(){return P},get mode(){return mode}};
 title();
