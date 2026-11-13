@@ -2,7 +2,7 @@
 
 브라우저에서 바로 하는 작은 퍼즐 게임입니다. 한번 미끄러지면 무언가에 부딪혀야 멈춥니다.
 
-**플레이: https://jicongjy.github.io/ice-slide/**
+**플레이: https://jicongjy.github.io/games/ice-slide/**
 
 ![첫 화면](docs/title.png)
 
