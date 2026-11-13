@@ -131,11 +131,13 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
     <p class="over">큰 서리의 밤</p>
     <h2>서리골</h2>
     <div id="mapWrap"><canvas id="map"></canvas></div>
+    <div class="row" id="roads" style="margin-bottom:10px"></div>
     <div class="row">
       <button class="pill accent" id="btnNext"></button>
       <button class="pill" id="btnBook">Q 배달 수첩 <span id="stampCount"></span></button>
       <button class="pill" id="btnCustom">C 꾸미기</button>
     </div>
+    <p class="keys">방향키 길 고르기 · Enter 다음 배달 · Q 배달 수첩 · C 꾸미기</p>
   </section>
 
   <section id="s-play" class="screen">
@@ -306,14 +308,16 @@ const TUT=[{key:'ArrowRight',t:"→ 방향키를 눌러 보게."},
  {key:'z',t:"지나가는 건 배달이 아니야. 문 앞에 서야지. Z를 눌러 한 수 물리게."},
  {key:null,t:"이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 R로 처음부터."}];
 const PUSH=[
- [r(0,"다음은 빵집일세. 밀어 주지. 하나, 둘.")],
+ [r(0,"광장까지 밀어 주지. 어느 길로 갈지는 자네가 정하게. 하나, 둘.")],
  [r(1,"다음은 쌍둥이네예요. 살살 밀게요. ...어머, 세게 밀었네.")],
- [r(2,"우리가 밀어 줄게요!"),r(2,"둘이 같이!"),nar("(둘이 밀면 두 배로 멀리 갑니다.)")],
- [r(3,"언덕 집은 저 아래일세. 가로등은 치지 말고.")],
- [r(4,"지도대로 가면 금방이야. 내 지도 말고, 두루 지도대로.")],
- [r(5,"제설기가 뚫어 놓은 길로 가요. 내가 밀... 아니, 제설기가 밀 거예요.")],
- [r(6,"..."),nar("(낚시꾼이 말없이 낚싯대로 밀어 줍니다.)")],
+ [r(2,"광장까지 우리가 밀어 줄게요!"),r(2,"둘이 같이!"),nar("(둘이 밀면 두 배로 멀리 갑니다.)")],
+ [r(3,"언덕 집은 이 길 끝일세. 가로등은 치지 말고.")],
+ [r(4,"광장까지는 내리막이야. 지도대로 가. 내 지도 말고, 두루 지도대로.")],
+ [r(5,"호수는 제설기를 돌아서 가요. 내가 밀... 아니, 제설기가 밀 거예요.")],
+ [r(6,"..."),nar("(낚시꾼이 말없이 낚싯대로 광장 쪽으로 밀어 줍니다.)")],
 ];
+const WINDOW=[["가로등은 조심하게.","소포는 던지는 게 아니야."],["빵 식기 전에 다녀와요!","밀대 잘 쓰고 있어요!"],["배달부다! 또 미끄러진다!","서른세 개 맞다니까!"],
+ ["전구 값은 달아 두겠네.","두루도 그 길로 다녔지."],["거긴 내 지도에 없는 길이야.","헤매도 괜찮아. 나도 헤매."],["제설기는 건드리지 마요!","거의 다 고쳤어요. 거의."],["...","...(손을 흔듭니다.)"],["차 식기 전에 오게."]];
 const OUTRO="소포 여덟 개, 집 여덟 채.\n서리골의 긴 하루가 시작됩니다.";
 const PRE=[
  [r(0,"우체국 문 앞까지만 갔다 와 보게. 요령은 나가서 알려 주지.")],
@@ -382,7 +386,7 @@ let S=fresh();
 try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);if(o&&o.best&&o.best.length===8)S=Object.assign(fresh(),o)}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const name=()=>S.courier.name||'배달부';
-const unlocked=i=>i===0||S.best[i-1]>0;
+const unlocked=k=>k===0||(k===7?S.best.slice(0,7).every(Boolean):(k===1||k===3||k===5)?S.best[0]>0:S.best[k-1]>0);
 
 /* ---------- 화면 전환 ---------- */
 const $=id=>document.getElementById(id);
@@ -462,38 +466,64 @@ $('btnCustomDone').onclick=customDone;
 /* ---------- 마을 ---------- */
 let T={sel:1};
 const allFaces=()=>S.quests.master;
-const NODES=[[2.5,3.6],[7,3.6],[11.5,3.6],[16,3.6],[16,7.6],[11.5,7.6],[7,7.6],[2.5,7.6]],CORNER=[[17.9,3.6],[17.9,7.6]];
+const PLAZA=8,VW=19,VH=11,WW=32,WH=22,PL=[16,11];
+const HOUSE=[[10,11],[20,5],[26,5],[22,11],[28,11],[20,17],[26,17],[4,11]];
+const ROUTE=[[PL,[10,11]],[PL,[16,5],[20,5]],[PL,[16,5],[20,5],[26,5]],[PL,[22,11]],[PL,[22,11],[28,11]],[PL,[16,17],[20,17]],[PL,[16,17],[20,17],[26,17]],[PL,[10,11],[4,11]],[PL]];
+const DETOUR=[[22.1,17],[22.1,17.7],[23.8,17.7],[23.8,17]];
+const BR={ArrowUp:[1,2],ArrowRight:[3,4],ArrowDown:[5,6],ArrowLeft:[7]},BRNAME={ArrowUp:'↑ 빵집 길',ArrowRight:'→ 가로등 길',ArrowDown:'↓ 호수 길',ArrowLeft:'← 빈집'};
 const houseOff=G.house.map(r=>r.map(c=>c==='r'?'#':c)),houseOn=G.house.map(r=>r.slice());[[4,8],[5,8],[4,9],[5,9]].forEach(([x,y])=>houseOn[y][x]='r');
-const DECOR=[[4.75,2.6,'lamp'],[9.25,2.6,'lamp'],[13.75,2.6,'lamp'],[13.75,6.6,'hedge'],[9.25,6.6,'machine'],[4.75,6.6,'icerock'],[5.3,5.2,'icerock'],[9.6,1.2,'snowman'],[10.4,1.5,'snowman'],[0.9,5.6,'mailbox']];
-const nextStop=()=>S.best.findIndex(b=>!b);
-const DETOUR=[[10.3,7.6],[10.3,8.3],[8.6,8.3],[8.6,7.6]];
-function mapPath(a,b){const pts=[NODES[a]],st=a<b?1:-1;for(let i=a;i!==b;i+=st){const j=i+st;if(S.best[5]&&i===5&&j===6)pts.push(...DETOUR);if(S.best[5]&&i===6&&j===5)pts.push(...DETOUR.slice().reverse());if(i===3&&j===4)pts.push(CORNER[0],CORNER[1]);if(i===4&&j===3)pts.push(CORNER[1],CORNER[0]);pts.push(NODES[j])}return pts}
-function drawMap(tx,ty){const c=$('map'),x=c.getContext('2d');if(c.width!==19*TS){c.width=19*TS;c.height=9*TS;c.style.width=c.width+'px'}
- x.imageSmoothingEnabled=false;x.fillStyle='#ebebeb';x.fillRect(0,0,c.width,c.height);
- x.fillStyle='#fff';const road=(x1,y1,x2,y2)=>x.fillRect(Math.min(x1,x2)*TS-24,Math.min(y1,y2)*TS-24,Math.abs(x2-x1)*TS+48,Math.abs(y2-y1)*TS+48);
- road(1.2,3.6,17.9,3.6);road(17.9,3.6,17.9,7.6);road(17.9,7.6,1.2,7.6);
- x.fillStyle='#e2e2e2';for(let i=0;i<34;i++){const px=(1.6+i*0.48)*TS;[3.6,7.6].forEach((ry,n)=>{if((i+n)%3===0){x.fillRect(px,ry*TS-8,3,3);x.fillRect(px+3,ry*TS-11,3,3);x.fillRect(px+6,ry*TS-14,3,3)}})}
- const plow=S.best[5]>0;if(plow){x.fillStyle='#ebebeb';x.fillRect(9.12*TS,7.6*TS-24,0.66*TS,48);x.fillStyle='#fff';road(10.3,7.6,10.3,8.3);road(10.3,8.3,8.6,8.3);road(8.6,8.3,8.6,7.6);x.drawImage(tiles.machine,Math.round(9.45*TS-24),Math.round(7.6*TS-24),TS,TS)}
+const DECOR=[[19,10,'lamp'],[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13,10,'lamp'],[11.8,10,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[28.6,4.1,'snowman'],[29.4,4.6,'snowman'],[27.5,6.3,'snowman'],
+ [30.2,9.6,'hedge'],[30.6,12.3,'hedge'],[25.4,12.4,'hedge'],[19.5,12.5,'hedge'],[18,16,'machine'],[28.6,16,'icerock'],[29.4,18.2,'icerock'],[27,19.3,'icerock'],[24.4,19.4,'icerock'],[30.5,19.8,'icerock'],
+ [5,5,'hedge'],[9,6.3,'hedge'],[12.4,3.2,'hedge'],[2.5,7.6,'snowman'],[6,17,'icerock'],[11,18.4,'hedge'],[3,15,'hedge'],[12.3,15,'snowman'],[13.2,7.6,'lamp'],[22,1.6,'hedge'],[30,1.8,'icerock'],[8,20,'lamp'],[21,20.3,'hedge'],[16,9.7,'fountain']];
+const nodePos=n=>n===PLAZA?PL:HOUSE[n];
+function route(n){const r=ROUTE[n].slice();if(n===6&&S.best[5])r.splice(3,0,...DETOUR);return r}
+function mapPath(a,b){const A=route(a),B=route(b);let c=0;while(c<A.length&&c<B.length&&A[c][0]===B[c][0]&&A[c][1]===B[c][1])c++;return A.slice(c-1).reverse().concat(B.slice(c))}
+function recNext(){if(S.loc<8&&!S.best[S.loc]&&unlocked(S.loc))return S.loc;if(!S.best[0])return 0;for(const d of['ArrowUp','ArrowRight','ArrowDown','ArrowLeft']){const k=BR[d].find(k=>!S.best[k]);if(k!=null&&unlocked(k))return k}return -1}
+let CAM=null,TOK=null,BUB=[],mapMe=null,mapTok=0,chatAt=0;
+const camTarget=p=>[Math.max(0,Math.min(WW-VW,p[0]-VW/2)),Math.max(0,Math.min(WH-VH,p[1]-VH/2))];
+function bubble(k,now){const L=WINDOW[k];BUB=BUB.filter(b=>b.k!==k);BUB.push({k,t:L[Math.floor(Math.random()*L.length)],until:now+2400})}
+function drawMap(now){const c=$('map'),x=c.getContext('2d');if(c.width!==VW*TS){c.width=VW*TS;c.height=VH*TS;c.style.width=c.width+'px'}
+ const tp=TOK||nodePos(S.loc),ct=camTarget(tp);if(!CAM)CAM=ct.slice();CAM[0]+=(ct[0]-CAM[0])*0.1;CAM[1]+=(ct[1]-CAM[1])*0.1;
+ x.imageSmoothingEnabled=false;x.fillStyle='#ebebeb';x.fillRect(0,0,c.width,c.height);x.save();x.translate(-Math.round(CAM[0]*TS),-Math.round(CAM[1]*TS));
+ x.fillStyle='#fff';const road=(p,q)=>x.fillRect(Math.min(p[0],q[0])*TS-24,Math.min(p[1],q[1])*TS-24,Math.abs(q[0]-p[0])*TS+48,Math.abs(q[1]-p[1])*TS+48);
+ const west=unlocked(7),plow=S.best[5]>0;
+ for(let n=0;n<8;n++){if(n===7&&!west)continue;const r=ROUTE[n];for(let i=1;i<r.length;i++)road(r[i-1],r[i])}
+ x.fillRect((PL[0]-1.5)*TS,(PL[1]-1.5)*TS,3*TS,3*TS);
+ if(plow){x.fillStyle='#ebebeb';x.fillRect(22.62*TS,17*TS-24,0.66*TS,48);x.fillStyle='#fff';road(DETOUR[0],DETOUR[1]);road(DETOUR[1],DETOUR[2]);road(DETOUR[2],DETOUR[3]);x.drawImage(tiles.machine,Math.round(22.95*TS-24),17*TS-24,TS,TS)}
+ if(!west){x.drawImage(tiles.icerock,Math.round(8.7*TS-24),11*TS-24,TS,TS);x.drawImage(tiles.icerock,Math.round(7.9*TS-24),11*TS-18,TS,TS)}
  DECOR.forEach(([dx,dy,t])=>{if(plow&&t==='machine')return;x.drawImage(tiles[t],Math.round(dx*TS-24),Math.round(dy*TS-24),TS,TS)});
- const nx=nextStop();x.textAlign='center';x.font='500 13px "DM Mono","Pretendard Variable",sans-serif';
- NODES.forEach(([hx,hy],k)=>{paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
-  x.fillStyle=k===nx?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+44);
-  if(k===nx){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}});
- if(tx==null){tx=NODES[S.loc][0];ty=NODES[S.loc][1]}
- x.drawImage(mapMe,Math.round(tx*TS-24),Math.round(ty*TS-24),TS,TS)}
-let mapMe=null;
-function townUI(){mapMe=toCanvas(face(S.courier),1);const nx=nextStop();$('btnNext').textContent=nx<0?'배달 끝 · 주소록에서 다시 찾아가기':'Enter 다음 배달 · '+(nx+1)+' '+RES[nx].place;
- $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;drawMap()}
-function town(){show('town');townUI();if(S.pending.length){const p=S.pending.splice(0);save();const sc=[];p.forEach(id=>sc.push(...QBY[id].scene));say(sc,townUI)}}
-function travel(a,b,cb,over){show('town');townUI();mode='travel';const pts=mapPath(a,b).map(p=>p.slice());
- if(over){const e=pts[pts.length-1],q=pts[pts.length-2],d=Math.sign(e[0]-q[0]);pts.push([e[0]+d*1.5,e[1]],[e[0],e[1]])}
+ x.textAlign='center';x.font='500 13px "DM Mono","Pretendard Variable",sans-serif';
+ HOUSE.forEach(([hx,hy],k)=>{const open=!S.best[k]&&unlocked(k);paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
+  x.fillStyle=open?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+44);
+  if(open){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}});
+ x.drawImage(mapMe,Math.round(tp[0]*TS-24),Math.round(tp[1]*TS-24),TS,TS);
+ x.font='500 14px "Pretendard Variable","Pretendard",sans-serif';BUB=BUB.filter(b=>b.until>now);
+ BUB.forEach(b=>{const[hx,hy]=HOUSE[b.k],w=x.measureText(b.t).width+20,bx=Math.round(hx*TS-w/2),by=Math.round(hy*TS-24-84-38);
+  x.fillStyle=COL['#'];x.fillRect(bx-3,by-3,w+6,34);x.fillRect(hx*TS-4,by+31,8,6);x.fillStyle='#fff';x.fillRect(bx,by,w,28);x.fillStyle=COL['#'];x.fillText(b.t,hx*TS,by+19)});
+ x.restore()}
+function startMap(){const tok=++mapTok;const step=now=>{if(tok!==mapTok||!(mode==='town'||mode==='travel'||(mode==='dlg'&&D&&D.back==='town')))return;
+  if(mode==='town'&&now>chatAt){chatAt=now+5000+Math.random()*4000;const vis=[0,1,2,3,4,5,6,7].filter(k=>(k<7?S.best[k]:S.quests.master)&&k!==S.loc&&Math.abs(HOUSE[k][0]-CAM[0]-VW/2)<VW/2-2&&Math.abs(HOUSE[k][1]-CAM[1]-VH/2)<VH/2-1);
+   if(vis.length)bubble(vis[Math.floor(Math.random()*vis.length)],now)}
+  drawMap(now);requestAnimationFrame(step)};requestAnimationFrame(step)}
+function townUI(){mapMe=toCanvas(face(S.courier),1);const k=recNext();$('btnNext').textContent=k<0?'배달 끝 · 주소록에서 다시 찾아가기':'Enter 다음 배달 · '+(k+1)+' '+RES[k].place;
+ $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;const box=$('roads');box.innerHTML='';
+ for(const d in BR){const ks=BR[d],b=document.createElement('button');b.className='pill';const lock=!unlocked(ks[0])&&!S.best[ks[0]];
+  b.textContent=BRNAME[d]+' · '+(d==='ArrowLeft'&&lock?'마지막에':ks.filter(k=>S.best[k]).length+'/'+ks.length);if(lock)b.style.color='#999',b.style.borderColor='#bdbdbd';b.onclick=()=>{b.blur();goDir(d)};box.appendChild(b)}}
+function town(){show('town');townUI();chatAt=performance.now()+2500;startMap();if(S.pending.length){const p=S.pending.splice(0);save();const sc=[];p.forEach(id=>sc.push(...QBY[id].scene));say(sc,townUI)}}
+function travel(a,b,cb,over){show('town');townUI();const pts=mapPath(a,b).map(p=>p.slice());if(pts.length<2){S.loc=b;save();startMap();cb();return}mode='travel';startMap();
+ if(over){const e=pts[pts.length-1],q=pts[pts.length-2];pts.push([e[0]+Math.sign(e[0]-q[0])*1.6,e[1]+Math.sign(e[1]-q[1])*1.6],[e[0],e[1]])}
  const seg=[];let len=0;for(let i=1;i<pts.length;i++){const l=Math.abs(pts[i][0]-pts[i-1][0])+Math.abs(pts[i][1]-pts[i-1][1]);seg.push(l);len+=l}
- const dur=Math.max(750,len*120),t0=performance.now();
+ const dur=Math.max(800,len*125),t0=performance.now(),said={};said[a]=1;
  const step=now=>{let t=Math.min(1,(now-t0)/dur);let d=(t*(2-t))*len,i=0;while(i<seg.length-1&&d>seg[i]){d-=seg[i];i++}const f=seg[i]?Math.min(1,d/seg[i]):1;
-  drawMap(pts[i][0]+(pts[i+1][0]-pts[i][0])*f,pts[i][1]+(pts[i+1][1]-pts[i][1])*f);
-  if(t<1)requestAnimationFrame(step);else{S.loc=b;save();mode='town';townUI();setTimeout(cb,260)}};requestAnimationFrame(step)}
+  TOK=[pts[i][0]+(pts[i+1][0]-pts[i][0])*f,pts[i][1]+(pts[i+1][1]-pts[i][1])*f];
+  HOUSE.forEach((h,k)=>{if(!said[k]&&k!==b&&(k<7?S.best[k]:S.quests.master)&&Math.abs(h[0]-TOK[0])+Math.abs(h[1]-TOK[1])<0.9){said[k]=1;bubble(k,now)}});
+  if(t<1)requestAnimationFrame(step);else{TOK=null;S.loc=b;save();mode='town';townUI();setTimeout(cb,280)}};requestAnimationFrame(step)}
 function enter(k){if(!S.best[k])say(PRE[k],()=>play(k));else play(k)}
-function goNext(){if(mode!=='town')return;const nx=nextStop();if(nx<0){book(true);return}if(S.loc!==nx)travel(S.loc,nx,()=>enter(nx));else enter(nx)}
+function goTo(k){if(S.loc===k)enter(k);else travel(S.loc,k,()=>enter(k))}
+function goNext(){if(mode!=='town')return;const k=recNext();if(k<0){book(true);return}goTo(k)}
+function goDir(d){if(mode!=='town')return;if(!S.best[0]){toast('우체국 앞 배달부터 마쳐야 합니다');return}const k=BR[d].find(k=>!S.best[k]);
+ if(k==null){toast('이 길은 배달을 마쳤습니다. 다시 가려면 배달 수첩(Q)의 주소록에서 고르세요');return}
+ if(!unlocked(k)){toast('빈집으로 가는 길은 아직 눈에 막혀 있습니다. 다른 집을 모두 돌고 오세요');return}goTo(k)}
 function renderTown(){const box=$('cards');box.innerHTML='';
  for(let i=0;i<10;i++){const d=document.createElement('div');let g,lab,meta='',mono=null,locked=false;
   if(i===0){g=face(S.courier);lab=name();meta='나'}
@@ -507,7 +537,7 @@ function renderTown(){const box=$('cards');box.innerHTML='';
   d.onclick=()=>{T.sel=i;renderTown();pick()};box.appendChild(d)}
 }
 function pick(){const i=T.sel;if(i===0){book(false);custom(false);return}if(i===9){if(allFaces())say([{f:[DURU],n:'두루 씨',t:"차 한잔하고 가게. 어차피 밖은 미끄러워."}],renderTown);return}const k=i-1;if(!unlocked(k)){toast('앞집 배달을 먼저 끝내야 합니다');return}
- book(false);if(S.loc!==k)travel(S.loc,k,()=>enter(k));else enter(k)}
+ book(false);goTo(k)}
 $('btnBook').onclick=()=>{if(mode==='town')book(true)};$('btnCustom').onclick=()=>{if(mode==='town')custom(false)};$('btnNext').onclick=goNext;
 
 /* ---------- 배달 수첩 ---------- */
@@ -522,7 +552,7 @@ function book(on){$('book').classList.toggle('on',on);if(on){mode='book';renderT
    const m=document.createElement('div');const secret=q.hidden&&!done;
    m.innerHTML='<div class="qt">'+(secret?'???':q.t)+'</div><div class="qd">'+(secret?q.hint:q.cond)+'</div>';d.appendChild(m);
    const p=document.createElement('span');p.className='pill'+(done?' accent':'');p.textContent=done?ITEMS[q.item].n:(secret?'보상 ???':'보상 '+ITEMS[q.item].n);d.appendChild(p);box.appendChild(d)})}
- else mode='town'}
+ else{mode='town';startMap()}}
 function award(id){if(S.quests[id])return false;S.quests[id]=1;S.items[QBY[id].item]=1;S.pending.push(id);save();toast('새 우표 · '+QBY[id].t);return true}
 
 /* ---------- 플레이 ---------- */
@@ -565,8 +595,8 @@ function afterClear(){const k=P.k,first=P.first;const sc=[];mode='play';
   else{pend.forEach(id=>sc.push(...QBY[id].scene));sc.push(...END_BASIC)}}
  else pend.forEach(id=>sc.push(...QBY[id].scene));
  if(first&&k<7)sc.push(...PUSH[k]);
- save();say(sc,()=>{if(first&&k<7){T.sel=k+2;pushOut(k,()=>travel(k,k+1,()=>enter(k+1),k===2))}else town()})}
-function pushOut(k,cb){const d=[[1,0],[1,0],[1,0],[0,1],[-1,0],[-1,0],[-1,0]][k];mode='push';P.out={t:performance.now(),d,fx:P.x,fy:P.y,cb}}
+ save();say(sc,()=>{if(first&&k<7){const nx=(k===1||k===3||k===5)?k+1:PLAZA;T.sel=k+2;pushOut(k,()=>travel(k,nx,nx===PLAZA?town:()=>enter(nx),k===2))}else town()})}
+function pushOut(k,cb){const d=[[1,0],[1,0],[-1,0],[1,0],[-1,0],[1,0],[-1,0]][k];mode='push';P.out={t:performance.now(),d,fx:P.x,fy:P.y,cb}}
 function loop(now){if(mode!=='play'&&mode!=='clear'&&mode!=='push'&&!(mode==='dlg'&&D&&D.back==='play')){return}
  if(P.out){const o=P.out,t=(now-o.t)/560,far=Math.max(P.L.w,P.L.h)+1;P.dx=o.fx+o.d[0]*t*t*far;P.dy=o.fy+o.d[1]*t*t*far;draw(now);if(t>=1){P.out=null;o.cb();return}requestAnimationFrame(loop);return}
  if(P.anim){const a=P.anim;let t=Math.min(1,(now-a.t)/a.dur);const e=t*(2-t);P.dx=a.fx+(a.tx-a.fx)*e;P.dy=a.fy+(a.ty-a.fy)*e;if(t>=1){P.anim=null;P.dx=a.tx;P.dy=a.ty;arrive(a)}}
@@ -597,7 +627,7 @@ document.addEventListener('keydown',e=>{if(e.isComposing||e.metaKey||e.ctrlKey||
  if(mode==='book'){if(k==='Escape'||kl==='q'||kl==='ㅂ'){e.preventDefault();book(false);return}
   const mv={ArrowLeft:-1,ArrowRight:1,ArrowUp:-5,ArrowDown:5}[k];if(mv){e.preventDefault();const n=T.sel+mv;if(n>=0&&n<10){T.sel=n;renderTown()}return}
   if(ok){e.preventDefault();pick()}return}
- if(mode==='town'){if(ok){e.preventDefault();goNext();return}if(kl==='q'||kl==='ㅂ'){book(true);return}if(kl==='c'||kl==='ㅊ'){custom(false);return}return}
+ if(mode==='town'){if(BR[k]){e.preventDefault();goDir(k);return}if(ok){e.preventDefault();goNext();return}if(kl==='q'||kl==='ㅂ'){book(true);return}if(kl==='c'||kl==='ㅊ'){custom(false);return}return}
  if(mode==='clear'){if(ok){e.preventDefault();afterClear()}return}
  if(mode==='play'){
   if(P.tut!=null&&P.tut<4){const want=TUT[P.tut].key,dk=DIRS[k]?k:(DIRS[kl]?kl:null);if(dk)e.preventDefault();if(k==='Escape'){town();return}if(P.anim)return;
@@ -619,6 +649,7 @@ if(ADMIN){const st=document.createElement('style');st.textContent='#adm{position
  sec('판 바로 가기');for(let k=0;k<8;k++)btn((k+1)+' '+RES[k].place,()=>{clean();S.intro=true;play(k)});
  sec('지금 판');btn('정답 재생',()=>{if(mode!=='play'||P.done)return;clearInterval(auto);P.tut=null;coach();const path=solve(P.k,P.x,P.y)||[];auto=setInterval(()=>{if(mode!=='play'||!path.length){clearInterval(auto);return}if(!P.anim)move(path.shift())},60)});
  sec('진행 상태');btn('전부 배달 (보통)',()=>{clean();S.intro=true;S.best=MIN.map(m=>m+2);S.loc=7;save();town()});
+ btn('빈집만 남기기',()=>{clean();S.intro=true;S.best=MIN.map((m,i)=>i<7?m+2:0);S.loc=PLAZA;save();town()});btn('우체국만 배달',()=>{clean();S.intro=true;S.best=MIN.map((m,i)=>i<1?m+2:0);S.loc=PLAZA;save();town()});
  btn('전부 최소 이동',()=>{clean();S.intro=true;S.best=MIN.slice();S.loc=7;save();town()});
  btn('우표와 소품 전부',()=>{clean();QUESTS.forEach(q=>S.quests[q.id]=1);ITEM_ORDER.forEach(k=>S.items[k]=1);S.pending=[];save();if(S.intro)town()});
  btn('처음 상태로',()=>{clean();S=fresh();save();title()});
