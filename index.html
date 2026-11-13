@@ -5,21 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>빙판 마을의 배달부</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{--ink:#111;--paper:#fff;--panel:#ebebeb;--mid:#bdbdbd;--accent:#ff3b1f;
-  --serif:"Noto Serif KR","Nanum Myeongjo",serif;--mono:"DM Mono",ui-monospace,Menlo,monospace;
-  --sans:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif}
+  --mono:"DM Mono",ui-monospace,Menlo,monospace;
+  --sans:"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans)}
 body{min-height:100vh;display:flex;justify-content:center}
 #app{width:960px;max-width:100%;padding:36px 24px 150px;position:relative}
 canvas{image-rendering:pixelated;display:block}
 .screen{display:none}.screen.on{display:block}
-h1{font-family:var(--serif);font-weight:400;font-size:44px;line-height:1.2;margin:0;text-align:center}
-h2{font-family:var(--serif);font-weight:400;font-size:30px;margin:0;text-align:center}
-.over{font-family:var(--serif);font-size:18px;text-align:center;margin:0 0 4px}
-.sub{font-family:var(--serif);font-style:italic;font-size:20px;text-align:center;margin:6px 0 0;color:#333}
+h1{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;font-size:44px;line-height:1.2;margin:0;text-align:center}
+h2{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;font-size:30px;margin:0;text-align:center}
+.over{font-family:var(--sans);font-size:18px;text-align:center;margin:0 0 4px}
+.sub{font-family:var(--sans);font-size:19px;text-align:center;margin:6px 0 0;color:#333}
 .pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:13px;background:var(--paper);
   border:1px solid var(--ink);border-radius:999px;padding:5px 12px;white-space:nowrap}
 button.pill{cursor:pointer;color:var(--ink)}
@@ -70,7 +71,7 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 #dlgBody{flex:1;min-width:0}
 #dlgName{margin-bottom:8px}
 #dlgText{font-size:18px;line-height:1.65;white-space:pre-line;font-family:var(--sans)}
-#dlgText.narr{font-family:var(--serif)}
+#dlgText.narr{font-family:var(--sans)}
 #dlgNext{font-family:var(--mono);font-size:11px;color:#777;margin-top:8px;text-align:right}
 #veil{position:fixed;inset:0;background:rgba(255,255,255,.72);display:none;z-index:10}
 #veil.on{display:block}
@@ -80,7 +81,7 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 #book.on{display:block}
 #bookIn{width:760px;max-width:100%;margin:0 auto}
 .quest{display:grid;grid-template-columns:72px 1fr auto;gap:18px;align-items:center;padding:14px 0;border-bottom:1px solid var(--panel)}
-.quest .qt{font-family:var(--serif);font-size:20px}
+.quest .qt{font-family:var(--sans);font-weight:600;font-size:19px}
 .quest .qd{font-size:14px;color:#555;margin-top:2px}
 .stamp{width:64px;height:64px}
 </style>
