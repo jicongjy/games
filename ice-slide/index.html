@@ -420,7 +420,9 @@ const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
 /* ---------- 저장 ---------- */
 const ADMIN=new URLSearchParams(location.search).has('admin');
-const KEY=ADMIN?'ice-slide-admin':'ice-slide-v1';
+const KEY=ADMIN?'ice-slide:admin':'ice-slide:v1';
+const OLD_KEY=ADMIN?'ice-slide-admin':'ice-slide-v1';
+try{if(localStorage.getItem(KEY)===null){const old=localStorage.getItem(OLD_KEY);if(old!==null)localStorage.setItem(KEY,old)}}catch(e){}
 function fresh(){return{courier:{name:'',hair:1,eyes:0,mouth:1,item:'scarf'},best:Array(8).fill(0),quests:{},
  items:{none:1,scarf:1,blush:1,glasses:1},events:{},intro:false,pending:[],loc:0}}
 let S=fresh();
