@@ -50,6 +50,10 @@ button.pill:hover,.pill.hot{background:var(--ink);color:var(--paper)}
 .tool:hover .ic,.tool.hot .ic{background:var(--panel)}
 .tool:hover::after{content:attr(data-tip);position:absolute;top:100%;margin-top:5px;right:0;white-space:nowrap;background:var(--ink);color:#fff;font-size:11px;padding:3px 8px;z-index:5}
 .pill.big{font-family:var(--sans);font-size:16px;font-weight:600;padding:11px 26px}
+.chip{background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:3px 9px;border-radius:4px;border:1px solid var(--accent);white-space:nowrap}
+.val .chip{margin-left:8px;vertical-align:middle}
+.chip.gift{background:var(--paper);color:var(--accent)}
+.tool .ic{position:relative}.tool.dot .ic::after{content:"";position:absolute;right:-6px;top:-6px;width:12px;height:12px;background:var(--accent);border:2px solid var(--paper)}
 #prog{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;font-size:14px;color:#333}
 #pips{display:flex;gap:4px}#pips i{width:12px;height:12px;border:2px solid var(--ink);display:block}#pips i.on{background:var(--accent);border-color:var(--accent)}
 #cap{display:flex;align-items:center;gap:14px;background:var(--ink);color:#fff;width:918px;max-width:100%;margin:0 auto;padding:12px 16px;min-height:64px}
@@ -491,6 +495,9 @@ $('btnReset').onclick=()=>{if(confirm('모은 얼굴과 우표가 모두 지워�
 let CU={row:0,first:false};
 const myItems=()=>ITEM_ORDER.filter(k=>S.items[k]);
 function custom(first){CU={row:first?0:1,first};$('btnCustomDone').textContent=first?'이 모습으로 출근하기':'완료';show('custom');renderCustom();if(CU.row===0)setTimeout(()=>$('nameInput')&&$('nameInput').focus(),0)}
+const ORIGIN=Object.assign({baguette:'빵집 주인의 선물',goggles:'발명가의 선물'},Object.fromEntries(QUESTS.map(q=>[q.item,'우표 · '+q.t])));
+const unseenGifts=()=>ITEM_ORDER.filter(k=>S.items[k]&&ORIGIN[k]&&!(S.seenItems||{})[k]);
+function giftChip(k){if(!ORIGIN[k])return'';const nw=!(S.seenItems||{})[k];S.seenItems=S.seenItems||{};S.seenItems[k]=1;save();return'<span class="chip gift">'+ORIGIN[k]+'</span>'+(nw?'<span class="chip">새로 받음</span>':'')}
 function renderCustom(){const c=S.courier,it=myItems();
  const rows=[['이름',null],['머리',HAIRS[c.hair].n,(c.hair+1)+'/6'],['눈',EYES[c.eyes].n,(c.eyes+1)+'/'+EYES.length],['입',MOUTHS[c.mouth].n,(c.mouth+1)+'/'+MOUTHS.length],
   ['소품',ITEMS[c.item].n,(it.indexOf(c.item)+1)+'/'+it.length+' ('+ITEM_ORDER.length+')']];
@@ -498,7 +505,7 @@ function renderCustom(){const c=S.courier,it=myItems();
  rows.forEach((rw,i)=>{const d=document.createElement('div');d.className='opt'+(i===CU.row?' sel':'');
   if(i===0){d.innerHTML='<span class="lab">이름</span><input id="nameInput" maxlength="8" placeholder="배달부" autocomplete="off"><span class="cnt"></span>';
    const inp=d.querySelector('input');inp.value=c.name;inp.oninput=()=>{c.name=inp.value.trim();save()};inp.onfocus=()=>{if(CU.row!==0){CU.row=0;markRow()}}}
-  else{d.innerHTML='<span class="lab">'+rw[0]+'</span><span class="arr" data-d="-1">◀</span><span class="val">'+rw[1]+'</span><span class="arr" data-d="1">▶</span><span class="cnt">'+rw[2]+'</span>';
+  else{d.innerHTML='<span class="lab">'+rw[0]+'</span><span class="arr" data-d="-1">◀</span><span class="val">'+rw[1]+(i===4?giftChip(c.item):'')+'</span><span class="arr" data-d="1">▶</span><span class="cnt">'+rw[2]+'</span>';
    d.querySelectorAll('.arr').forEach(a=>a.onclick=ev=>{ev.stopPropagation();CU.row=i;change(+a.dataset.d)});d.onclick=()=>{CU.row=i;renderCustom()}}
   box.appendChild(d)});
  if(keep||CU.row===0)$('nameInput').focus();
@@ -569,7 +576,7 @@ function startMap(){const tok=++mapTok;const step=now=>{if(tok!==mapTok||!(mode=
   if(mode==='town'&&now>chatAt){chatAt=now+5000+Math.random()*4000;const vis=[0,1,2,3,4,5,6,7].filter(k=>(k<7?S.best[k]:S.quests.master)&&k!==S.loc&&Math.abs(HOUSE[k][0]-CAM[0]-VW/2)<VW/2-2&&Math.abs(HOUSE[k][1]-CAM[1]-VH/2)<VH/2-1);
    if(vis.length)bubble(vis[Math.floor(Math.random()*vis.length)],now)}
   drawMap(now);requestAnimationFrame(step)};requestAnimationFrame(step)}
-function townUI(){guide();$('btnOver').classList.toggle('hot',OVER);mapMe=toCanvas(face(S.courier),1);const dn=S.best.filter(Boolean).length;$('pips').innerHTML=S.best.map(b=>'<i'+(b?' class="on"':'')+'></i>').join('');$('progText').textContent='소포 8개 중 '+dn+'개 배달';const cf=$('capFace');cf.innerHTML='';cf.appendChild(toCanvas(face(S.courier),2));
+function townUI(){$('btnCustom').classList.toggle('dot',unseenGifts().length>0);guide();$('btnOver').classList.toggle('hot',OVER);mapMe=toCanvas(face(S.courier),1);const dn=S.best.filter(Boolean).length;$('pips').innerHTML=S.best.map(b=>'<i'+(b?' class="on"':'')+'></i>').join('');$('progText').textContent='소포 8개 중 '+dn+'개 배달';const cf=$('capFace');cf.innerHTML='';cf.appendChild(toCanvas(face(S.courier),2));
  $('stampCount').textContent=Object.keys(S.quests).length+'/'+QUESTS.length;
  [['icBook',G.icBook],['icMe',face(S.courier)],['icMap',G.icMap]].forEach(([id,g])=>{const b=$(id);b.innerHTML='';b.appendChild(toCanvas(g,2))})}
 function mapHit(e){if(OVER||!CAM)return null;const c=$('map'),r=c.getBoundingClientRect(),q=c.width/r.width,wx=(e.clientX-r.left)*q+Math.round(CAM[0]*TS),wy=(e.clientY-r.top)*q+Math.round(CAM[1]*TS);
