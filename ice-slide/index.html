@@ -215,7 +215,7 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
   <h2>배달 수첩</h2>
   <h3>주소록 · 배달한 집을 누르면 다시 찾아갑니다</h3>
   <div id="cards"></div>
-  <h3>우표 · 두루 씨가 남긴 숙제입니다. 집에 배달하러 들어가서, 적힌 대로 해 보면 받습니다</h3>
+  <h3>우표 · 두루 씨가 남긴 숙제입니다. 집에 배달하러 들어가서, 두루 씨의 말대로 한다면 선물을 받을 수 있을지도?</h3>
   <div id="quests"></div>
   <p class="keys"><span class="key">←</span><span class="key">↑</span><span class="key">↓</span><span class="key">→</span>집 고르기 <span class="key">Enter</span>찾아가기</p>
   <div class="row" style="margin-top:14px"><button class="pill big" id="bookClose2"><span class="key">Esc</span>수첩 덮기</button></div>
@@ -373,7 +373,7 @@ const TUT=[{key:'ArrowRight',t:"오른쪽으로 가 보게. → 방향키를 누
  {key:'ArrowDown',t:"봤지? 한번 미끄러지면 못 멈춰. 멈추려면 부딪혀야 하네. 이번엔 ↓ 방향키."},
  {key:'ArrowLeft',t:"저기 다홍색이 문 앞일세. ← 방향키로 가 보게."},
  {key:'z',t:"지나가는 건 배달이 아니야. 문 앞에 서야지. Z 키를 눌러 한 수 되돌리게."},
- {key:null,t:"이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 R 키로 처음부터."}];
+ {key:null,t:"이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 R 키로 처음부터. 참, 가장 빠르게 문 앞에 도착하면 별이 세 개일세."}];
 const RATE=[["도착은 했군. 배달부는 도착이 반일세.","쓸 만하군. 두루 씨 첫날보다는 훨씬 낫네.","군더더기가 없군. 사십 년 차인 줄 알았네."],
  ["빵이 좀 식었지만 괜찮아요. 왔으니까!","제법 빨리 왔네요. 빵이 아직 따뜻해요.","어머, 갓 구운 그대로네. 오븐에서 바로 온 줄 알았어요."],
  ["눈사람을 다 치고 왔다!","눈사람을 몇 개만 쳤어요. 잘했어요.","하나도 안 헤맸어! 서른세 개 사이로!"],
@@ -443,8 +443,10 @@ const QUESTS=[
  {id:'mayor',t:'이장님 발견',hidden:true,hint:'"호수 아래쪽 눈더미에서 가끔 기침 소리가 난다. 부딪혀 보면 안다."',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',gf:[MAYOR],gn:'이장님',line:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가. 꺼내 주진 말게, 이제 정들었어."},
  {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'"어느 집에서도 한 수를 낭비하지 않으면, 차를 끓여 두겠네."',cond:'모든 집에서 별 세 개 받기',item:'oldscarf',gf:[DURU],gn:'두루 씨',line:"이건 자네가 매게. 나는 이제 안 나가니까.",pre:END_HIDDEN,note:"아홉 번째 얼굴이 주소록에 열렸습니다."},
 ];
-const HOW={snowman:['3 쌍둥이네','눈사람 하나를 골라 열 번 부딪히기'],lost:['아무 집','문 앞에 멈추지 않고 세 번 지나가기 (한 집에서)'],short:['3번 집부터','별 세 개 받기 (목표 이동 수 안에 배달)'],noundo:['3번 집부터','되돌리기(Z)를 쓰지 않고 배달하기'],
- fountain:['2 빵집','가운데 분수대에 세 번 부딪히기'],thirtythree:['5 언덕 집','코가 다홍색인 덤불에 부딪히기'],mayor:['7 호수','맨 아랫줄, 얼굴이 보이는 눈더미에 부딪히기'],master:['모든 집','여덟 집 모두 별 세 개 받기']};
+const HOW={snowman:['3 쌍둥이네','"눈사람 하나를 골라 열 번 부딪혀 보게. 좋아할 걸세."'],lost:['아무 집','"문 앞에 서지 말고 세 번 지나쳐 보게. 한 집에서 말일세."'],
+ short:['3번 집부터','"목표 이동 수 안에 배달해서 별 세 개를 받아 보게."'],noundo:['3번 집부터','"되돌리기(Z) 없이 한 번에 배달해 보게."'],
+ fountain:['2 빵집','"가운데 분수대에 세 번 부딪혀 보게. 나도 그랬네."'],thirtythree:['5 언덕 집','"코가 다홍색인 덤불이 있을 걸세. 부딪혀 보게."'],
+ mayor:['7 호수','"맨 아랫줄에 얼굴이 보이는 눈더미가 있네. 부딪혀 보게."'],master:['모든 집','"여덟 집 모두 별 세 개를 받아 보게. 차를 끓여 두겠네."']};
 const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
 /* ---------- 저장 ---------- */
@@ -587,7 +589,7 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
  x.fillRect((PL[0]-1.5)*TS,(PL[1]-1.5)*TS,3*TS,3*TS);
  if(plow){x.fillStyle='#ebebeb';x.fillRect(22.62*TS,17*TS-24,0.66*TS,48);x.fillStyle='#fff';road(DETOUR[0],DETOUR[1]);road(DETOUR[1],DETOUR[2]);road(DETOUR[2],DETOUR[3]);x.drawImage(tiles.machine,Math.round(22.95*TS-24),17*TS-24,TS,TS)}
  if(!west){x.drawImage(tiles.icerock,Math.round(8.7*TS-24),11*TS-24,TS,TS);x.drawImage(tiles.icerock,Math.round(7.9*TS-24),11*TS-18,TS,TS)}
- DECOR.forEach(([dx,dy,t])=>{if(plow&&t==='machine')return;const px=Math.round(dx*TS-24),py=Math.round(dy*TS-24);x.drawImage(tiles[t],px,py,TS,TS);if(OVER)return;const inf=decorInfo(dx,dy,t),mark=inf.q&&!S.quests[inf.q]&&S.best[0];
+ DECOR.forEach(([dx,dy,t])=>{if(plow&&t==='machine')return;const px=Math.round(dx*TS-24),py=Math.round(dy*TS-24);x.drawImage(tiles[t],px,py,TS,TS);if(OVER)return;const inf=decorInfo(dx,dy,t),mark=false;
   if(mark){x.fillStyle=COL.r;x.fillRect(px+15,py-22,18,18);x.fillStyle='#fff';x.fillRect(px+21,py-18,6,2);x.fillRect(px+25,py-16,2,4);x.fillRect(px+23,py-13,2,3);x.fillRect(px+23,py-8,2,2)}
   HIT.push({x:px,y:py-(mark?24:0),w:TS,h:TS+(mark?24:0),fn:()=>guide(inf.txt,inf.q?8000:4200)})});
  x.textAlign='center';x.font='500 '+Math.round(13/sc)+'px "DM Mono","Pretendard Variable",sans-serif';
