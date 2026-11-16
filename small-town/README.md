@@ -1,10 +1,9 @@
-# 작은 마을 설계
+# 할머니의 마을 노트
 
 할머니가 남긴 노트를 들고, 의뢰인의 빈 땅에 조각을 놓아 마을을 지어 주는 배치 퍼즐 게임.
 
 - 설치할 것 없는 순수 웹 파일이다. `index.html`을 웹 서버로 열면 된다.
-- 주소: https://jicongjy.github.io/games/small-town/
-- 내 컴퓨터에서 열기: 레포 루트에서 `python3 -m http.server 4173` 실행 후 http://localhost:4173/small-town/
+- 내 컴퓨터에서 열기: `python3 -m http.server 4173` 실행 후 http://localhost:4173
 - 기획 내용은 `docs/기획.md`, 숫자와 대사는 `js/data.js`에 있다.
 - 난이도 확인: `node tools/sim.js`
 
