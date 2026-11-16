@@ -436,17 +436,17 @@ const SPECIAL={'1:4,3':'fountain','6:4,8':'mayorBank','4:7,4':'hedgeSnow'};
 const QUESTS=[
  {id:'snowman',t:'눈사람의 친구',hidden:true,hint:'"쌍둥이네 눈사람은 열 번쯤 부딪혀 주면 웃는다."',cond:'같은 눈사람에 열 번 부딪히기',item:'carrot',g:2,line:"눈사람이 배달부님 좋대요. 코 하나 드릴게요."},
  {id:'lost',t:'길치',hidden:true,hint:'"문 앞을 세 번 지나치면 온 마을에 소문이 난다. 한 집에서 세 번."',cond:'한 집에서 문 앞을 세 번 지나치기',item:'cap',g:0,line:"문 앞을 세 번 지나쳤다고 소문이 났네. 이 모자라도 쓰게."},
- {id:'short',t:'지름길',cond:'쌍둥이네부터, 별 세 개 받기',item:'loupe',g:4,line:"그 길은 내 지도에도 없는데. 이거 쓰고 다시 보여 줘 봐."},
- {id:'noundo',t:'뒤돌아보지 않기',cond:'"쌍둥이네부터, 한 번도 물리지 않고 배달해 보게."',item:'bucket',g:6,line:"...",note:"낚시꾼이 말없이 모자를 씌워 줍니다."},
+ {id:'short',t:'지름길',cond:'어느 집에서든 별 세 개 받기',item:'loupe',g:4,line:"그 길은 내 지도에도 없는데. 이거 쓰고 다시 보여 줘 봐."},
+ {id:'noundo',t:'뒤돌아보지 않기',cond:'어느 집에서든 되돌리기 없이 배달하기',item:'bucket',g:6,line:"...",note:"낚시꾼이 말없이 모자를 씌워 줍니다."},
  {id:'fountain',t:'분수대의 전통',hidden:true,hint:'"빵집 앞 분수대. 첫날 세 번 빠졌다. 자네도 해 보게."',cond:'빵집 앞 분수대에 세 번 부딪히기',item:'towel',g:0,line:"자네도 분수대에 세 번 빠졌나. 전통이 이어지는군."},
  {id:'thirtythree',t:'서른세 번째 눈사람',hidden:true,hint:'"언덕 집 덤불 중 하나는 덤불이 아니다. 코를 보면 안다."',cond:'언덕 집 근처에 숨은 눈사람 찾기',item:'pin',g:2,line:"거봐, 서른세 개랬잖아! ...언덕까지 굴러간 거였네."},
  {id:'mayor',t:'이장님 발견',hidden:true,hint:'"호수 아래쪽 눈더미에서 가끔 기침 소리가 난다. 부딪혀 보면 안다."',cond:'호수 가장자리 눈더미에 부딪히기',item:'earmuffs',gf:[MAYOR],gn:'이장님',line:"작년부터 여기 있었네. 옆 마을인 줄 알았지 뭔가. 꺼내 주진 말게, 이제 정들었어."},
  {id:'master',t:'사십 년의 솜씨',hidden:true,hint:'"어느 집에서도 한 수를 낭비하지 않으면, 차를 끓여 두겠네."',cond:'모든 집에서 별 세 개 받기',item:'oldscarf',gf:[DURU],gn:'두루 씨',line:"이건 자네가 매게. 나는 이제 안 나가니까.",pre:END_HIDDEN,note:"아홉 번째 얼굴이 주소록에 열렸습니다."},
 ];
-const HOW={snowman:['3 쌍둥이네','"눈사람 하나를 골라 열 번 부딪혀 보게. 좋아할 걸세."'],lost:['아무 집','"문 앞에 서지 말고 세 번 지나쳐 보게. 한 집에서 말일세."'],
- short:['3번 집부터','"목표 이동 수 안에 배달해서 별 세 개를 받아 보게."'],noundo:['3번 집부터','"되돌리기(Z) 없이 한 번에 배달해 보게."'],
- fountain:['2 빵집','"가운데 분수대에 세 번 부딪혀 보게. 나도 그랬네."'],thirtythree:['5 언덕 집','"코가 다홍색인 덤불이 있을 걸세. 부딪혀 보게."'],
- mayor:['7 호수','"맨 아랫줄에 얼굴이 보이는 눈더미가 있네. 부딪혀 보게."'],master:['모든 집','"여덟 집 모두 별 세 개를 받아 보게. 차를 끓여 두겠네."']};
+const HOW={snowman:['3 쌍둥이네','"쌍둥이네 눈사람은 외로움을 탄다네. 열 번쯤 들이받아 주면 웃더군."'],lost:['아무 집','"문 앞에 멈추지 말고 휙 지나쳐 버리게. 한 집에서 세 번이면 자네도 나처럼 길치일세."'],
+ short:['아무 집','"돌아가지 말고 가장 빠른 길로 배달해 보게. 나는 그 지름길을 사십 년 찾았네."'],noundo:['아무 집','"낚시꾼은 뒤돌아보는 사람을 안 좋아하네. 어느 집에서든 한 번도 되돌리지 말고 배달해 보게."'],
+ fountain:['2 빵집','"빵집 마당 분수대는 내 첫날의 원수일세. 세 번 빠졌지. 자네도 인사나 하고 오게."'],thirtythree:['5 언덕 집','"쌍둥이는 눈사람이 서른세 개라고 우기더군. 언덕 집 마당에 코 달린 덤불이 있던데, 설마."'],
+ mayor:['7 호수','"작년에 미끄러진 이장님을 아직 아무도 못 찾았다네. 호수 맨 아랫줄 눈더미가 가끔 기침을 하던데."'],master:['모든 집','"어느 집에서도 한 수를 낭비하지 않으면, 차를 끓여 두겠네."']};
 const QBY=Object.fromEntries(QUESTS.map(q=>[q.id,q]));
 
 /* ---------- 저장 ---------- */
@@ -560,7 +560,7 @@ const ROUTE=[[PL,[10,11]],[PL,[16,5],[20,5]],[PL,[16,5],[20,5],[26,5]],[PL,[22,1
 const DETOUR=[[22.1,17],[22.1,17.7],[23.8,17.7],[23.8,17]];
 const BR={ArrowUp:[1,2],ArrowRight:[3,4],ArrowDown:[5,6],ArrowLeft:[7]},BRNAME={ArrowUp:'↑ 빵집 길',ArrowRight:'→ 가로등 길',ArrowDown:'↓ 호수 길',ArrowLeft:'← 빈집'},DIFF={ArrowUp:'쉬움',ArrowRight:'보통',ArrowDown:'어려움',ArrowLeft:'가장 어려움'};
 const houseOff=G.house.map(r=>r.map(c=>c==='r'?'#':c)),houseOn=G.house.map(r=>r.slice());[[4,8],[5,8],[4,9],[5,9]].forEach(([x,y])=>houseOn[y][x]='r');
-const DECOR=[[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13.6,9.6,'lamp'],[11.6,9.3,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[28.6,4.1,'snowman'],[29.4,4.6,'snowman'],[27.5,6.3,'snowman'],
+const DECOR=[[25,10,'lamp'],[31,10,'lamp'],[6.5,10,'lamp'],[13.6,9.6,'lamp'],[11.6,9.3,'mailbox'],[18,4,'crate'],[17.6,6.2,'crate'],[23,4,'snowman'],[23.8,4.3,'snowman'],[29.6,3.4,'snowman'],[30.4,4.3,'snowman'],[27.5,6.3,'snowman'],
  [30.2,9.6,'hedge'],[30.6,12.3,'hedge'],[25.4,12.4,'hedge'],[18,16,'machine'],[28.6,16,'icerock'],[29.4,18.2,'icerock'],[27,19.3,'icerock'],[24.4,19.4,'icerock'],[30.5,19.8,'icerock'],
  [5,5,'hedge'],[9,6.3,'hedge'],[12.4,3.2,'hedge'],[2.5,7.6,'snowman'],[6,17,'icerock'],[11,18.4,'hedge'],[3,15,'hedge'],[12.3,15,'snowman'],[13.2,7.6,'lamp'],[22,1.6,'hedge'],[30,1.8,'icerock'],[8,20,'lamp'],[21,20.3,'hedge'],[16,9.7,'fountain']];
 const SIGNS=[{d:'ArrowUp',x:16,y:7.55,n:'빵집 길',lv:1,t:'쉬움'},{d:'ArrowRight',x:19.05,y:11,n:'가로등 길',lv:2,t:'보통'},{d:'ArrowDown',x:16,y:13.8,n:'호수 길',lv:3,t:'어려움'},{d:'ArrowLeft',x:13.2,y:11,n:'빈집',lv:3,t:'가장 어려움'}];
@@ -574,7 +574,7 @@ function decorInfo(dx,dy,t){
 const nodePos=n=>n===PLAZA?PL:HOUSE[n];
 function route(n){const r=ROUTE[n].slice();if(n===6&&S.best[5])r.splice(3,0,...DETOUR);return r}
 function mapPath(a,b){const A=route(a),B=route(b);let c=0;while(c<A.length&&c<B.length&&A[c][0]===B[c][0]&&A[c][1]===B[c][1])c++;return A.slice(c-1).reverse().concat(B.slice(c))}
-let CAM=null,TOK=null,BUB=[],mapMe=null,mapTok=0,chatAt=0,OVER=false;
+let KIDS=null,CAM=null,TOK=null,BUB=[],mapMe=null,mapTok=0,chatAt=0,OVER=false;
 function overview(on){if(mode!=='town')return;OVER=on==null?!OVER:on;$('btnOver').classList.toggle('hot',OVER)}
 const camTarget=p=>[Math.max(0,Math.min(WW-VW,p[0]-VW/2)),Math.max(0,Math.min(WH-VH,p[1]-VH/2))];
 const TIPS={snowman:"쌍둥이네 눈사람은 자꾸 부딪히면 좋아한다더군.",lost:"문 앞을 세 번 지나친 배달부도 있었지. 소문이 났어.",short:"지도 할머니는 지름길 아는 배달부를 좋아하네.",noundo:"낚시꾼은 뒤돌아보지 않는 사람을 높이 치지.",
@@ -593,7 +593,14 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
   if(mark){x.fillStyle=COL.r;x.fillRect(px+15,py-22,18,18);x.fillStyle='#fff';x.fillRect(px+21,py-18,6,2);x.fillRect(px+25,py-16,2,4);x.fillRect(px+23,py-13,2,3);x.fillRect(px+23,py-8,2,2)}
   HIT.push({x:px,y:py-(mark?24:0),w:TS,h:TS+(mark?24:0),fn:()=>guide(inf.txt,inf.q?8000:4200)})});
  x.textAlign='center';x.font='500 '+Math.round(13/sc)+'px "DM Mono","Pretendard Variable",sans-serif';
- HOUSE.forEach(([hx,hy],k)=>{const open=!S.best[k]&&unlocked(k);paint(x,S.best[k]?houseOn:houseOff,Math.round(hx*TS-45),Math.round(hy*TS-24-84),6);
+ const tm=now||performance.now();
+ HOUSE.forEach(([hx,hy],k)=>{const open=!S.best[k]&&unlocked(k),lx=Math.round(hx*TS-45),ly=Math.round(hy*TS-24-84);
+  if(S.best[k]){const pu=0.5+0.5*Math.sin(tm/900+k*1.7),gx=lx+30,gy=ly+54,r=92+pu*14,g=x.createRadialGradient(gx,gy,4,gx,gy,r);
+   g.addColorStop(0,'rgba(255,170,60,'+(0.50+pu*0.12)+')');g.addColorStop(0.45,'rgba(255,120,50,'+(0.20+pu*0.06)+')');g.addColorStop(1,'rgba(255,120,50,0)');x.fillStyle=g;x.fillRect(gx-r,gy-r,r*2,r*2);
+   const g2=x.createRadialGradient(lx+51,ly+96,2,lx+51,ly+96,46);g2.addColorStop(0,'rgba(255,170,60,'+(0.42+pu*0.1)+')');g2.addColorStop(1,'rgba(255,170,60,0)');x.fillStyle=g2;x.fillRect(lx+5,ly+80,92,34)}
+  paint(x,S.best[k]?houseOn:houseOff,lx,ly,6);
+  if(S.best[k])for(let i=0;i<4;i++){const t=((tm/3000)+i/4+k*0.13)%1,sz=6+Math.round(t*3)*3,px=lx+69+Math.round((Math.sin(t*5+i*2+k)*5+t*14)/3)*3,py=ly+8-Math.round(t*54/3)*3;
+   x.globalAlpha=(1-t)*0.85;x.fillStyle='#8f8f8f';x.fillRect(px-sz/2,py-sz/2,sz,sz);x.fillStyle='#fff';x.fillRect(px-sz/2+3,py-sz/2+3,Math.max(0,sz-6),Math.max(0,sz-6));x.globalAlpha=1}
   x.fillStyle=open?COL.r:S.best[k]?COL['#']:'#999';x.fillText((k+1)+' '+RES[k].place,hx*TS,hy*TS+(OVER?58:44));
   if(open){x.fillStyle=COL.r;[[0,0,15],[3,3,9],[6,6,3]].forEach(([ox,oy,w])=>x.fillRect(Math.round(hx*TS-7+ox),Math.round(hy*TS-24-102+oy),w,3))}
   HIT.push({x:hx*TS-50,y:hy*TS-24-90,w:100,h:140,fn:()=>{if(S.best[k]||unlocked(k))goTo(k);else toast(k===7?'빈집은 맨 마지막이다. 다른 소포부터 다 돌리고 오자.':'저 집은 아직 차례가 아니다. 같은 길 앞집부터 가자.')}})});
@@ -607,6 +614,9 @@ function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==
    x.textAlign='left';x.fillText('난이도',bx+15,by+45);for(let i=0;i<3;i++){x.fillStyle=i<g.lv?(lock?'#fff':COL.r):'#555';x.fillRect(bx+56+i*13,by+36,9,9)}
    x.fillStyle='#fff';x.fillText(g.t,bx+100,by+45);
    HIT.push({x:bx-20,y:by-16,w:w+40,h:h+44,fn:()=>goDir(g.d)})});x.textAlign='center'}
+ if(S.best[2]){if(!KIDS)KIDS=RES[2].f.map(sp=>toCanvas(face(sp),2));KIDS.forEach((c,i)=>{const ph=tm/1100+i*2.4,kx=Math.round((27.75+i*0.9+Math.sin(ph)*0.42)*TS),hop=Math.abs(Math.sin(tm/170+i*1.3))*7,ky=Math.round(3.72*TS-hop);
+   x.fillStyle='rgba(0,0,0,.10)';x.fillRect(kx-10,Math.round(3.72*TS)+44,20,3);x.fillStyle=COL['#'];x.fillRect(kx-6,ky+30,12,9);const st=Math.sin(tm/170+i*1.3)>0?2:-2;x.fillRect(kx-6+st,ky+39,4,5);x.fillRect(kx+2-st,ky+39,4,5);
+   x.fillStyle=COL.r;x.fillRect(kx-6,ky+30,12,3);x.drawImage(c,kx-16,ky,32,32)})}
  x.drawImage(mapMe,Math.round(tp[0]*TS-24),Math.round(tp[1]*TS-24),TS,TS);
  x.font='500 14px "Pretendard Variable","Pretendard",sans-serif';BUB=BUB.filter(b=>b.until>now);
  if(!OVER)BUB.forEach(b=>{const[hx,hy]=HOUSE[b.k],w=x.measureText(b.t).width+20,bx=Math.round(hx*TS-w/2),by=Math.round(hy*TS-24-84-38);
@@ -715,7 +725,7 @@ function arrive(a){P.marks.push([a.fx,a.fy,a.tx,a.ty]);bump(a.tx+a.dx,a.ty+a.dy,
 function undo(){if(P.done||P.anim||!P.hist.length)return;const h=P.hist.pop();P.x=P.dx=h.x;P.y=P.dy=h.y;P.marks.length=h.marks;P.moves--;P.undo=true;hud()}
 function restart(){if(P.done||P.anim)return;const L=P.L;P.x=P.dx=L.sx;P.y=P.dy=L.sy;P.moves=0;P.hist=[];P.marks=[];P.undo=false;P.pass=0;hud()}
 function cleared(){P.done=true;const k=P.k;P.first=!S.best[k];S.best[k]=S.best[k]?Math.min(S.best[k],P.moves):P.moves;
- if(k>=2&&P.moves===MIN[k])award('short');if(k>=2&&!P.undo)award('noundo');
+ if(P.moves===MIN[k])award('short');if(!P.undo)award('noundo');
  if(S.best.every((b,i)=>b===MIN[i]))award('master');save();mode='clear';
  hud();$('clearBar').innerHTML='';const n=starsFor(k,P.moves),R=RES[k];$('toast').style.display='none';
  $('rKick').textContent='배달 완료 · '+(k+1)+' '+R.place;const st=$('rStars');st.innerHTML='';for(let i=0;i<3;i++)st.appendChild(toCanvas(G.star,4,i<n?COL.r:'#d4d4d4'));
