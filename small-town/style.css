@@ -805,3 +805,5 @@ button.pulse { animation: bob 1.2s steps(2) infinite; }
 .pg.lock { background: var(--paper-2); color: var(--ink-2); }
 .newpg .np-h { display: flex; align-items: center; gap: 8px; font-size: 16px; }
 .newpg .np-h img { width: 32px; height: 32px; object-fit: contain; }
+.cell.canwork.pulse { outline: 3px solid #ffe07a; background: rgba(255, 224, 122, 0.4); }
+.v-work .memo.coach { margin: 0; }
