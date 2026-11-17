@@ -499,11 +499,14 @@
       phase: 'play', found: [], news: [], fx: [], at: {},
       todo: {}, todoNew: [], todoList: (c.todo || []).map(function (t) { return { id: t.id, gold: t.gold }; }),
       stat: { grain: 0, baked: 0, bought: 0, dayBread: 0 },
-      market: null, night: null, won: false, failed: false
+      market: null, night: null, won: false, failed: false, event: null, eventsLeft: []
     };
     for (var i = 0; i < 25; i++) s.board.push(null);
     var t = quest.terrain || {};
     for (var key in t) s.board[+key] = { k: 't', t: t[key] };
+    var ev = (c.events || []).slice();
+    for (var e = ev.length - 1; e > 0; e--) { var j = rnd(s, e + 1), tmp = ev[e]; ev[e] = ev[j]; ev[j] = tmp; }
+    s.eventsLeft = ev;
     for (var id in c.start) s.inv[id] = c.start[id];
     return s;
   };
@@ -549,11 +552,25 @@
   W.canWork = function (s, cell) {
     var b = s.board[cell];
     if (s.phase !== 'play' || !isB(b)) return '거기는 일할 데가 아니에요.';
-    if (!W.WORKABLE[b.id]) return ST.PIECES[b.id].name + '에는 일꾼을 보내지 않아요. 옆에 무엇을 짓느냐가 중요해요.';
+    if (!W.WORKABLE[b.id]) return (ST.PIECES[b.id].work && ST.PIECES[b.id].work.idle) || ST.PIECES[b.id].name + '에는 일꾼을 보내지 않아요.';
     if (!W.idle(s)) return '오늘 일할 일꾼이 없어요. "하루 마치기"를 눌러요.';
     if (b.id === 'field' && b.w >= W.CAP) return '이 밭은 곡식이 가득 쌓였어요. 빵집에서 먼저 구워요.';
     if (b.id === 'bakery' && !W.takeable(s, cell)) return '옆 밭에 쌓인 곡식이 없어요. 밭에 먼저 일꾼을 보내요.';
     return '';
+  };
+  // 지금 빵집에 일꾼을 보내면 나오는 빵(덤 포함)
+  W.bakeOut = function (s, cell) {
+    var n = W.takeable(s, cell);
+    if (!n) return 0;
+    return n + (n >= 3 ? 1 : 0) + (adj(s, cell, 'mill') > 0 ? 1 : 0);
+  };
+  // 일꾼이 필요 없는 건물이 지금 옆 칸을 돕고 있는가
+  W.helping = function (s, cell) {
+    var b = s.board[cell];
+    if (!isB(b)) return false;
+    if (b.id === 'well') return adj(s, cell, 'field') > 0;
+    if (b.id === 'mill') return adj(s, cell, 'bakery') > 0;
+    return false;
   };
   W.work = function (s, cell) {
     if (W.canWork(s, cell)) return false;
@@ -630,11 +647,37 @@
     s.day++;
     s.at = {};
     s.stat.dayBread = 0;
+    s.workers = s.workers.filter(function (w) { return !w.guest; });
     s.workers.forEach(function (w) { w.used = !!w.hungry; w.fresh = false; });
     todos(s);
+    if (s.phase === 'play') morning(s);
     return true;
   };
-  W.next = function (s) { if (s.phase === 'market') s.phase = 'play'; };
+  // 주마다 사흘째 아침에 깜짝 이벤트가 하나 생긴다
+  function morning(s) {
+    if ((s.day - 1) % s.perWeek === 2 && s.eventsLeft.length) { s.event = s.eventsLeft.shift(); s.phase = 'event'; }
+  }
+  W.next = function (s) { if (s.phase === 'market') { s.phase = 'play'; morning(s); } };
+  function fields(s) { var o = []; for (var i = 0; i < 25; i++) if (isB(s.board[i]) && s.board[i].id === 'field') o.push(s.board[i]); return o; }
+  // 이벤트 선택지: cost 내는 것(모자라면 못 고름), give 받는 것, loseGrain 밭에서 사라지는 곡식,
+  // rain 모든 밭에 곡식 1개, card 받는 조각, guest 오늘만 일하는 일꾼
+  W.canChoose = function (s, ch) {
+    for (var k in (ch.cost || {})) if ((s[k] || 0) < ch.cost[k]) return false;
+    return true;
+  };
+  W.choose = function (s, ch) {
+    if (s.phase !== 'event' || !ch || !W.canChoose(s, ch)) return false;
+    begin(s);
+    var k;
+    for (k in (ch.cost || {})) s[k] -= ch.cost[k];
+    for (k in (ch.give || {})) s[k] += ch.give[k];
+    if (ch.loseGrain) { var n = ch.loseGrain; fields(s).sort(function (a, b) { return b.w - a.w; }).forEach(function (f) { var d = Math.min(n, f.w); f.w -= d; n -= d; }); }
+    if (ch.rain) fields(s).forEach(function (f) { f.w = Math.min(W.CAP, f.w + 1); });
+    if (ch.card) s.inv[ch.card] = (s.inv[ch.card] || 0) + 1;
+    if (ch.guest) s.workers.push({ t: 'guest', used: false, guest: true });
+    s.event = null; s.phase = 'play';
+    return true;
+  };
 
   W.daysLeft = function (s) { return s.perWeek - ((s.day - 1) % s.perWeek); };
   W.meets = function (s, g) {

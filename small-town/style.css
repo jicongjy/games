@@ -749,15 +749,25 @@ button.big { min-height: 54px; font-size: 18px; }
 .wtodo .rw img { width: 14px; height: 14px; object-fit: contain; }
 .wmsg { color: var(--paper); font-size: 12px; line-height: 1.4; min-height: 1.4em; text-align: center; word-break: keep-all; }
 .wmsg.good { color: #ffe07a; }
-.cell .wst { position: absolute; left: 1px; bottom: 1px; display: inline-flex; align-items: center; gap: 1px; background: rgba(253, 246, 227, 0.95); border: 2px solid var(--line); padding: 0 3px 0 1px; font-size: 12px; line-height: 1.2; color: var(--ink); pointer-events: none; }
-.cell .wst img { width: 12px; height: 12px; object-fit: contain; }
-.cell .wst.full { background: #ffe07a; }
+.cell .wst { position: absolute; left: 2px; right: 2px; bottom: 2px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 2px solid var(--line); pointer-events: none; }
+.cell .wst i { display: block; aspect-ratio: 1; background: rgba(253, 246, 227, 0.55); }
+.cell .wst i.on { background: var(--paper); }
+.cell .wst i img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.cell .wst.full i.on { background: #ffe07a; }
+.cell .wst.none { opacity: 0.75; }
+.cell .bst, .cell .hst { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; background: rgba(253, 246, 227, 0.7); border: 2px solid var(--line); padding: 0 4px 0 2px; font-size: 11px; line-height: 1.3; color: var(--ink-2); pointer-events: none; }
+.cell .bst img { width: 12px; height: 12px; object-fit: contain; }
+.cell .bst.on { background: #ffe07a; color: var(--ink); font-size: 13px; }
+.cell .hst { padding: 0 3px; font-size: 10px; }
+.cell .hst.on { background: #eaf6ea; color: var(--ok); border-color: var(--ok); }
 .cell .wk { position: absolute; right: 1px; top: 1px; width: 44%; height: 44%; background: rgba(253, 246, 227, 0.92); border: 2px solid var(--line); border-radius: 50%; overflow: hidden; pointer-events: none; }
 .cell .wk img { width: 100%; height: 100%; object-fit: contain; }
 .cell.canwork { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: -3px; }
 .cell .pv img { width: 12px; height: 12px; }
-.winv { display: flex; gap: 6px; min-height: 64px; }
-.winv .card { flex: 1 1 0; max-width: 25%; min-height: 64px !important; }
+.winv { display: flex; gap: 6px; min-height: 84px; }
+.winv .card { flex: 1 1 0; max-width: 34%; min-height: 84px !important; }
+.winv .card .tag2 small { font-size: 10px; word-break: keep-all; }
+.winv .card .tag2 b { font-size: 12px !important; }
 .winv .card img { width: 34px !important; height: 34px !important; }
 .winv .card .nm { font-size: 12px !important; }
 .winv .none { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--paper); font-size: 12px; border: 2px dashed rgba(255, 255, 255, 0.3); }

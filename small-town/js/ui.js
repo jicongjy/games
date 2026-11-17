@@ -676,7 +676,7 @@
   }
 
   // ───── 일꾼 규칙의 짓기 화면 ─────
-  var WHO = { hero: 'hero', donkey: 'donkey', res: 'i_people' };
+  var WHO = { hero: 'hero', donkey: 'donkey', res: 'i_people', guest: 'i_people' };
   function knownPages() { return save.pages || (save.pages = []); }
   function todoOf(q, id) {
     for (var k = 0; k < q.work.todo.length; k++) if (q.work.todo[k].id === id) return q.work.todo[k];
@@ -708,6 +708,8 @@
   function wtag(id) {
     var t = ST.PIECES[id].work;
     if (!t) return '';
+    // 노트에서 이미 찾은 조합이면 정확한 효과를 보여 준다
+    if (t.page && t.known && knownPages().indexOf(t.page) >= 0) t = t.known;
     return '<span class="tag2">' + (t.when ? '<small>' + esc(t.when) + '</small>' : '') +
       '<b>' + (t.res ? img(ST.RES[t.res].icon) + t.n : esc(t.text)) + '</b></span>';
   }
@@ -730,6 +732,18 @@
         '<button class="primary wide" data-a="judge">' + esc(q.who) + '에게 가기</button></div>';
     }
     var wk = s.week, dw = (s.day - 1) % s.perWeek, need = s.quota[wk];
+    if (s.phase === 'event') {
+      var e = ST.WEVENTS[s.event];
+      h += '<div class="light center lead">' + (wk + 1) + '주차 · ' + (dw + 1) + '일째 아침</div>';
+      h += '<div class="panel scene ev"><div class="tag">무슨 일이 생겼다</div><div class="art">' +
+        e.art.map(function (a) { return e.piece ? img(a, 'day', 16, 'scnp') : img(a, null, null, 'scn'); }).join('') + '</div>' +
+        '<h2>' + esc(e.title) + '</h2><p>' + esc(e.text) + '</p></div>';
+      h += '<div class="payrow" style="justify-content:center"><span>' + img('i_bread') + '빵 ' + s.bread + '개</span><span>' + img('i_gold') + '금화 ' + s.gold + '개</span></div>';
+      e.choices.forEach(function (ch, n) {
+        h += '<button class="choice" data-a="wchoose" data-i="' + n + '"' + (W.canChoose(s, ch) ? '' : ' disabled') + '><b>' + esc(ch.label) + '</b><span>' + esc(ch.note || '') + '</span></button>';
+      });
+      return h;
+    }
     if (s.phase === 'market') {
       var m = s.market;
       h += '<div class="banner"><div class="light sm">' + (m.week + 1) + '번째 장날</div><h1 class="light">장날이다!</h1></div>';
@@ -766,6 +780,10 @@
     var msg = V.msg, good = V.good;
     if (!msg && s.day === 1 && !s.stat.grain && !(save.stars[q.id] > 0)) msg = sel === null && !s.board.some(function (x) { return x && x.k === 'b'; })
       ? '아래에서 조각을 고르고, 땅의 빈칸을 눌러 지어요.' : '';
+    if (!msg && !s.stat.baked && s.stat.grain && idle && !(save.stars[q.id] > 0)) {
+      msg = s.board.some(function (x, n) { return x && x.k === 'b' && x.id === 'bakery' && W.bakeOut(s, n); })
+        ? '밭에 곡식이 쌓였어요. 지금 바로 빵집을 눌러 구울 수 있어요.' : '';
+    }
     if (!msg && s.night && dw > 0 && idle === s.workers.length - s.workers.filter(function (w) { return w.used; }).length && !Object.keys(s.at).length) {
       var nt = [];
       if (s.night.ate) nt.push('주민이 빵 ' + s.night.ate + '개를 먹었어요');
@@ -783,8 +801,17 @@
         inner = img(c.id, q.ground, 16);
         hold = ' data-hold="' + c.id + '"';
         if (fx && fx.cell === i) cls += ' pop';
-        if (c.id === 'field' && c.w) {
-          inner += '<span class="wst' + (c.w >= W.CAP ? ' full' : '') + '">' + img('i_grain') + c.w + '</span>';
+        if (c.id === 'field') {
+          // 밭에 쌓인 곡식: 네 칸짜리 자루 줄. 찬 만큼 곡식 그림이 들어온다
+          inner += '<span class="wst' + (c.w >= W.CAP ? ' full' : '') + (c.w ? '' : ' none') + '">';
+          for (var k = 0; k < W.CAP; k++) inner += '<i' + (k < c.w ? ' class="on"' : '') + '>' + (k < c.w ? img('i_grain') : '') + '</i>';
+          inner += '</span>';
+        } else if (c.id === 'bakery') {
+          // 지금 일꾼을 보내면 나오는 빵
+          var bo = W.bakeOut(s, i);
+          inner += '<span class="bst' + (bo ? ' on' : '') + '">' + img('i_bread') + (bo ? '+' + bo : '0') + '</span>';
+        } else if (c.id === 'well' || c.id === 'mill') {
+          inner += '<span class="hst' + (W.helping(s, i) ? ' on' : '') + '">' + (W.helping(s, i) ? '돕는 중' : '쉬는 중') + '</span>';
         }
         if (s.at[i]) inner += '<span class="wk">' + img(WHO[s.at[i]]) + '</span>';
         else if (sel === null && idle && W.WORKABLE[c.id] && !W.canWork(s, i)) cls += ' canwork';
@@ -805,7 +832,7 @@
     if (!have.length) h += '<span class="none">놓을 조각이 없어요. 상인에게서 꾸러미를 사요.</span>';
     have.forEach(function (id) {
       h += '<button class="card' + (sel === id ? ' sel' : '') + '" data-a="wpiece" data-id="' + id + '" data-hold="' + id + '">' + img(id, null, 16) +
-        '<span class="nm">' + ST.PIECES[id].name + (s.inv[id] > 1 ? ' ×' + s.inv[id] : '') + '</span></button>';
+        '<span class="nm">' + ST.PIECES[id].name + (s.inv[id] > 1 ? ' ×' + s.inv[id] : '') + '</span>' + wtag(id) + '</button>';
     });
     h += '</div>';
     h += '<div class="row acts"><button class="small" data-a="wshop">상인</button><button class="small" data-a="wundo"' + (hist.length ? '' : ' disabled') + '>되돌리기</button>' +
@@ -1130,7 +1157,8 @@
       hist = []; sel = null; fx = null; V.msg = null; V.good = false;
       absorb(); render(); window.scrollTo(0, 0);
     },
-    wnext: function () { ST.work.next(G); render(); },
+    wnext: function () { ST.work.next(G); render(); window.scrollTo(0, 0); },
+    wchoose: function (d) { if (ST.work.choose(G, ST.WEVENTS[G.event].choices[+d.i])) { hist = []; absorb(); render(); window.scrollTo(0, 0); } },
     wshop: function () { V.shop = !V.shop; V.got = null; render(); },
     wbuy: function (d) {
       var got = ST.work.buy(G, ST.PACKS[+d.i]);

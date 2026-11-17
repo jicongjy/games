@@ -58,12 +58,15 @@
   for (var tk in TAG) ST.PIECES[tk].tag = TAG[tk];
   // 일꾼 규칙에서 쓰는 조각 설명. 조합(ST.PAGES)은 여기에 적지 않는다. 직접 찾아내는 것이라서다.
   var WORK = {
-    field: { desc: '일꾼을 보내면 곡식 1개가 밭에 쌓인다. 4개까지 쌓인다.', when: '일꾼 1명', res: 'grain', n: '+1' },
-    bakery: { desc: '일꾼을 보내면 옆 밭에 쌓인 곡식을 밭마다 1개씩 가져와 빵으로 굽는다.', when: '옆 밭마다', res: 'bread', n: '+1' },
+    field: { desc: '일꾼을 보내면 곡식 1개가 밭에 쌓인다. 4개까지 쌓이고, 날이 바뀌어도 사라지지 않는다.', when: '일꾼 1명', res: 'grain', n: '+1' },
+    bakery: { desc: '일꾼을 보내면 옆 밭에 쌓인 곡식을 밭마다 1개씩 가져와 빵으로 굽는다. 곡식이 쌓여 있기만 하면 같은 날에도 구울 수 있다.', when: '옆 밭마다', res: 'bread', n: '+1' },
     orchard: { desc: '일꾼을 보내면 과일을 따서 금화 2개를 번다.', when: '일꾼 1명', res: 'gold', n: '+2' },
-    house: { desc: '주민 1명이 이사 온다. 다음 날부터 일꾼이 된다. 주민은 저녁마다 빵 1개를 먹고, 못 먹으면 다음 날 쉰다.', when: '일꾼', res: 'people', n: '+1' },
-    well: { desc: '일꾼을 보내지 않는다. 옆에 무엇이 있느냐에 따라 쓸모가 생긴다.', text: '옆 칸을 돕는다' },
-    mill: { desc: '일꾼을 보내지 않는다. 옆에 무엇이 있느냐에 따라 쓸모가 생긴다.', text: '옆 칸을 돕는다' }
+    house: { desc: '주민 1명이 이사 온다. 다음 날부터 일꾼이 된다. 주민은 저녁마다 빵 1개를 먹고, 못 먹으면 다음 날 쉰다.', when: '일꾼', res: 'people', n: '+1',
+      idle: '집에는 일꾼을 보내지 않아요. 여기 사는 주민이 일꾼이에요.' },
+    well: { desc: '일꾼이 필요 없다. 밭 옆에 지으면 그 밭을 돕는다. 얼마나 돕는지는 지어 보면 안다.', when: '밭 옆에 지으면', text: '밭을 돕는다', page: 'wet', known: { when: '옆 밭', res: 'grain', n: '×2' },
+      idle: '우물은 일꾼이 필요 없어요. 밭 옆에 있으면 그 밭을 도와요.' },
+    mill: { desc: '일꾼이 필요 없다. 빵집 옆에 지으면 그 빵집을 돕는다. 얼마나 돕는지는 지어 보면 안다.', when: '빵집 옆에 지으면', text: '빵집을 돕는다', page: 'flour', known: { when: '옆 빵집이 구울 때', res: 'bread', n: '+1' },
+      idle: '방앗간은 일꾼이 필요 없어요. 빵집 옆에 있으면 그 빵집을 도와요.' }
   };
   for (var wk in WORK) ST.PIECES[wk].work = WORK[wk];
   // 할머니 노트의 쪽. 조각 a와 b를 붙여 지어 처음 효과가 나면 채워진다. hint는 채우기 전에 보이는 글.
@@ -80,6 +83,21 @@
     { id: 'shop', name: '일터 꾸러미', cost: 4, sure: ['field'], or: ['mill', 'bakery'] },
     { id: 'town', name: '마을 꾸러미', cost: 4, sure: ['house'], or: ['house', 'orchard'] }
   ];
+  // 일꾼 규칙의 깜짝 이벤트. 주마다 사흘째 아침에 하나씩 나온다. 선택지의 뜻은 js/engine.js의 W.choose에 있다.
+  ST.WEVENTS = {
+    parcel: { art: ['grandma'], title: '할머니의 소포', text: '온천에서 소포가 왔다. 쪽지에는 "둘 중 하나만 가져라. 욕심내면 두부 준다."',
+      choices: [{ label: '빵 바구니', note: '빵 2개', give: { bread: 2 } }, { label: '동전 주머니', note: '금화 3개', give: { gold: 3 } }] },
+    donkey: { art: ['donkey'], title: '두부의 간식 시간', text: '두부가 밭에 머리를 박고 있다. 꼬리가 신났다.',
+      choices: [{ label: '당근으로 달랜다', note: '금화 1개', cost: { gold: 1 } }, { label: '그냥 둔다', note: '밭에 쌓인 곡식 2개 잃음', loseGrain: 2 }] },
+    neighbor: { art: ['hero'], title: '빵 냄새를 맡고 온 손님', text: '옆 마을 사람이 코를 킁킁거리며 찾아왔다. "그 빵, 저한테도 파시죠?"',
+      choices: [{ label: '빵을 판다', note: '빵 2개 → 금화 6개', cost: { bread: 2 }, give: { gold: 6 } }, { label: '인사만 한다', note: '아무 일 없음' }] },
+    rain: { art: ['field'], piece: true, title: '밤새 내린 비', text: '아침에 보니 밭이 반짝반짝하다. 비가 일을 대신 해 줬다.',
+      choices: [{ label: '좋았어!', note: '모든 밭에 곡식 1개', rain: true }] },
+    peddler: { art: ['donkey', 'crate'], title: '급한 상인', text: '떠돌이 상인이 숨을 헐떡인다. "우물 조각 하나 남았어요. 오늘만 금화 2개!"',
+      choices: [{ label: '산다', note: '금화 2개 → 우물 조각', cost: { gold: 2 }, card: 'well' }, { label: '구경만 한다', note: '아무 일 없음' }] },
+    traveler: { art: ['i_people'], title: '길 잃은 나그네', text: '배고픈 나그네가 문을 두드린다. "빵 하나만 주시면 오늘 하루 일을 거들겠습니다."',
+      choices: [{ label: '빵을 주고 일을 맡긴다', note: '빵 1개 → 오늘만 일꾼 1명 더', cost: { bread: 1 }, guest: true }, { label: '길만 알려 준다', note: '아무 일 없음' }] }
+  };
   ST.workGoalText = function (g) {
     if (g.t === 'pages') return '한 판에 노트 ' + g.n + '쪽 채우기';
     if (g.t === 'res') return '주민 ' + g.n + '명 맞이하기';
@@ -130,6 +148,7 @@
           { id: 'bake4', text: '하루에 빵 4개 굽기', gold: 4 },
           { id: 'page3', text: '노트 세 쪽 채우기', gold: 5 }
         ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
         bonus: [{ t: 'pages', n: 3 }, { t: 'res', n: 3 }] },
       workTip: '건물은 일꾼을 보내야 일한다. 밭에 보내면 곡식이 쌓이고, 빵집에 보내면 옆 밭의 곡식을 빵으로 굽는다. 뭘 옆에 붙여 짓느냐에 따라 달라지니까 이것저것 붙여 봐라.',
       tip: '건물은 매일 밤 일한다. 일찍 지을수록 오래 벌어. 빵집은 밭 사이에 끼워야 빵이 많이 나온다. 주민은 밤마다 금화를 내고, 금화 3개는 빵 1개 값이다.',

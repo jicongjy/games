@@ -56,6 +56,7 @@ function run(kind, seed, quota) {
   let total = 0;
   while (s.phase !== 'over') {
     if (s.phase === 'market') { W.next(s); continue; }
+    if (s.phase === 'event') { const cs = ST.WEVENTS[s.event].choices; W.choose(s, cs.find(c => W.canChoose(s, c))); continue; }
     if (kind === 'random') randomDay(s, r);
     else { placeAll(s, kind); shop(s, kind); workDay(s); }
     const before = s.stat.baked; W.endDay(s); total = s.stat.baked;
