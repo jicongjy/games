@@ -470,6 +470,8 @@
   var ST = root.ST, N = 5, W = {};
   W.CAP = 4;     // 밭 하나에 쌓이는 곡식
   W.SELL = 2;    // 빵 1개를 팔면 받는 금화
+  W.ERRAND = 1;  // 일꾼 한 명이 상인 심부름을 하면 받는 금화
+  W.PAY = 1;     // 장날에 낸 빵 1개마다 의뢰인이 주는 금화
   W.WORKABLE = { field: 1, bakery: 1, orchard: 1 };
 
   function nb(i) {
@@ -606,7 +608,14 @@
     begin(s);
     s.gold -= pack.cost;
     var got = pack.sure.slice();
-    if (pack.or && pack.or.length) got.push(pack.or[rnd(s, pack.or.length)]);
+    if (pack.or && pack.or.length) {
+      // 둘 중 하나는 번갈아 나온다. 같은 꾸러미를 두 번 사면 둘 다 얻는다
+      s.lastOr = s.lastOr || {};
+      var pick = pack.or[rnd(s, pack.or.length)], prev = s.lastOr[pack.id];
+      if (prev && pack.or.length > 1 && pick === prev) pick = pack.or[(pack.or.indexOf(prev) + 1) % pack.or.length];
+      s.lastOr[pack.id] = pick;
+      got.push(pick);
+    }
     got.forEach(function (id) { s.inv[id] = (s.inv[id] || 0) + 1; });
     s.stat.bought++;
     todos(s);
@@ -616,6 +625,15 @@
     if (s.phase !== 'play' || s.bread < 1) return false;
     begin(s);
     s.bread--; s.gold += W.SELL;
+    return true;
+  };
+
+  // 심부름: 쉬는 일꾼 한 명이 상인의 짐을 날라 주고 금화를 받는다. 금화가 떨어졌을 때의 마지막 길이다
+  W.errand = function (s) {
+    if (s.phase !== 'play' || !W.idle(s)) return false;
+    begin(s);
+    for (var k = 0; k < s.workers.length; k++) if (!s.workers[k].used) { s.workers[k].used = true; break; }
+    s.gold += W.ERRAND;
     return true;
   };
 
@@ -639,7 +657,8 @@
         s.failed = true; s.phase = 'over'; return true;
       }
       s.bread -= need;
-      s.market = { week: s.week, need: need, short: 0 };
+      s.gold += need * W.PAY;
+      s.market = { week: s.week, need: need, short: 0, pay: need * W.PAY };
       s.week++;
       if (s.week >= s.quota.length) { s.won = true; s.phase = 'over'; todos(s); return true; }
       s.phase = 'market';

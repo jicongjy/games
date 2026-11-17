@@ -783,6 +783,13 @@ button.pulse { animation: bob 1.2s steps(2) infinite; }
 .pk-in .or { display: inline-flex; align-items: center; gap: 3px; border: 2px dashed var(--ink-2); padding: 2px; }
 .pk-c { display: inline-flex; align-items: center; gap: 3px; font-size: 16px !important; color: var(--ink) !important; }
 .pk-c img { width: 16px; height: 16px; object-fit: contain; }
+.earn { display: grid; gap: 6px; border-top: 2px dashed var(--ink-2); padding-top: 8px; }
+.earn > b { font-weight: 400; font-size: 12px; color: var(--ink-2); }
+.earn .choice { padding: 6px 12px; min-height: 0; }
+.earn .choice span { display: inline-flex; align-items: center; gap: 3px; color: var(--ink); font-size: 14px; }
+.earn .choice img { width: 14px; height: 14px; object-fit: contain; }
+.earn .choice small { color: var(--ink-2); font-size: 11px; margin-left: 4px; }
+.sheet-in { max-height: calc(100dvh - 24px); overflow: auto; }
 .got { display: flex; align-items: center; gap: 8px; background: #eaf6ea; border: 2px solid var(--ok); padding: 6px 8px; font-size: 13px; }
 .got .g1 { display: inline-flex; align-items: center; gap: 4px; }
 .got img { width: 28px; height: 28px; background: #2f9e7f; border: 2px solid var(--line); }

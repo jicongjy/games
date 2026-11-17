@@ -757,7 +757,7 @@
       var m = s.market;
       h += '<div class="banner"><div class="light sm">' + (m.week + 1) + '번째 장날</div><h1 class="light">장날이다!</h1></div>';
       h += '<div class="talk"><div class="who">' + portrait(q) + '<span>' + esc(q.who) + '</span></div><div class="bubbles"><p class="bubble">빵 ' + m.need + '개, 잘 받아 가요!</p></div></div>';
-      h += '<div class="panel mk-pay"><h2>빵 ' + m.need + '개를 냈어요</h2><div class="payrow"><span>' + img('i_bread') + '남은 빵 ' + s.bread + '개</span><span>' + img('i_gold') + '금화 ' + s.gold + '개</span></div>' +
+      h += '<div class="panel mk-pay"><h2>빵 ' + m.need + '개를 냈어요</h2><p style="margin:2px 0 6px">' + esc(q.who.split(' ').pop()) + '이 빵 값으로 금화 ' + m.pay + '개를 줬어요.</p><div class="payrow"><span>' + img('i_bread') + '남은 빵 ' + s.bread + '개</span><span>' + img('i_gold') + '금화 ' + s.gold + '개</span></div>' +
         '<p class="muted">다음 장날에는 빵 ' + need + '개가 필요해요.</p></div>';
       h += '<button class="primary wide" data-a="wnext" style="margin-top:auto">다음 주로</button>';
       return h;
@@ -855,8 +855,12 @@
       ST.PACKS.forEach(function (p, n) {
         h += '<button class="choice pk" data-a="wbuy" data-i="' + n + '"' + (s.gold >= p.cost ? '' : ' disabled') + '><span class="pk-l"><b>' + esc(p.name) + '</b>' + packHtml(p) + '</span><span class="pk-c">' + img('i_gold') + p.cost + '</span></button>';
       });
-      h += '<p class="muted" style="margin:0">꾸러미에는 앞의 조각 하나와, 뒤의 둘 중 하나가 들어 있어요.</p>';
-      h += '<div class="row"><button style="flex:1" data-a="wsell"' + (s.bread ? '' : ' disabled') + '>빵 1개 팔기 → 금화 ' + W.SELL + '개</button><button class="primary" data-a="wshop">닫기</button></div></div></div>';
+      h += '<p class="muted" style="margin:0">꾸러미에는 앞의 조각 하나와, 뒤의 둘 중 하나가 들어 있어요. 둘 중 하나는 번갈아 나와요.</p>';
+      h += '<div class="earn"><b>금화 버는 법</b>' +
+        '<button class="choice" data-a="werrand"' + (idle ? '' : ' disabled') + '><b>심부름 보내기</b><span>일꾼 1명 → ' + img('i_gold') + W.ERRAND + ' <small>(쉬는 일꾼 ' + idle + '명)</small></span></button>' +
+        '<button class="choice" data-a="wsell"' + (s.bread ? '' : ' disabled') + '><b>빵 팔기</b><span>' + img('i_bread') + '1 → ' + img('i_gold') + W.SELL + ' <small>(가진 빵 ' + s.bread + '개)</small></span></button>' +
+        '<p class="muted" style="margin:0">장날에 빵을 내면 1개마다 금화 ' + W.PAY + '개를 받아요. 과수원에 일꾼을 보내도 금화가 나와요.</p></div>';
+      h += '<button class="primary wide" data-a="wshop">닫기</button></div></div>';
     }
     if (V.note) {
       h += '<div class="sheet" data-a="wnote"><div class="sheet-in" data-a="noop"><div class="row between"><h2>할머니의 노트</h2><span class="muted">' + kp.length + ' / ' + ST.PAGE_ORDER.length + ' 쪽</span></div>' +
@@ -1179,6 +1183,7 @@
       if (!got) return;
       hist = []; V.got = got; absorb(); render();
     },
+    werrand: function () { if (ST.work.errand(G)) { hist = []; V.got = null; render(); } },
     wsell: function () { if (ST.work.sell(G)) { hist = []; V.got = null; render(); } },
     wnote: function () { V.note = !V.note; render(); },
     wpop: function () { V.pop.shift(); render(); },
