@@ -705,6 +705,15 @@
     });
     return out;
   }
+  // 조각을 들었을 때 그 칸이 좋은 자리인지: 밭과 빵집은 서로 붙어야 하고, 우물은 밭 옆, 방앗간은 빵집 옆이다
+  function spotAt(id, cell) {
+    var W = ST.work, n;
+    if (id === 'field') return W.adj(G, cell, 'bakery') ? '빵집 옆' : null;
+    if (id === 'bakery') { n = W.adj(G, cell, 'field'); return n ? '밭 ' + n + '곳' : null; }
+    if (id === 'well') return W.adj(G, cell, 'field') ? '밭 옆' : null;
+    if (id === 'mill') return W.adj(G, cell, 'bakery') ? '빵집 옆' : null;
+    return null;
+  }
   function wtag(id) {
     var t = ST.PIECES[id].work;
     if (!t) return '';
@@ -791,7 +800,7 @@
       if (s.night.hungry) nt.push('빵이 없어서 ' + s.night.hungry + '명이 오늘 쉬어요');
       if (nt.length) msg = '어제 저녁: ' + nt.join(', ') + '.';
     }
-    h += '<div class="wmsg' + (good ? ' good' : '') + '">' + esc(msg || (sel !== null ? '지을 빈칸을 눌러요.' : (idle ? '건물을 눌러 일꾼을 보내요. 꾹 누르면 설명이 나와요.' : '일꾼이 다 일했어요. 하루를 마쳐요.'))) + '</div>';
+    h += '<div class="wmsg' + (good ? ' good' : '') + '">' + esc(msg || (sel !== null ? (sel === 'field' && !s.board.some(function (x) { return x && x.k === 'b' && x.id === 'bakery'; }) ? '지을 빈칸을 눌러요. 밭은 빵집과 붙어 있어야 쓸모가 있어요.' : '지을 빈칸을 눌러요. 밝은 칸이 좋은 자리예요.') : (idle ? '건물을 눌러 일꾼을 보내요. 꾹 누르면 설명이 나와요.' : '일꾼이 다 일했어요. 하루를 마쳐요.'))) + '</div>';
 
     h += '<div class="bwrap"><div class="board" style="background-image:url(' + ST.ground(q.ground, q.id.charCodeAt(1)) + ')">';
     for (i = 0; i < 25; i++) {
@@ -806,6 +815,7 @@
           inner += '<span class="wst' + (c.w >= W.CAP ? ' full' : '') + (c.w ? '' : ' none') + '">';
           for (var k = 0; k < W.CAP; k++) inner += '<i' + (k < c.w ? ' class="on"' : '') + '>' + (k < c.w ? img('i_grain') : '') + '</i>';
           inner += '</span>';
+          if (!W.adj(s, i, 'bakery')) inner += '<span class="nst">빵집 없음</span>';
         } else if (c.id === 'bakery') {
           // 지금 일꾼을 보내면 나오는 빵
           var bo = W.bakeOut(s, i);
@@ -818,9 +828,10 @@
       } else {
         cls += ' empty';
         if (sel !== null) {
-          var cb = comboAt(sel, i);
-          cls += ' can' + (cb ? ' good' : '');
+          var cb = comboAt(sel, i), sp = spotAt(sel, i);
+          cls += ' can' + (cb || sp ? ' good' : '');
           if (cb) inner += '<span class="pv">' + img('star') + esc(cb) + '</span>';
+          else if (sp) inner += '<span class="pv">' + esc(sp) + '</span>';
         }
       }
       h += '<button class="' + cls + '" data-a="wcell" data-i="' + i + '"' + hold + ' aria-label="' + (Math.floor(i / 5) + 1) + '번째 줄 ' + (i % 5 + 1) + '번째 칸">' + inner + '</button>';
@@ -1146,7 +1157,10 @@
         W.work(G, i);
         hist.push(snap);
       } else return;
-      absorb(); render();
+      absorb();
+      // 빵집과 떨어진 밭에 일꾼을 보냈으면 다른 안내보다 먼저 알려 준다
+      if (c && c.id === 'field' && !W.adj(G, i, 'bakery')) { V.msg = '이 밭 옆에는 빵집이 없어요. 곡식이 쌓여도 구울 수가 없어요.'; V.good = false; }
+      render();
     },
     wundo: function () { if (hist.length) { G = JSON.parse(hist.pop()); sel = null; fx = null; V.msg = null; render(); } },
     wend: function () {
