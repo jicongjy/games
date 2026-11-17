@@ -85,6 +85,15 @@
     return '<span class="bchip">' + img('star') + (g.r ? img(ST.RES[g.r].icon, null, null, 'bi') + ST.RES[g.r].name + ' ' + g.n + ST.RES[g.r].unit : esc(ST.goalText(g))) + '</span>';
   }
   function goalTiles(q) {
+    if (q.work) {
+      var hw = '<div class="todo"><div class="todo-h">해야 할 일 <small>닷새마다 장날, 장날마다 빵을 내요</small></div><div class="gts n' + q.work.quota.length + '">';
+      q.work.quota.forEach(function (n, i) {
+        hw += '<div class="gt"><span class="mk">' + (i + 1) + '번째 장날</span>' + img('i_bread', null, null, 'gi') + '<span class="num">' + n + '<small>개</small></span></div>';
+      });
+      hw += '</div></div><div class="more"><div class="todo-h">여유가 되면 <small>하나 할 때마다 별 1개 더!</small></div><div class="bchips">';
+      q.work.bonus.forEach(function (g) { hw += '<span class="bchip">' + img('star') + esc(ST.workGoalText(g)) + '</span>'; });
+      return hw + '</div></div>';
+    }
     if (q.days) {
       var hd = '<div class="todo"><div class="todo-h">해야 할 일 <small>닷새마다 장날, 장날마다 빵을 내요</small></div><div class="gts n' + q.days.quota.length + '">';
       q.days.quota.forEach(function (n, i) {
@@ -102,6 +111,13 @@
   }
   function goalsHtml(q, s) {
     var h = '';
+    if (q.work) {
+      h += '<div class="goal' + (s && s.won ? ' done' : '') + '"><span class="box"></span><span>장날 ' + q.work.quota.length + '번 넘기기</span></div>';
+      q.work.bonus.forEach(function (g) {
+        h += '<div class="goal' + (s && s.won && ST.work.meets(s, g) ? ' done' : '') + '"><span class="box"></span>' + img('star', null, null, 'gs') + '<span>' + esc(ST.workGoalText(g)) + '</span></div>';
+      });
+      return h;
+    }
     if (q.days) {
       h += '<div class="goal' + (s && s.won ? ' done' : '') + '"><span class="box"></span><span>장날 ' + q.days.quota.length + '번 넘기기</span></div>';
       q.days.bonus.forEach(function (g) {
@@ -297,7 +313,7 @@
       '<p class="bubble">' + esc(q.ask) + '</p></div>' + goalTiles(q) +
       (q.ruleText ? '<div class="rule"><b>이 땅의 규칙</b>' + esc(q.ruleText) + '</div>' : '') + lendHtml(q) + '</div>';
     h += '<div class="row"><button data-a="map">지도로</button><button data-a="story">이야기 다시 보기</button>' +
-      '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button></div>';
+      (q.work ? '<button class="primary" style="flex:1" data-a="wstart">출발</button></div>' : '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button></div>');
     return h;
   }
 
@@ -541,8 +557,8 @@
   function detailHtml(id) {
     var p = ST.PIECES[id];
     return '<div class="sheet" data-a="detailclose"><div class="sheet-in"><div class="row" style="gap:12px;align-items:flex-start">' +
-      '<span class="portrait">' + img(id, null, 16) + '</span><div><h2>' + p.name + ' <small class="muted">' + p.cat + '</small></h2>' + tagHtml(id) + '</div></div>' +
-      '<p class="full">' + esc(Q && Q.days ? p.daily : p.desc) + '</p>' +
+      '<span class="portrait">' + img(id, null, 16) + '</span><div><h2>' + p.name + ' <small class="muted">' + p.cat + '</small></h2>' + (Q && Q.work ? wtag(id) : tagHtml(id)) + '</div></div>' +
+      '<p class="full">' + esc(Q && Q.work && p.work ? p.work.desc : (Q && Q.days ? p.daily : p.desc)) + '</p>' +
       '<div class="memo" style="margin:0"><b>할머니의 메모</b>' + esc(p.memo) + '</div>' +
       '<button class="primary wide" data-a="detailclose">닫기</button></div></div>';
   }
@@ -659,6 +675,164 @@
     return h;
   }
 
+  // ───── 일꾼 규칙의 짓기 화면 ─────
+  var WHO = { hero: 'hero', donkey: 'donkey', res: 'i_people' };
+  function knownPages() { return save.pages || (save.pages = []); }
+  function todoOf(q, id) {
+    for (var k = 0; k < q.work.todo.length; k++) if (q.work.todo[k].id === id) return q.work.todo[k];
+    return null;
+  }
+  // 방금 한 일에서 새로 채운 노트 쪽과 끝낸 할 일을 화면에 띄울 준비를 한다
+  function absorb() {
+    var s = G, kp = knownPages();
+    s.news.forEach(function (id) {
+      if (kp.indexOf(id) >= 0) return;
+      kp.push(id); persist();
+      V.pop = (V.pop || []).concat([id]);
+    });
+    if (s.todoNew.length) {
+      var t = todoOf(Q, s.todoNew[s.todoNew.length - 1]);
+      V.msg = '해냈다! ' + t.text + ' · 금화 ' + t.gold + '개 받음'; V.good = true;
+    }
+  }
+  // 이미 아는 조합이 그 칸에서 생기면 그 이름을 돌려준다
+  function comboAt(id, cell) {
+    var kp = knownPages(), out = null;
+    ST.PAGE_ORDER.forEach(function (pid) {
+      var p = ST.PAGES[pid];
+      if (kp.indexOf(pid) < 0) return;
+      if ((p.a === id && ST.work.adj(G, cell, p.b)) || (p.b === id && ST.work.adj(G, cell, p.a))) out = p.name;
+    });
+    return out;
+  }
+  function wtag(id) {
+    var t = ST.PIECES[id].work;
+    if (!t) return '';
+    return '<span class="tag2">' + (t.when ? '<small>' + esc(t.when) + '</small>' : '') +
+      '<b>' + (t.res ? img(ST.RES[t.res].icon) + t.n : esc(t.text)) + '</b></span>';
+  }
+  function pageHtml(pid, known) {
+    var p = ST.PAGES[pid];
+    if (!known) return '<div class="pg lock"><div class="pg-h"><span class="q">?</span><b>아직 안 채운 쪽</b></div><p>' + esc(p.hint) + '</p></div>';
+    return '<div class="pg"><div class="pg-h">' + img(p.a, null, 16) + '<i>+</i>' + img(p.b, null, 16) + '<b>' + esc(p.name) + '</b></div>' +
+      '<p>' + esc(p.text) + '</p><p class="gm">' + esc(p.memo) + '</p></div>';
+  }
+  function packHtml(p) {
+    var h = '<span class="pk-in">';
+    p.sure.forEach(function (id) { h += img(id, null, 16); });
+    h += '<i>+</i><span class="or">' + p.or.map(function (id) { return img(id, null, 16); }).join('<em>나</em>') + '</span></span>';
+    return h;
+  }
+  function vWork() {
+    var q = Q, s = G, W = ST.work, h = '', i;
+    if (s.phase === 'over') {
+      return '<div class="panel center"><p>' + (s.won ? '마지막 장날까지 넘겼어요!' : '장날에 빵이 ' + s.market.short + '개 모자랐어요.') + '</p>' +
+        '<button class="primary wide" data-a="judge">' + esc(q.who) + '에게 가기</button></div>';
+    }
+    var wk = s.week, dw = (s.day - 1) % s.perWeek, need = s.quota[wk];
+    if (s.phase === 'market') {
+      var m = s.market;
+      h += '<div class="banner"><div class="light sm">' + (m.week + 1) + '번째 장날</div><h1 class="light">장날이다!</h1></div>';
+      h += '<div class="talk"><div class="who">' + portrait(q) + '<span>' + esc(q.who) + '</span></div><div class="bubbles"><p class="bubble">빵 ' + m.need + '개, 잘 받아 가요!</p></div></div>';
+      h += '<div class="panel mk-pay"><h2>빵 ' + m.need + '개를 냈어요</h2><div class="payrow"><span>' + img('i_bread') + '남은 빵 ' + s.bread + '개</span><span>' + img('i_gold') + '금화 ' + s.gold + '개</span></div>' +
+        '<p class="muted">다음 장날에는 빵 ' + need + '개가 필요해요.</p></div>';
+      h += '<button class="primary wide" data-a="wnext" style="margin-top:auto">다음 주로</button>';
+      return h;
+    }
+
+    var kp = knownPages(), idle = W.idle(s), left = W.daysLeft(s);
+    h += '<div class="row between"><div class="light bt">' + esc(q.who) + ' · ' + (wk + 1) + '주차</div>' +
+      '<span class="row" style="gap:6px"><button class="small" data-a="wnote">노트 ' + kp.length + '/' + ST.PAGE_ORDER.length + '</button><button class="small" data-a="quit">그만두기</button></span></div>';
+    h += '<div class="daybar">';
+    for (i = 0; i < s.perWeek; i++) {
+      h += '<span class="dp' + (i < dw ? ' past' : (i === dw ? ' now' : '')) + (i === s.perWeek - 1 ? ' mkt' : '') + '">' + (i === s.perWeek - 1 ? '장날' : (i + 1) + '일') + '</span>';
+    }
+    h += '</div>';
+    var pct = Math.min(100, Math.round(s.bread / need * 100));
+    h += '<div class="quota"><div class="qtxt"><span>장날에 낼 빵 <b>' + need + '개</b></span><span class="' + (s.bread >= need ? 'ok' : '') + '">지금 ' + s.bread + '개 · ' + (left === 1 ? '오늘이 장날' : '장날까지 ' + left + '일') + '</span></div>' +
+      '<div class="qbar"><i style="width:' + pct + '%"></i></div></div>';
+
+    h += '<div class="wstat"><span class="wchip">' + img('i_bread') + s.bread + '</span><span class="wchip">' + img('i_gold') + s.gold + '</span><span class="crew"><span class="lb">일꾼</span>';
+    s.workers.forEach(function (w) {
+      h += '<span class="wm' + (w.used ? ' used' : '') + (w.hungry ? ' hungry' : '') + (w.fresh ? ' fresh' : '') + '">' + img(WHO[w.t]) + '</span>';
+    });
+    h += '<span class="cnt">' + idle + '명 남음</span></span></div>';
+
+    var cur = null, doneN = 0;
+    q.work.todo.forEach(function (t) { if (s.todo[t.id]) doneN++; else if (!cur) cur = t; });
+    h += '<div class="wtodo"><span><b>해 볼 일</b> ' + (cur ? esc(cur.text) : '다 해 봤어요. 이제 마음대로 지어요.') + '</span>' +
+      (cur ? '<span class="rw">' + img('i_gold') + '+' + cur.gold + '</span>' : '') + '</div>';
+
+    var msg = V.msg, good = V.good;
+    if (!msg && s.day === 1 && !s.stat.grain && !(save.stars[q.id] > 0)) msg = sel === null && !s.board.some(function (x) { return x && x.k === 'b'; })
+      ? '아래에서 조각을 고르고, 땅의 빈칸을 눌러 지어요.' : '';
+    if (!msg && s.night && dw > 0 && idle === s.workers.length - s.workers.filter(function (w) { return w.used; }).length && !Object.keys(s.at).length) {
+      var nt = [];
+      if (s.night.ate) nt.push('주민이 빵 ' + s.night.ate + '개를 먹었어요');
+      if (s.night.snack) nt.push('주민 ' + s.night.snack + '명은 과일로 때웠어요');
+      if (s.night.hungry) nt.push('빵이 없어서 ' + s.night.hungry + '명이 오늘 쉬어요');
+      if (nt.length) msg = '어제 저녁: ' + nt.join(', ') + '.';
+    }
+    h += '<div class="wmsg' + (good ? ' good' : '') + '">' + esc(msg || (sel !== null ? '지을 빈칸을 눌러요.' : (idle ? '건물을 눌러 일꾼을 보내요. 꾹 누르면 설명이 나와요.' : '일꾼이 다 일했어요. 하루를 마쳐요.'))) + '</div>';
+
+    h += '<div class="bwrap"><div class="board" style="background-image:url(' + ST.ground(q.ground, q.id.charCodeAt(1)) + ')">';
+    for (i = 0; i < 25; i++) {
+      var c = s.board[i], cls = 'cell', inner = '', hold = '';
+      if (c && c.k === 't') inner = img(terrainSprite(c.t, i), q.ground, 16);
+      else if (c) {
+        inner = img(c.id, q.ground, 16);
+        hold = ' data-hold="' + c.id + '"';
+        if (fx && fx.cell === i) cls += ' pop';
+        if (c.id === 'field' && c.w) {
+          inner += '<span class="wst' + (c.w >= W.CAP ? ' full' : '') + '">' + img('i_grain') + c.w + '</span>';
+        }
+        if (s.at[i]) inner += '<span class="wk">' + img(WHO[s.at[i]]) + '</span>';
+        else if (sel === null && idle && W.WORKABLE[c.id] && !W.canWork(s, i)) cls += ' canwork';
+      } else {
+        cls += ' empty';
+        if (sel !== null) {
+          var cb = comboAt(sel, i);
+          cls += ' can' + (cb ? ' good' : '');
+          if (cb) inner += '<span class="pv">' + img('star') + esc(cb) + '</span>';
+        }
+      }
+      h += '<button class="' + cls + '" data-a="wcell" data-i="' + i + '"' + hold + ' aria-label="' + (Math.floor(i / 5) + 1) + '번째 줄 ' + (i % 5 + 1) + '번째 칸">' + inner + '</button>';
+    }
+    h += '</div></div>';
+
+    var have = ST.PIECE_ORDER.filter(function (id) { return s.inv[id] > 0; });
+    h += '<div class="winv">';
+    if (!have.length) h += '<span class="none">놓을 조각이 없어요. 상인에게서 꾸러미를 사요.</span>';
+    have.forEach(function (id) {
+      h += '<button class="card' + (sel === id ? ' sel' : '') + '" data-a="wpiece" data-id="' + id + '" data-hold="' + id + '">' + img(id, null, 16) +
+        '<span class="nm">' + ST.PIECES[id].name + (s.inv[id] > 1 ? ' ×' + s.inv[id] : '') + '</span></button>';
+    });
+    h += '</div>';
+    h += '<div class="row acts"><button class="small" data-a="wshop">상인</button><button class="small" data-a="wundo"' + (hist.length ? '' : ' disabled') + '>되돌리기</button>' +
+      '<button class="primary' + (idle ? '' : ' pulse') + '" style="flex:1" data-a="wend">' + (left === 1 ? '하루 마치고 장날 가기' : '하루 마치기') + '</button></div>';
+
+    if (V.shop) {
+      h += '<div class="sheet" data-a="wshop"><div class="sheet-in" data-a="noop"><div class="row between"><h2>떠돌이 상인</h2><span class="wchip">' + img('i_gold') + s.gold + '</span></div>';
+      if (V.got) h += '<div class="got"><span>나왔다!</span>' + V.got.map(function (id) { return '<span class="g1">' + img(id, null, 16) + ST.PIECES[id].name + '</span>'; }).join('') + '</div>';
+      ST.PACKS.forEach(function (p, n) {
+        h += '<button class="choice pk" data-a="wbuy" data-i="' + n + '"' + (s.gold >= p.cost ? '' : ' disabled') + '><span class="pk-l"><b>' + esc(p.name) + '</b>' + packHtml(p) + '</span><span class="pk-c">' + img('i_gold') + p.cost + '</span></button>';
+      });
+      h += '<p class="muted" style="margin:0">꾸러미에는 앞의 조각 하나와, 뒤의 둘 중 하나가 들어 있어요.</p>';
+      h += '<div class="row"><button style="flex:1" data-a="wsell"' + (s.bread ? '' : ' disabled') + '>빵 1개 팔기 → 금화 ' + W.SELL + '개</button><button class="primary" data-a="wshop">닫기</button></div></div></div>';
+    }
+    if (V.note) {
+      h += '<div class="sheet" data-a="wnote"><div class="sheet-in" data-a="noop"><div class="row between"><h2>할머니의 노트</h2><span class="muted">' + kp.length + ' / ' + ST.PAGE_ORDER.length + ' 쪽</span></div>' +
+        '<p class="muted" style="margin:0">조각을 서로 붙여 지으면 쪽이 채워져요. 한 번 채운 쪽은 다음 판에도 남아요.</p><div class="pgs">';
+      ST.PAGE_ORDER.forEach(function (pid) { h += pageHtml(pid, kp.indexOf(pid) >= 0); });
+      h += '</div><button class="primary wide" data-a="wnote">닫기</button></div></div>';
+    }
+    if (V.pop && V.pop.length) {
+      h += '<div class="sheet" data-a="wpop"><div class="sheet-in newpg"><div class="np-h">' + img('note') + '<span>노트에 한 쪽이 채워졌다!</span></div>' +
+        pageHtml(V.pop[0], true) + '<button class="primary wide" data-a="wpop">좋았어</button></div></div>';
+    }
+    return h;
+  }
+
   // 보상 카드 한 장. state: pick 고를 수 있다, sel 골랐다, new 방금 받았다, had 전에 받았다, wait 별이 더 필요하다
   function rewardCard(q, i, state) {
     var rw = q.rewards[i], isP = !!rw.p, d = isP ? ST.PIECES[rw.p] : ST.RELICS[rw.r];
@@ -690,8 +864,8 @@
     if (!r.ev.base) {
       h += '<div class="panel"><div class="row" style="gap:12px">' + portrait(q) + '<div><div class="muted">' + esc(q.who) + '</div><p>' + esc(q.fail) + '</p></div></div>' +
         '<div class="gap"></div>' + goalsHtml(q, G) + '</div>';
-      h += '<div class="memo"><b>할머니의 메모</b>' + esc(q.tip) + '</div>';
-      h += '<div class="row"><button data-a="map">지도로</button><button data-a="pack">짐 다시 싸기</button><button class="primary" style="flex:1" data-a="restart">다시 짓기</button></div>';
+      h += '<div class="memo"><b>할머니의 메모</b>' + esc(q.work ? q.workTip : q.tip) + '</div>';
+      h += '<div class="row"><button data-a="map">지도로</button>' + (q.work ? '' : '<button data-a="pack">짐 다시 싸기</button>') + '<button class="primary" style="flex:1" data-a="restart">다시 짓기</button></div>';
       return h;
     }
     var pages = ['win'];
@@ -773,10 +947,11 @@
     else if (V.name === 'pack') h = vPack();
     else if (V.name === 'build') h = vBuild();
     else if (V.name === 'days') h = vDays();
+    else if (V.name === 'work') h = vWork();
     else if (V.name === 'result') h = vResult();
     else if (V.name === 'dex') h = vDex();
     else if (V.name === 'ending') h = vEnding();
-    app.className = 'v-' + V.name + (V.name === 'days' && G ? ' ph-' + G.phase : '');
+    app.className = V.name === 'work' ? 'v-days v-work ph-' + G.phase : 'v-' + V.name + (V.name === 'days' && G ? ' ph-' + G.phase : '');
     if (V.detail) h += detailHtml(V.detail);
     app.innerHTML = h;
 
@@ -792,6 +967,18 @@
         cells[p.cell].appendChild(el);
       });
       fx = null;
+    }
+    // 일꾼 규칙: 방금 일한 칸 위에 얻은 것을 띄운다
+    if (V.name === 'work' && G && G.phase === 'play' && G.fx.length) {
+      var wc = app.querySelectorAll('.cell');
+      G.fx.forEach(function (p) {
+        if (!wc[p.cell]) return;
+        var el = document.createElement('span');
+        el.className = 'float';
+        el.textContent = ST.RES[p.r].name + '+' + p.n;
+        wc[p.cell].appendChild(el);
+      });
+      G.fx = [];
     }
   }
   function go(name, extra) {
@@ -816,6 +1003,12 @@
   }
   // 새 판을 편다. 튜토리얼이면 손에 들어오는 순서를 정해 둔다.
   function newBoard(bag) {
+    if (Q.work) {
+      G = ST.work.newGame(Q, (Date.now() % 100000) + 1);
+      tut = null; hist = []; sel = null; fx = null;
+      go('work');
+      return;
+    }
     if (Q.days) {
       G = ST.days.newGame(Q, bag, draft.relics, (Date.now() % 100000) + 1);
       tut = null; hist = []; sel = null; fx = null;
@@ -852,7 +1045,7 @@
   }
 
   function judge() {
-    var ev = Q.days ? ST.days.evaluate(G, Q) : ST.evaluate(G, Q);
+    var ev = Q.work ? ST.work.evaluate(G, Q) : (Q.days ? ST.days.evaluate(G, Q) : ST.evaluate(G, Q));
     if (isTut()) {
       result = { tutres: true, ev: ev, first: tutDone() };
       go('result');
@@ -906,6 +1099,47 @@
     story: function () { V.i = 0; render(); },
     newgame: function () { go('start', { i: 0 }); },
     tutorial: function () { startTut(); },
+    // 일꾼 규칙
+    noop: function () {},
+    wstart: function () { draft = { bag: {}, relics: [] }; newBoard([]); },
+    wpiece: function (d) { sel = sel === d.id ? null : d.id; V.msg = null; render(); },
+    wcell: function (d) {
+      if (!Q.work || G.phase !== 'play') return;
+      var i = +d.i, W = ST.work, snap = JSON.stringify(G), c = G.board[i];
+      V.msg = null; V.good = false;
+      if (sel !== null && !c) {
+        if (!W.build(G, sel, i)) return;
+        hist.push(snap);
+        fx = { cell: i, parts: [] };
+        if (!G.inv[sel]) sel = null;
+      } else if (c && c.k === 'b') {
+        sel = null;
+        var why = W.canWork(G, i);
+        if (why) { V.msg = why; render(); return; }
+        W.work(G, i);
+        hist.push(snap);
+      } else return;
+      absorb(); render();
+    },
+    wundo: function () { if (hist.length) { G = JSON.parse(hist.pop()); sel = null; fx = null; V.msg = null; render(); } },
+    wend: function () {
+      var W = ST.work, can = false;
+      for (var i = 0; i < 25; i++) if (G.board[i] && G.board[i].k === 'b' && W.WORKABLE[G.board[i].id] && !W.canWork(G, i)) can = true;
+      if (can && !window.confirm('아직 일할 수 있는 일꾼이 있어요. 그래도 하루를 마칠까요?')) return;
+      W.endDay(G);
+      hist = []; sel = null; fx = null; V.msg = null; V.good = false;
+      absorb(); render(); window.scrollTo(0, 0);
+    },
+    wnext: function () { ST.work.next(G); render(); },
+    wshop: function () { V.shop = !V.shop; V.got = null; render(); },
+    wbuy: function (d) {
+      var got = ST.work.buy(G, ST.PACKS[+d.i]);
+      if (!got) return;
+      hist = []; V.got = got; absorb(); render();
+    },
+    wsell: function () { if (ST.work.sell(G)) { hist = []; V.got = null; render(); } },
+    wnote: function () { V.note = !V.note; render(); },
+    wpop: function () { V.pop.shift(); render(); },
     // 날짜 규칙
     dcell: function (d) {
       if (sel === null || !Q.days || G.phase !== 'play') return;

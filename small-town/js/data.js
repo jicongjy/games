@@ -56,6 +56,35 @@
     bell: { when: '옆 건물', text: '한 번 더' }
   };
   for (var tk in TAG) ST.PIECES[tk].tag = TAG[tk];
+  // 일꾼 규칙에서 쓰는 조각 설명. 조합(ST.PAGES)은 여기에 적지 않는다. 직접 찾아내는 것이라서다.
+  var WORK = {
+    field: { desc: '일꾼을 보내면 곡식 1개가 밭에 쌓인다. 4개까지 쌓인다.', when: '일꾼 1명', res: 'grain', n: '+1' },
+    bakery: { desc: '일꾼을 보내면 옆 밭에 쌓인 곡식을 밭마다 1개씩 가져와 빵으로 굽는다.', when: '옆 밭마다', res: 'bread', n: '+1' },
+    orchard: { desc: '일꾼을 보내면 과일을 따서 금화 2개를 번다.', when: '일꾼 1명', res: 'gold', n: '+2' },
+    house: { desc: '주민 1명이 이사 온다. 다음 날부터 일꾼이 된다. 주민은 저녁마다 빵 1개를 먹고, 못 먹으면 다음 날 쉰다.', when: '일꾼', res: 'people', n: '+1' },
+    well: { desc: '일꾼을 보내지 않는다. 옆에 무엇이 있느냐에 따라 쓸모가 생긴다.', text: '옆 칸을 돕는다' },
+    mill: { desc: '일꾼을 보내지 않는다. 옆에 무엇이 있느냐에 따라 쓸모가 생긴다.', text: '옆 칸을 돕는다' }
+  };
+  for (var wk in WORK) ST.PIECES[wk].work = WORK[wk];
+  // 할머니 노트의 쪽. 조각 a와 b를 붙여 지어 처음 효과가 나면 채워진다. hint는 채우기 전에 보이는 글.
+  ST.PAGES = {
+    wet: { name: '물 댄 밭', a: 'field', b: 'well', hint: '밭이 목말라 보이던데. 옆에 뭘 파 줬더라?', text: '우물 옆 밭은 일꾼이 한 번 갈 때마다 곡식이 2개씩 쌓인다.', memo: '물 주는 걸 까먹고 밭 탓만 한 게 30년이다.' },
+    oven: { name: '큰 화덕', a: 'bakery', b: 'field', hint: '빵집은 밭에 둘러싸일수록 신이 났지. 몇 군데였더라?', text: '빵집이 한 번에 밭 세 곳의 곡식을 구우면 빵 1개가 덤으로 나온다.', memo: '불은 한 번 땔 때 많이 굽는 거야. 장작이 아깝잖니.' },
+    flour: { name: '고운 가루', a: 'bakery', b: 'mill', hint: '방앗간은 혼자 두면 바람만 쐰다. 누구 옆이었더라?', text: '방앗간 옆 빵집은 구울 때마다 빵 1개가 더 나온다.', memo: '곱게 빻으면 같은 밀로 빵이 하나 더 나와. 밀순이한테는 비밀이다.' },
+    snack: { name: '과일 새참', a: 'house', b: 'orchard', hint: '빵 말고도 배 채울 게 있었는데. 집 옆에 뭘 심었더라?', text: '과수원 옆 집에 사는 주민은 과일을 먹어서 저녁에 빵을 먹지 않는다.', memo: '담 너머로 손만 뻗으면 사과였지. 그 집 애들은 밥을 안 먹었어.' }
+  };
+  ST.PAGE_ORDER = ['wet', 'oven', 'flour', 'snack'];
+  // 떠돌이 상인의 꾸러미. sure는 꼭 들어 있는 조각, or는 그중 하나가 들어 있다.
+  ST.PACKS = [
+    { id: 'farm', name: '밭 꾸러미', cost: 3, sure: ['field'], or: ['field', 'well'] },
+    { id: 'shop', name: '일터 꾸러미', cost: 4, sure: ['field'], or: ['mill', 'bakery'] },
+    { id: 'town', name: '마을 꾸러미', cost: 4, sure: ['house'], or: ['house', 'orchard'] }
+  ];
+  ST.workGoalText = function (g) {
+    if (g.t === 'pages') return '한 판에 노트 ' + g.n + '쪽 채우기';
+    if (g.t === 'res') return '주민 ' + g.n + '명 맞이하기';
+    return '';
+  };
   ST.PIECE_ORDER = ['field', 'orchard', 'fishing', 'bakery', 'mill', 'brewery', 'house', 'inn', 'tower', 'well', 'plaza', 'bell'];
   ST.DWELL = { house: 1, inn: 1, tower: 1 };
 
@@ -89,6 +118,20 @@
       // events는 주 중간에 생기는 일(아래 ST.EVENTS), bonus는 별을 더 받는 조건(left 끝났을 때 남은 빵, people 주민 수)
       days: { perWeek: 5, quota: [5, 20, 45], pool: ['field', 'house', 'bakery', 'well', 'orchard', 'mill', 'inn', 'plaza', 'tower'],
         events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'crow'], bonus: [{ t: 'left', n: 25 }, { t: 'people', n: 6 }] },
+      // 일꾼 규칙(지금 쓰는 규칙). start는 처음 가진 조각, quota는 장날마다 가져가는 빵, todo는 해 볼 일과 상금(금화),
+      // bonus는 별을 더 받는 조건(pages 이번 판에 채운 노트 쪽 수, res 이사 온 주민 수)
+      work: { perWeek: 5, quota: [4, 9, 14], gold: 0, start: { field: 2, bakery: 1 },
+        todo: [
+          { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'buy', text: '상인에게 꾸러미 사기', gold: 2 },
+          { id: 'house', text: '집을 지어 주민 맞이하기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 },
+          { id: 'bake4', text: '하루에 빵 4개 굽기', gold: 4 },
+          { id: 'page3', text: '노트 세 쪽 채우기', gold: 5 }
+        ],
+        bonus: [{ t: 'pages', n: 3 }, { t: 'res', n: 3 }] },
+      workTip: '건물은 일꾼을 보내야 일한다. 밭에 보내면 곡식이 쌓이고, 빵집에 보내면 옆 밭의 곡식을 빵으로 굽는다. 뭘 옆에 붙여 짓느냐에 따라 달라지니까 이것저것 붙여 봐라.',
       tip: '건물은 매일 밤 일한다. 일찍 지을수록 오래 벌어. 빵집은 밭 사이에 끼워야 빵이 많이 나온다. 주민은 밤마다 금화를 내고, 금화 3개는 빵 1개 값이다.',
       win: ['밀이다! 우리 마을 밀이야!', '첫 빵은 두부 줄게요. 아니, 당신도 줄게요.'],
       fail: '빵이 모자라요. 저 또 옆 마을에 가야 하나요?',
