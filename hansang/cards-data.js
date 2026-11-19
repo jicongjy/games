@@ -44,3 +44,6 @@ export function iconSvg(card) {
   }
   return `<svg viewBox="0 0 200 200" aria-hidden="true">${ICONS[card.course]}</svg>`;
 }
+
+// 코스 줄과 좌판에서 쓰는 코스 아이콘 (카드와 같은 그림)
+export const courseIcon = (course) => `<svg viewBox="0 0 200 200" aria-hidden="true">${ICONS[course]}</svg>`;

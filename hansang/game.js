@@ -1,8 +1,8 @@
 // 차려내라! 한 상: 한 기기에서 둘이 번갈아 두는 화면
 import {
-  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, scores, winner, STAR_CARDS,
+  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, scores, winner, STAR_CARDS, BASE_COST,
 } from './engine/rules.js';
-import { THEME, RESERVE_TEXT, cardTitle, iconSvg } from './cards-data.js';
+import { THEME, cardTitle, iconSvg, courseIcon } from './cards-data.js';
 
 const PREFIX = 'hansang:';
 const store = {
@@ -12,6 +12,7 @@ const store = {
 
 const app = document.getElementById('app');
 const esc = (s) => String(s).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 let names = ['요리사 1', '요리사 2'];
 try {
@@ -23,6 +24,8 @@ let screen = 'start'; // start | play | over
 let game = null;
 let selected = null; // 선택한 손패 카드 id
 let cover = false; // 차례 넘김 가림 화면
+let sheet = null; // null | {type:'lane', player, course} | {type:'score'}
+let starPop = null; // 방금 별을 받은 코스
 let toastTimer = null;
 
 function toast(msg) {
@@ -36,48 +39,61 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.remove(), 2600);
 }
 
+const colorVars = (course, reserve = false) => {
+  const t = THEME[course];
+  return reserve ? '--bg:#F1EDE6;--ink:#1a1a1a' : `--bg:${t.color};--ink:${t.ink}`;
+};
+
 function cardHtml(card, { tag = 'div', extra = '', mini = false, sel = false } = {}) {
   const t = THEME[card.course];
-  const bg = card.step === 0 ? '#F1EDE6' : t.color;
-  const ink = card.step === 0 ? '#1a1a1a' : t.ink;
   const num = card.step === 0 ? '예' : card.step;
-  return `<${tag} class="card${mini ? ' mini' : ''}${sel ? ' sel' : ''}" style="--bg:${bg};--ink:${ink}" ${extra}>
+  return `<${tag} class="card${mini ? ' mini' : ''}${sel ? ' sel' : ''}" style="${colorVars(card.course, card.step === 0)}" ${extra}>
     <div class="ct">${cardTitle(card)}</div>
     <div class="ci">${iconSvg(card)}</div>
     <div class="cf"><span>${t.name}</span><b>${num}</b></div>
   </${tag}>`;
 }
 
-function stripHtml(card) {
-  const t = THEME[card.course];
-  const label = card.step === 0 ? '단골 예약' : cardTitle(card);
-  const num = card.step === 0 ? '예' : card.step;
-  const bg = card.step === 0 ? '#F1EDE6' : t.color;
-  const ink = card.step === 0 ? '#1a1a1a' : t.ink;
-  const reserveBorder = card.step === 0 ? `;border:2px solid ${t.color}` : '';
-  return `<div class="strip" style="--bg:${bg};--ink:${ink}${reserveBorder}" title="${esc(label)}"><b>${num}</b><span>${esc(label)}</span></div>`;
-}
-
-function badgeHtml(lane) {
+// 코스 줄 요약: 마지막으로 낸 단계 숫자를 크게
+function laneSummary(lane) {
   const d = laneDetail(lane);
-  if (!d.started) return '<div class="badge">&nbsp;</div>';
-  const star = d.star ? '<span class="star">★ 별 </span>' : '';
-  return `<div class="badge ${d.score < 0 ? 'neg' : ''}">${star}${d.score > 0 ? '+' : ''}${d.score}점</div>`;
+  const steps = lane.filter((c) => c.step > 0);
+  const big = steps.length ? steps[steps.length - 1].step : (d.reservations ? `예${d.reservations}` : '–');
+  return { d, big, count: lane.length };
 }
 
-function laneHtml(lanes, course, { mine, target }) {
+function myLaneHtml(lanes, course, { target, player }) {
   const lane = lanes[course];
   const t = THEME[course];
+  const { d, big, count } = laneSummary(lane);
   const cls = ['lane'];
-  if (lane.length === 0) cls.push('empty');
+  if (!d.started) cls.push('empty');
   if (target) cls.push('target');
-  const attrs = target ? `data-lane="${course}" role="button" tabindex="0" aria-label="${t.name} 줄에 올리기"` : '';
-  const strips = lane.length
-    ? lane.map(stripHtml).join('')
-    : `<div class="ph">${t.name}</div>`;
-  const badge = badgeHtml(lane);
-  // 시장과 가까운 쪽에 점수 표시: 상대는 아래, 나는 위
-  return `<div class="${cls.join(' ')}" style="--c:${t.color}" ${attrs}>${mine ? badge + strips : strips + badge}</div>`;
+  else cls.push('dim');
+  const star = d.star ? `<span class="star${starPop === course ? ' pop' : ''}" title="별 한 개">★</span>` : '';
+  const meta = d.started ? `${count}장${d.reservations ? `<br>예약 ${d.reservations}` : ''}` : '&nbsp;<br>&nbsp;';
+  const pt = d.started ? `<div class="pt ${d.score < 0 ? 'neg' : ''}">${d.score > 0 ? '+' : ''}${d.score}</div>` : '<div class="pt" style="opacity:0">0</div>';
+  const main = `
+    ${star}
+    <div class="ic">${courseIcon(course)}</div>
+    <div class="nm">${t.name}</div>
+    <div class="big">${big}</div>
+    <div class="meta">${meta}</div>
+    ${pt}`;
+  const attrs = `data-mylane="${course}" style="--c:${t.color};--k:${t.ink}"`;
+  const info = d.started ? `<button class="info" data-detail="${player}:${course}" aria-label="${t.name} 낸 카드 보기">i</button>` : '';
+  if (target) {
+    return `<div class="lw"><button class="${cls.join(' ')}" ${attrs} data-lane="${course}" aria-label="${t.name} 줄에 올리기"><span class="tag">올리기</span>${main}</button>${info}</div>`;
+  }
+  return `<div class="lw"><div class="${cls.join(' ')}" ${attrs}>${main}</div>${info}</div>`;
+}
+
+function oppChipHtml(oppLanes, course, oppIdx) {
+  const t = THEME[course];
+  const { d, big, count } = laneSummary(oppLanes[course]);
+  const cls = d.started ? 'opp' : 'opp empty';
+  const sc = d.started ? `<span class="m">${count}장</span><span class="m">${d.score > 0 ? '+' : ''}${d.score}</span>` : `<span class="m">${t.name}</span>`;
+  return `<button class="${cls}" style="--c:${t.color};--k:${t.ink}" data-detail="${oppIdx}:${course}" ${d.started ? '' : 'disabled'} aria-label="${esc(names[oppIdx])} ${t.name} 줄 보기"><span class="n">${big}</span>${sc}</button>`;
 }
 
 function renderStart() {
@@ -104,22 +120,44 @@ function renderStart() {
   </section>`;
 }
 
-function statusTip(v) {
-  return v.phase === 'play'
-    ? '① 카드를 골라 코스 줄에 올리거나, 시장 좌판에 내려놓으세요'
-    : '② 식재료 창고에서 한 장, 혹은 시장 좌판에서 한 장 가져오세요';
+function sheetHtml() {
+  if (!sheet) return '';
+  if (sheet.type === 'score') {
+    const sc = scores(game);
+    return `<div class="backdrop" data-act="close"></div>
+    <div class="sheet" role="dialog" aria-label="점수">
+      <h3>지금까지 점수</h3><p class="sub">코스 점수의 합이에요. 마감 때 확정돼요.</p>
+      <div class="sc"><span>${esc(names[0])}</span><b class="${sc[0] < 0 ? 'neg' : ''}">${sc[0]}</b></div>
+      <div class="sc"><span>${esc(names[1])}</span><b class="${sc[1] < 0 ? 'neg' : ''}">${sc[1]}</b></div>
+      <button class="btn ghost close" data-act="close">닫기</button>
+    </div>`;
+  }
+  const { player, course } = sheet;
+  const lane = game.lanes[player][course];
+  const t = THEME[course];
+  const d = laneDetail(lane);
+  const rows = lane.map((c) => `<div class="li" style="--c:${c.step === 0 ? '#F1EDE6' : t.color};--k:${c.step === 0 ? '#1a1a1a' : t.ink}"><span class="no">${c.step === 0 ? '예' : c.step}</span>${cardTitle(c)}</div>`).join('');
+  const calc = `(숫자 합 ${d.sum} − ${BASE_COST}) × ${1 + d.reservations}${d.star ? ' + 별 20' : ''} = <b>${d.score}점</b>`;
+  return `<div class="backdrop" data-act="close"></div>
+  <div class="sheet" role="dialog" aria-label="${t.name} 줄">
+    <h3>${esc(names[player])}님 · ${t.name}</h3>
+    <p class="sub">낸 순서대로 ${lane.length}장</p>
+    ${rows || '<p class="sub">아직 낸 카드가 없어요</p>'}
+    ${d.started ? `<div class="calc">${calc}</div>` : ''}
+    <button class="btn ghost close" data-act="close">닫기</button>
+  </div>`;
 }
 
 function renderPlay() {
   const p = game.turn;
   const opp = 1 - p;
   const v = viewFor(game, p);
-  const sc = scores(game);
   const selCard = selected ? v.myHand.find((c) => c.id === selected) : null;
   if (selected && !selCard) selected = null;
 
   const playing = v.phase === 'play';
   const drawing = v.phase === 'draw';
+  const aim = (playing && !!selCard) || drawing;
 
   const hand = v.myHand.slice().sort((a, b) => COURSES.indexOf(a.course) - COURSES.indexOf(b.course) || a.step - b.step);
 
@@ -133,19 +171,18 @@ function renderPlay() {
     const canDrawHere = drawing && top && top.id !== v.justDiscarded;
     const canDropHere = playing && selCard && selCard.course === course;
     const target = canDrawHere || canDropHere;
-    const attrs = canDrawHere
-      ? `data-draw="${course}" role="button" tabindex="0" aria-label="${t.name} 좌판에서 가져오기"`
-      : canDropHere
-        ? `data-drop="${course}" role="button" tabindex="0" aria-label="${t.name} 좌판에 내려놓기"`
-        : '';
-    const body = top ? cardHtml(top, { mini: true }) : `<div class="none" style="--c:${t.color}">${t.name}<br>좌판</div>`;
-    return `<div class="pile ${target ? 'target' : ''}" ${attrs}>${body}<div class="cnt">${pile.length}장</div></div>`;
+    const body = top ? cardHtml(top, { mini: true }) : `<div class="none" style="--c:${t.color}">${t.name}</div>`;
+    const cnt = `<div class="cnt">${pile.length}장</div>`;
+    const base = `data-pile="${course}"`;
+    if (canDrawHere) return `<button class="pile target" ${base} data-draw="${course}" aria-label="${t.name} 좌판에서 가져오기"><span class="tag">가져오기</span>${body}${cnt}</button>`;
+    if (canDropHere) return `<button class="pile target" ${base} data-drop="${course}" aria-label="${t.name} 좌판에 내려놓기"><span class="tag">내려놓기</span>${body}${cnt}</button>`;
+    return `<div class="pile ${aim ? 'dim' : ''}" ${base}>${body}${cnt}</div>`;
   }).join('');
 
-  const oppLanes = COURSES.map((c) => laneHtml(v.opponentLanes, c, { mine: false, target: false })).join('');
+  const oppChips = COURSES.map((c) => oppChipHtml(v.opponentLanes, c, opp)).join('');
   const myLanes = COURSES.map((c) => {
     const target = playing && selCard && selCard.course === c && canPlayOnLane(v.myLanes[c], selCard);
-    return laneHtml(v.myLanes, c, { mine: true, target });
+    return myLaneHtml(v.myLanes, c, { target, player: p });
   }).join('');
 
   const handHtml = hand.map((card) => cardHtml(card, {
@@ -154,37 +191,47 @@ function renderPlay() {
     sel: card.id === selected,
   })).join('');
 
+  const tip = playing
+    ? '<span class="stp">1</span>카드를 골라 코스에 올리거나 좌판에 내려놓기'
+    : '<span class="stp">2</span>창고나 좌판에서 한 장 가져오기';
+
   app.innerHTML = `
   <header class="top">
-    <div class="deck ${deckUrgent ? 'urgent' : ''} ${deckTarget ? 'target' : ''}" ${deckTarget ? 'data-draw="deck" role="button" tabindex="0" aria-label="식재료 창고에서 가져오기"' : ''}>
-      <span>마감까지</span><b>${v.deckCount}</b><span>장</span>
-    </div>
+    ${deckTarget
+      ? `<button class="deckbtn target ${deckUrgent ? 'urgent' : ''}" data-draw="deck" aria-label="식재료 창고에서 가져오기"><span class="tag">가져오기</span><small>마감까지</small><b>${v.deckCount}</b></button>`
+      : `<div class="deckbtn ${deckUrgent ? 'urgent' : ''}"><small>마감까지</small><b>${v.deckCount}</b></div>`}
     <div class="status">
       <div class="who">${esc(names[p])}님 차례</div>
-      <div class="tip">${statusTip(v)}</div>
-      ${deckUrgent ? '<div class="urgent-note">곧 마감입니다</div>' : ''}
+      <div class="tip">${tip}</div>
+      ${deckUrgent ? '<div class="late">곧 마감입니다</div>' : ''}
     </div>
-    <div class="score">
-      <div>${esc(names[0])} <b>${sc[0]}</b></div>
-      <div>${esc(names[1])} <b>${sc[1]}</b></div>
-    </div>
+    <button class="scorebtn" data-act="score">점수</button>
   </header>
-  <main class="board">
-    <div class="side-label">${esc(names[opp])}님의 코스</div>
-    <div class="row">${oppLanes}</div>
-    <div class="market">
-      <div class="side-label" style="margin-bottom:6px">시장 좌판</div>
+  <main class="board ${aim ? 'aim' : ''}">
+    <section>
+      <div class="lbl"><span>${esc(names[opp])}님의 코스</span><span>눌러서 보기</span></div>
+      <div class="row" style="margin-top:8px">${oppChips}</div>
+    </section>
+    <section class="market">
+      <div class="lbl"><span>시장 좌판</span></div>
       <div class="row">${marketCols}</div>
-    </div>
-    <div class="row">${myLanes}</div>
-    <div class="side-label">${esc(names[p])}님의 코스 · 내 패 ${v.myHand.length}장</div>
-    <div class="hand">${handHtml}</div>
+    </section>
+    <section>
+      <div class="lbl"><span>${esc(names[p])}님의 코스</span></div>
+      <div class="row" style="margin-top:8px">${myLanes}</div>
+    </section>
   </main>
+  <div class="handwrap">
+    <div class="handlbl">내 패 ${v.myHand.length}장</div>
+    <div class="hand">${handHtml}</div>
+  </div>
+  ${sheetHtml()}
   ${cover ? `<div class="cover">
       <h2>${esc(names[p])}님 차례입니다</h2>
       <p>${esc(names[opp])}님은 화면을 보지 마세요.<br>준비되면 아래 버튼을 눌러 패를 확인하세요.</p>
       <button class="btn" data-act="reveal">내 패 보기</button>
     </div>` : ''}`;
+  starPop = null;
 }
 
 function review() {
@@ -210,7 +257,7 @@ function renderOver() {
       ? `${d.sum}${d.reservations ? ` · 예약 ${d.reservations}` : ''}${d.star ? ' · ★' : ''}`
       : '–');
     const sc = (d) => `<td class="${d.score < 0 ? 'neg' : ''}">${d.started ? d.score : 0}</td>`;
-    return `<tr><td class="c" style="--c:${t.color}"><i></i>${t.name}</td><td>${cell(r.lanes[0][c])}</td>${sc(r.lanes[0][c])}<td>${cell(r.lanes[1][c])}</td>${sc(r.lanes[1][c])}</tr>`;
+    return `<tr><td class="cname" style="--c:${t.color}"><i></i>${t.name}</td><td>${cell(r.lanes[0][c])}</td>${sc(r.lanes[0][c])}<td>${cell(r.lanes[1][c])}</td>${sc(r.lanes[1][c])}</tr>`;
   }).join('');
   const unfinished = [0, 1].filter((p) => COURSES.some((c) => r.lanes[p][c].started && r.lanes[p][c].score < 0));
   app.innerHTML = `
@@ -239,32 +286,68 @@ function render() {
   if (screen === 'start') renderStart();
   else if (screen === 'over') renderOver();
   else renderPlay();
-  window.scrollTo?.(0, 0);
 }
 
 function startGame() {
   game = newGame();
   selected = null;
   cover = true;
+  sheet = null;
   screen = 'play';
   render();
+  window.scrollTo?.(0, 0);
+}
+
+// 카드가 손에서 줄이나 좌판으로 날아가는 짧은 움직임 (같은 차례 안에서만)
+function fly(card, fromRect, targetSelector) {
+  if (reduceMotion() || !fromRect) return;
+  const to = document.querySelector(targetSelector)?.getBoundingClientRect();
+  if (!to) return;
+  const el = document.createElement('div');
+  el.className = 'fly';
+  el.innerHTML = cardHtml(card, { extra: '' });
+  const c = el.firstElementChild;
+  c.style.setProperty('--w', `${fromRect.width}px`);
+  el.style.left = `${fromRect.left}px`;
+  el.style.top = `${fromRect.top}px`;
+  document.body.appendChild(el);
+  const dx = to.left + to.width / 2 - (fromRect.left + fromRect.width / 2);
+  const dy = to.top + to.height / 2 - (fromRect.top + fromRect.height / 2);
+  const s = Math.min(1, (to.width * 0.8) / fromRect.width);
+  el.animate(
+    [{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx}px,${dy}px) scale(${s})`, opacity: 0.2 }],
+    { duration: 320, easing: 'cubic-bezier(.2,.7,.2,1)' },
+  ).finished.then(() => el.remove(), () => el.remove());
 }
 
 function act(action) {
+  const srcEl = action.cardId ? document.querySelector(`[data-card="${action.cardId}"]`) : null;
+  const fromRect = srcEl?.getBoundingClientRect();
+  const movedCard = action.cardId ? game.hands[game.turn].find((c) => c.id === action.cardId) : null;
+  const before = movedCard ? game.lanes[game.turn][movedCard.course].length : 0;
+
   const r = apply(game, game.turn, action);
   if (!r.ok) { toast(r.error); return; }
   const turnBefore = game.turn;
   game = r.state;
   selected = null;
-  if (game.over) { screen = 'over'; render(); return; }
+  sheet = null;
+  if (game.over) { screen = 'over'; render(); window.scrollTo?.(0, 0); return; }
   if (game.turn !== turnBefore) cover = true;
-  const keepScroll = window.scrollY;
+
+  if (action.type === 'play' && movedCard) {
+    const after = game.lanes[turnBefore][movedCard.course].length;
+    if (before < STAR_CARDS && after >= STAR_CARDS) starPop = movedCard.course;
+  }
   render();
-  if (!cover) window.scrollTo?.(0, keepScroll);
+  if (movedCard) {
+    fly(movedCard, fromRect, action.type === 'play' ? `[data-mylane="${movedCard.course}"]` : `[data-pile="${movedCard.course}"]`);
+  }
+  if (cover) window.scrollTo?.(0, 0);
 }
 
 app.addEventListener('click', (e) => {
-  const t = e.target.closest('[data-act],[data-card],[data-lane],[data-drop],[data-draw]');
+  const t = e.target.closest('[data-act],[data-card],[data-lane],[data-drop],[data-draw],[data-detail]');
   if (!t) return;
   const d = t.dataset;
   if (d.act === 'start') {
@@ -276,6 +359,13 @@ app.addEventListener('click', (e) => {
   } else if (d.act === 'reveal') { cover = false; render(); }
   else if (d.act === 'again') startGame();
   else if (d.act === 'home') { screen = 'start'; render(); }
+  else if (d.act === 'score') { sheet = { type: 'score' }; render(); }
+  else if (d.act === 'close') { sheet = null; render(); }
+  else if (d.detail) {
+    const [pl, course] = d.detail.split(':');
+    sheet = { type: 'lane', player: Number(pl), course };
+    render();
+  }
   else if (d.card) { selected = selected === d.card ? null : d.card; render(); }
   else if (d.lane) act({ type: 'play', cardId: selected });
   else if (d.drop) act({ type: 'discard', cardId: selected });
@@ -283,13 +373,10 @@ app.addEventListener('click', (e) => {
 });
 
 app.addEventListener('keydown', (e) => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) {
-    e.preventDefault();
-    e.target.click();
-  }
+  if (e.key === 'Escape' && sheet) { sheet = null; render(); }
 });
 
-// 테스트와 디버깅용 (콘솔에서 확인)
+// 테스트와 디버깅용
 window.__hansang = { get game() { return game; } };
 
 render();
