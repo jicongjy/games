@@ -515,20 +515,23 @@
     for (var e = ev.length - 1; e > 0; e--) { var j = rnd(s, e + 1), tmp = ev[e]; ev[e] = ev[j]; ev[j] = tmp; }
     s.eventsLeft = ev;
     for (var id in c.start) s.inv[id] = c.start[id];
-    // 당근 주머니: 당근을 먹는 동안 두부는 세는 걸 까먹어서 하루에 한 번 더 일한다
-    if (s.relics.indexOf('carrot') >= 0) s.workers.push({ t: 'donkey', used: false, extra: true });
+    // 당근 주머니: 두부가 장날(주의 마지막 날)에는 한 번 더 일한다. 매일 하면 너무 쉬워서 장날로 좁혔다.
+    if (s.relics.indexOf('carrot') >= 0) s.workers.push({ t: 'donkey', used: true, extra: true });
     return s;
   };
 
   // ── 유물 ──
   W.has = function (s, id) { return s.relics.indexOf(id) >= 0; };
   W.CORNERS = { 0: 1, 4: 1, 20: 1, 24: 1 };
-  // 그 칸에서 일꾼이 한 번 일하면 내는 것에 곱하는 수. 낡은 나침반(모서리 칸), 새벽 종(하루의 첫 일)이 각각 2배.
+  // 그 칸에서 일꾼이 한 번 일하면 내는 것에 곱하는 수. 낡은 나침반(모서리 칸)이 2배.
   W.mult = function (s, cell) {
     var m = 1;
     if (W.has(s, 'compass') && W.CORNERS[cell]) m *= 2;
-    if (W.has(s, 'dawnbell') && !Object.keys(s.at).length) m *= 2;
     return m;
+  };
+  // 새벽 종: 한 주를 여는 날(주의 첫날)의 첫 일은 내는 것이 1개 더(2배로 하면 의뢰가 너무 쉬워져서 더하기로 바꿨다)
+  W.first = function (s) {
+    return W.has(s, 'dawnbell') && !Object.keys(s.at).length && (s.day - 1) % s.perWeek === 0 ? 1 : 0;
   };
   // 돋보기: 상인 꾸러미 값을 금화 1개 깎는다(1개 밑으로는 안 내려간다)
   W.cost = function (s, pack) { return Math.max(1, pack.cost - (W.has(s, 'magnifier') ? 1 : 0)); };
@@ -648,12 +651,12 @@
   W.bakeOut = function (s, cell) {
     var n = W.takeable(s, cell);
     if (!n) return 0;
-    return (n + (n >= 3 ? 1 : 0) + (adj(s, cell, 'mill') > 0 ? 1 : 0)) * W.mult(s, cell);
+    return (n + (n >= 3 ? 1 : 0) + (adj(s, cell, 'mill') > 0 ? 1 : 0)) * W.mult(s, cell) + (n ? W.first(s) : 0);
   };
   // 지금 양조장에 일꾼을 보내면 나오는 금화(덤 포함)
   W.brewOut = function (s, cell) {
     var on = adj(s, cell, 'orchard');
-    return (on * W.BREW + (on >= 2 ? 2 : 0)) * W.mult(s, cell);
+    return (on * W.BREW + (on >= 2 ? 2 : 0)) * W.mult(s, cell) + W.first(s);
   };
   // 일꾼이 필요 없는 건물이 지금 옆 칸을 돕고 있는가
   W.helping = function (s, cell) {
@@ -666,12 +669,12 @@
   W.work = function (s, cell) {
     if (W.canWork(s, cell)) return false;
     begin(s);
-    var b = s.board[cell], who = null, k, m = W.mult(s, cell);   // 유물 곱은 일하기 전에 정한다(하루의 첫 일인지 봐야 해서)
+    var b = s.board[cell], who = null, k, m = W.mult(s, cell), ex = W.first(s);   // 유물 곱은 일하기 전에 정한다(하루의 첫 일인지 봐야 해서)
     for (k = 0; k < s.workers.length; k++) if (!s.workers[k].used) { who = s.workers[k]; break; }
     who.used = true;
     s.at[cell] = who.t;
     if (b.id === 'field') {
-      var wet = adj(s, cell, 'well') > 0, g = Math.min((wet ? 2 : 1) * m, W.CAP - b.w);
+      var wet = adj(s, cell, 'well') > 0, g = Math.min((wet ? 2 : 1) * m + ex, W.CAP - b.w);
       b.w += g; s.stat.grain += g;
       if (wet) find(s, 'wet');
       s.fx.push({ cell: cell, r: 'grain', n: g });
@@ -681,24 +684,24 @@
       var out = n;
       if (n >= 3) { out++; find(s, 'oven'); }
       if (adj(s, cell, 'mill') > 0) { out++; find(s, 'flour'); }
-      out *= m;
+      out = out * m + ex;
       s.bread += out; s.stat.baked += out; s.stat.dayBread += out;
       s.fx.push({ cell: cell, r: 'bread', n: out });
     } else if (b.id === 'brewery') {
       var on = adj(s, cell, 'orchard'), bg = on * W.BREW;
       if (on >= 2) { bg += 2; find(s, 'cask'); }
-      bg *= m;
+      bg = bg * m + ex;
       s.gold += bg; s.stat.brewed += bg;
       s.fx.push({ cell: cell, r: 'gold', n: bg });
     } else if (b.id === 'fishing') {
       var fg = W.FISH;
       if (adj(s, cell, 'inn') > 0) { fg++; find(s, 'guest'); }
-      fg *= m;
+      fg = fg * m + ex;
       s.gold += fg; s.stat.fished += fg;
       s.fx.push({ cell: cell, r: 'gold', n: fg });
     } else if (b.id === 'orchard') {
-      s.gold += 2 * m;
-      s.fx.push({ cell: cell, r: 'gold', n: 2 * m });
+      s.gold += 2 * m + ex;
+      s.fx.push({ cell: cell, r: 'gold', n: 2 * m + ex });
     }
     todos(s);
     return true;
@@ -787,6 +790,7 @@
     s.stat.dayBread = 0;
     s.workers = s.workers.filter(function (w) { return !w.guest; });
     s.workers.forEach(function (w) { w.used = !!w.hungry; w.fresh = false; });
+    s.workers.forEach(function (w) { if (w.extra) w.used = (s.day - 1) % s.perWeek !== s.perWeek - 1; });   // 당근 두부는 장날에만 쉬지 않는다
     todos(s);
     if (s.phase === 'play') morning(s);
     return true;

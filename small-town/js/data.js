@@ -122,10 +122,10 @@
 
   ST.RELICS = {
     compass: { name: '낡은 나침반', sprite: 'r_compass', desc: '모서리 네 칸에 있는 건물은 일꾼이 한 번 일할 때 내는 것이 2배', old: '모서리 네 칸에 놓은 건물은 내는 것이 2배', lore: '바늘이 북쪽 말고 자꾸 구석만 가리킨다. 고장인 줄 알았는데 아니었다.' },
-    dawnbell: { name: '새벽 종', sprite: 'r_dawnbell', desc: '하루의 첫 일은 내는 것이 2배', old: '그 판에서 처음 놓는 조각이 두 번 발동', lore: '할머니가 아침마다 나를 깨우던 종. 지금 들어도 몸이 먼저 일어난다.' },
+    dawnbell: { name: '새벽 종', sprite: 'r_dawnbell', desc: '한 주를 여는 날(주의 첫날)의 첫 일은 내는 것이 1개 더', old: '그 판에서 처음 놓는 조각이 두 번 발동', lore: '할머니가 아침마다 나를 깨우던 종. 지금 들어도 몸이 먼저 일어난다.' },
     magnifier: { name: '돋보기', sprite: 'r_magnifier', desc: '상인 꾸러미가 금화 1개 싸진다', old: '손에 조각이 4개 들어온다', lore: '할머니는 눈이 좋다. 이건 남의 설계 흠잡을 때만 꺼내셨다.' },
     pencil: { name: '몽당연필', sprite: 'r_pencil', desc: '판마다 한 번, 지은 건물을 지우고 그 조각을 돌려받는다(옮겨 짓기)', old: '판마다 한 번, 손에 든 조각을 전부 다시 뽑는다', lore: '연필보다 지우개 쪽이 더 닳았다. 할머니도 많이 지우셨구나.' },
-    carrot: { name: '당근 주머니', sprite: 'r_carrot', desc: '두부가 하루에 한 번 더 일한다. 지을 수 있는 조각 수에 한도가 있는 땅에서는 1개 더', old: '짐을 하나 더 실을 수 있다', lore: '당근 먹는 동안에는 두부가 세는 걸 까먹는다.' }
+    carrot: { name: '당근 주머니', sprite: 'r_carrot', desc: '장날(주의 마지막 날)에는 두부가 한 번 더 일한다. 지을 수 있는 조각 수에 한도가 있는 땅에서는 1개 더', old: '짐을 하나 더 실을 수 있다', lore: '당근 먹는 동안에는 두부가 세는 걸 까먹는다.' }
   };
   ST.RELIC_ORDER = ['compass', 'dawnbell', 'magnifier', 'pencil', 'carrot'];
 
@@ -283,7 +283,7 @@
       bonus: [{ r: 'gold', n: 6 }, { r: 'people', n: 5 }],
       // 일꾼 규칙. 땅에 지을 수 있는 조각은 pieces개까지라서, 가진 조각 중 어떤 여섯을 지을지 고르는 게 핵심이다(짐 6개를 옮긴 것).
       // 마지막 장날에 people(주민), needGold(금화), needGrain(밭에 쌓인 곡식)이 한꺼번에 있어야 한다. 빵은 장날마다 내는 것이 곧 그 조건이다.
-      work: { perWeek: 5, quota: [3, 6, 9], gold: 0, people: 2, needGold: 3, needGrain: 2, pieces: 6,
+      work: { perWeek: 5, quota: [3, 7, 11], gold: 0, people: 2, needGold: 3, needGrain: 2, pieces: 6,
         start: { field: 3, bakery: 1, house: 2, well: 1, orchard: 1 },
         todo: [
           { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
