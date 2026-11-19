@@ -504,7 +504,7 @@
       workers: [{ t: 'hero', used: false }, { t: 'donkey', used: false }],
       phase: 'play', found: [], news: [], fx: [], at: {},
       todo: {}, todoNew: [], todoList: (c.todo || []).map(function (t) { return { id: t.id, gold: t.gold }; }),
-      stat: { grain: 0, baked: 0, bought: 0, dayBread: 0, fished: 0, brewed: 0 },
+      stat: { grain: 0, baked: 0, bought: 0, dayBread: 0, fished: 0, brewed: 0, errand: 0 },
       market: null, night: null, won: false, failed: false, event: null, eventsLeft: []
     };
     for (var i = 0; i < 25; i++) s.board.push(null);
@@ -699,7 +699,7 @@
     if (s.phase !== 'play' || !W.idle(s)) return false;
     begin(s);
     for (var k = 0; k < s.workers.length; k++) if (!s.workers[k].used) { s.workers[k].used = true; break; }
-    s.gold += W.ERRAND;
+    s.gold += W.ERRAND; s.stat.errand++;
     return true;
   };
 

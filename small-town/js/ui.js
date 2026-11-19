@@ -732,6 +732,10 @@
       if (!s.stat.grain) return { work: [C.field1], text: T.work1 };
       if (!s.stat.baked) return { work: [C.bakery], text: T.bake1 };
       if (!tut.ack) return { wait: true, text: T.why };
+      // 금화 쓰는 법: 용돈을 알려 주고, 상인에게서 밭 꾸러미를 사게 한다
+      if (!tut.gack) return { wait: true, gold: true, text: T.gold };
+      if (!s.stat.bought) return V.shop ? { buy: true, text: T.buy } : { shop: true, text: T.shop };
+      if (V.shop) return { sheet: true, text: T.bought };
       return { end: true, text: T.end1 };
     }
     if (s.day === 2) {
@@ -742,6 +746,9 @@
       return { end: true, text: T.end2 };
     }
     if (!s.stat.dayBread && W.idle(s) && W.bakeOut(s, C.bakery)) return { work: [C.bakery], text: T.bake2 };
+    // 금화 버는 법: 남은 일꾼을 상인 심부름에 보내 본다(일꾼이 남아 있을 때만)
+    if (!s.stat.errand && W.idle(s)) return V.shop ? { errand: true, text: T.errand2 } : { shop: true, text: T.errand };
+    if (V.shop && s.stat.errand && !tut.errClosed) return { sheet: true, text: T.errandDone };
     return { free: true, end: true, text: T.free };
   }
   function wtag(id) {
@@ -775,7 +782,7 @@
   function vWork() {
     var q = Q, s = G, W = ST.work, h = '', i;
     if (s.phase === 'over') {
-      return '<div class="panel center"><p>' + (s.won ? (isTut() ? '장날에 빵 ' + s.market.need + '개를 냈어요!' : '마지막 장날까지 넘겼어요!') : failText(s.market)) + '</p>' +
+      return '<div class="panel center"><p>' + (s.won ? (isTut() ? '장날에 빵 ' + s.market.need + '개를 냈어요! 금화 ' + s.market.pay + '개도 받았어요.' : '마지막 장날까지 넘겼어요!') : failText(s.market)) + '</p>' +
         '<button class="primary wide" data-a="judge">' + (isTut() ? '할머니에게 보여 주기' : esc(q.who) + '에게 가기') + '</button></div>';
     }
     var wk = s.week, dw = (s.day - 1) % s.perWeek, need = s.quota[wk];
@@ -815,7 +822,7 @@
     h += '<div class="quota"><div class="qtxt"><span>장날에 낼 빵 <b>' + need + '개</b></span><span class="' + (s.bread >= need ? 'ok' : '') + '">지금 ' + s.bread + '개 · ' + (left === 1 ? '오늘이 장날' : '장날까지 ' + left + '일') + '</span></div>' +
       '<div class="qbar"><i style="width:' + pct + '%"></i></div></div>';
 
-    h += '<div class="wstat"><span class="wchip">' + img('i_bread') + s.bread + '</span><span class="wchip">' + img('i_gold') + s.gold + '</span><span class="crew"><span class="lb">일꾼</span>';
+    h += '<div class="wstat"><span class="wchip">' + img('i_bread') + s.bread + '</span><span class="wchip' + (ts && ts.gold ? ' pulse' : '') + '">' + img('i_gold') + s.gold + '</span><span class="crew"><span class="lb">일꾼</span>';
     s.workers.forEach(function (w) {
       h += '<span class="wm' + (w.used ? ' used' : '') + (w.hungry ? ' hungry' : '') + (w.fresh ? ' fresh' : '') + '">' + img(WHO[w.t]) + '</span>';
     });
@@ -902,21 +909,24 @@
         '<span class="nm">' + ST.PIECES[id].name + (s.inv[id] > 1 ? ' ×' + s.inv[id] : '') + '</span>' + wtag(id) + '</button>';
     });
     h += '</div>';
-    h += '<div class="row acts">' + (isTut() ? '' : '<button class="small" data-a="wshop">상인</button>') + '<button class="small" data-a="wundo"' + (hist.length && (!ts || ts.free) ? '' : ' disabled') + '>되돌리기</button>' +
+    h += '<div class="row acts">' + (isTut() ? '<button class="small' + (ts && ts.shop ? ' pulse' : '') + '" data-a="wshop"' + (ts && (ts.shop || ts.free) ? '' : ' disabled') + '>상인</button>' : '<button class="small" data-a="wshop">상인</button>') + '<button class="small" data-a="wundo"' + (hist.length && (!ts || ts.free) ? '' : ' disabled') + '>되돌리기</button>' +
       '<button class="primary' + ((ts ? ts.end && !ts.free : !idle) ? ' pulse' : '') + '" style="flex:1" data-a="wend"' + (ts && !ts.end ? ' disabled' : '') + '>' + (left === 1 ? '하루 마치고 장날 가기' : '하루 마치기') + '</button></div>';
 
     if (V.shop) {
       h += '<div class="sheet" data-a="wshop"><div class="sheet-in" data-a="noop"><div class="row between"><h2>떠돌이 상인</h2><span class="wchip">' + img('i_gold') + s.gold + '</span></div>';
+      // 튜토리얼에서는 단계가 정해 준 것만 누를 수 있다
+      var tb = !isTut() || (ts && (ts.buy || ts.free)), te = !isTut() || (ts && (ts.errand || ts.free)), tsell = !isTut() || (ts && ts.free);
+      if (isTut() && ts) h += coach(ts);
       if (V.got) h += '<div class="got"><span>나왔다!</span>' + V.got.map(function (id) { return '<span class="g1">' + img(id, null, 16) + ST.PIECES[id].name + '</span>'; }).join('') + '</div>';
       ST.packsFor(q).forEach(function (p, n) {
-        h += '<button class="choice pk" data-a="wbuy" data-i="' + n + '"' + (s.gold >= p.cost ? '' : ' disabled') + '><span class="pk-l"><b>' + esc(p.name) + '</b>' + packHtml(p) + '</span><span class="pk-c">' + img('i_gold') + p.cost + '</span></button>';
+        h += '<button class="choice pk" data-a="wbuy" data-i="' + n + '"' + (s.gold >= p.cost && tb ? '' : ' disabled') + '><span class="pk-l"><b>' + esc(p.name) + '</b>' + packHtml(p) + '</span><span class="pk-c">' + img('i_gold') + p.cost + '</span></button>';
       });
       h += '<p class="muted" style="margin:0">꾸러미에는 앞의 조각 하나와, 뒤의 둘 중 하나가 들어 있어요. 둘 중 하나는 번갈아 나와요.</p>';
       h += '<div class="earn"><b>금화 버는 법</b>' +
-        '<button class="choice" data-a="werrand"' + (idle ? '' : ' disabled') + '><b>심부름 보내기</b><span>일꾼 1명 → ' + img('i_gold') + W.ERRAND + ' <small>(쉬는 일꾼 ' + idle + '명)</small></span></button>' +
-        '<button class="choice" data-a="wsell"' + (s.bread ? '' : ' disabled') + '><b>빵 팔기</b><span>' + img('i_bread') + '1 → ' + img('i_gold') + W.SELL + ' <small>(가진 빵 ' + s.bread + '개)</small></span></button>' +
+        '<button class="choice" data-a="werrand"' + (idle && te ? '' : ' disabled') + '><b>심부름 보내기</b><span>일꾼 1명 → ' + img('i_gold') + W.ERRAND + ' <small>(쉬는 일꾼 ' + idle + '명)</small></span></button>' +
+        '<button class="choice" data-a="wsell"' + (s.bread && tsell ? '' : ' disabled') + '><b>빵 팔기</b><span>' + img('i_bread') + '1 → ' + img('i_gold') + W.SELL + ' <small>(가진 빵 ' + s.bread + '개)</small></span></button>' +
         '<p class="muted" style="margin:0">장날에 빵을 내면 1개마다 금화 ' + W.PAY + '개를 받아요. 과수원에 일꾼을 보내도 금화가 나와요.</p></div>';
-      h += '<button class="primary wide" data-a="wshop">닫기</button></div></div>';
+      h += '<button class="primary' + (ts && ts.sheet ? ' pulse' : '') + ' wide" data-a="wshop">닫기</button></div></div>';
     }
     if (V.note) {
       h += '<div class="sheet" data-a="wnote"><div class="sheet-in" data-a="noop"><div class="row between"><h2>할머니의 노트</h2><span class="muted">' + kp.length + ' / ' + ST.PAGE_ORDER.length + ' 쪽</span></div>' +
@@ -1103,7 +1113,7 @@
   function newBoard(bag) {
     if (Q.work) {
       G = ST.work.newGame(Q, (Date.now() % 100000) + 1);
-      tut = isTut() ? { pre: 0, ack: false } : null; hist = []; sel = null; fx = null;
+      tut = isTut() ? { pre: 0, ack: false, gack: false, errClosed: false } : null; hist = []; sel = null; fx = null;
       go('work');
       return;
     }
@@ -1240,14 +1250,22 @@
     },
     wnext: function () { ST.work.next(G); render(); window.scrollTo(0, 0); },
     wchoose: function (d) { if (ST.work.choose(G, ST.WEVENTS[G.event].choices[+d.i])) { hist = []; absorb(); render(); window.scrollTo(0, 0); } },
-    wshop: function () { V.shop = !V.shop; V.got = null; render(); },
+    wshop: function () {
+      if (isTut()) {
+        var ts0 = wtStep();
+        if (!V.shop && !(ts0 && (ts0.shop || ts0.free))) return;   // 튜토리얼에서는 단계가 시킬 때만 연다
+        if (V.shop && G.stat.errand) tut.errClosed = true;
+      }
+      V.shop = !V.shop; V.got = null; render();
+    },
     wbuy: function (d) {
+      if (isTut()) { var tb = wtStep(); if (!(tb && (tb.buy || tb.free))) return; }
       var got = ST.work.buy(G, ST.packsFor(Q)[+d.i]);
       if (!got) return;
       hist = []; V.got = got; absorb(); render();
     },
-    werrand: function () { if (ST.work.errand(G)) { hist = []; V.got = null; render(); } },
-    wsell: function () { if (ST.work.sell(G)) { hist = []; V.got = null; render(); } },
+    werrand: function () { if (isTut()) { var te = wtStep(); if (!(te && (te.errand || te.free))) return; } if (ST.work.errand(G)) { hist = []; V.got = null; render(); } },
+    wsell: function () { if (isTut()) { var tl = wtStep(); if (!(tl && tl.free)) return; } if (ST.work.sell(G)) { hist = []; V.got = null; render(); } },
     wnote: function () { V.note = !V.note; render(); },
     wpop: function () { V.pop.shift(); render(); },
     // 날짜 규칙
@@ -1280,7 +1298,7 @@
     rnext: function () { V.pg = (V.pg || 0) + 1; render(); window.scrollTo(0, 0); },
     tnext: function () {
       if (!tut) return;
-      if (tut.pre < ST.TUTOR.pre.length) tut.pre++; else tut.ack = true;
+      if (tut.pre < ST.TUTOR.pre.length) tut.pre++; else if (!tut.ack) tut.ack = true; else tut.gack = true;
       window.scrollTo(0, 0);
       render();
     },
