@@ -2,7 +2,7 @@
 
 마감 전에 두 요리사가 같은 시장 재료로 5개 코스를 차려내는 2인 실시간 웹 카드게임.
 
-- 상태: 한 기기 모드와 온라인 2인 모드 구현 완료. 온라인은 Cloudflare Worker 배포 후 `config.js`의 `SERVER_URL`을 채워야 켜진다.
+- 상태: 한 기기 모드와 온라인 2인 모드 구현 완료. 온라인 서버는 Cloudflare에 배포됨(`wss://hansang.hansang-server.workers.dev`, `config.js`의 `SERVER_URL`).
 - 기획서: `docs/plan.md`
 - 카드 디자인 시안: `docs/card-sample.png` (원본 `docs/card-sample.html`)
 - localStorage 키는 `hansang:키` 형식을 쓴다.
