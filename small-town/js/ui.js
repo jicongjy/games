@@ -712,6 +712,8 @@
     if (id === 'bakery') { n = W.adj(G, cell, 'field'); return n ? '밭 ' + n + '곳' : null; }
     if (id === 'well') return W.adj(G, cell, 'field') ? '밭 옆' : null;
     if (id === 'mill') return W.adj(G, cell, 'bakery') ? '빵집 옆' : null;
+    if (id === 'fishing') return W.water(G, cell) ? '물가 옆' : null;
+    if (id === 'inn') return W.adj(G, cell, 'fishing') ? '낚시터 옆' : null;
     return null;
   }
   // 튜토리얼 단계(일꾼 규칙). 지금 판의 상태를 보고 다음에 할 일을 정한다.
@@ -762,6 +764,7 @@
   // 일꾼 규칙에서 장날에 실패한 까닭
   function failText(m) {
     if (m.uneven) return '담 양쪽 주민이 왼쪽 ' + m.L + '명, 오른쪽 ' + m.R + '명이라 차이가 1명을 넘었어요.';
+    if (m.poor) return '금화가 ' + m.gold + '개뿐이에요. 마지막 장날에는 ' + Q.work.needGold + '개가 있어야 해요.';
     if (m.few) return '주민이 ' + m.people + '명뿐이에요. 마지막 장날에는 ' + Q.work.people + '명이 있어야 해요.';
     return '장날에 빵이 ' + m.short + '개 모자랐어요.';
   }
@@ -858,6 +861,8 @@
           // 지금 일꾼을 보내면 나오는 빵
           var bo = W.bakeOut(s, i);
           inner += '<span class="bst' + (bo ? ' on' : '') + '">' + img('i_bread') + (bo ? '+' + bo : '0') + '</span>';
+        } else if (c.id === 'fishing' && !W.water(s, i)) {
+          inner += '<span class="nst">물가 없음</span>';
         } else if (c.id === 'well' || c.id === 'mill') {
           inner += '<span class="hst' + (W.helping(s, i) ? ' on' : '') + '">' + (W.helping(s, i) ? '돕는 중' : '쉬는 중') + '</span>';
         }
@@ -892,7 +897,7 @@
     if (V.shop) {
       h += '<div class="sheet" data-a="wshop"><div class="sheet-in" data-a="noop"><div class="row between"><h2>떠돌이 상인</h2><span class="wchip">' + img('i_gold') + s.gold + '</span></div>';
       if (V.got) h += '<div class="got"><span>나왔다!</span>' + V.got.map(function (id) { return '<span class="g1">' + img(id, null, 16) + ST.PIECES[id].name + '</span>'; }).join('') + '</div>';
-      ST.PACKS.forEach(function (p, n) {
+      ST.packsFor(q).forEach(function (p, n) {
         h += '<button class="choice pk" data-a="wbuy" data-i="' + n + '"' + (s.gold >= p.cost ? '' : ' disabled') + '><span class="pk-l"><b>' + esc(p.name) + '</b>' + packHtml(p) + '</span><span class="pk-c">' + img('i_gold') + p.cost + '</span></button>';
       });
       h += '<p class="muted" style="margin:0">꾸러미에는 앞의 조각 하나와, 뒤의 둘 중 하나가 들어 있어요. 둘 중 하나는 번갈아 나와요.</p>';
@@ -1196,7 +1201,7 @@
       }
       V.msg = null; V.good = false;
       if (sel !== null && !c) {
-        if (!W.build(G, sel, i)) return;
+        if (!W.build(G, sel, i)) { var bw = W.buildWhy(G, sel, i); if (bw) { V.msg = bw; render(); } return; }
         hist.push(snap);
         fx = { cell: i, parts: [] };
         if (!G.inv[sel]) sel = null;
@@ -1226,7 +1231,7 @@
     wchoose: function (d) { if (ST.work.choose(G, ST.WEVENTS[G.event].choices[+d.i])) { hist = []; absorb(); render(); window.scrollTo(0, 0); } },
     wshop: function () { V.shop = !V.shop; V.got = null; render(); },
     wbuy: function (d) {
-      var got = ST.work.buy(G, ST.PACKS[+d.i]);
+      var got = ST.work.buy(G, ST.packsFor(Q)[+d.i]);
       if (!got) return;
       hist = []; V.got = got; absorb(); render();
     },

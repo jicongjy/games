@@ -63,6 +63,9 @@
     orchard: { desc: '일꾼을 보내면 과일을 따서 금화 2개를 번다.', when: '일꾼 1명', res: 'gold', n: '+2' },
     house: { desc: '주민 1명이 이사 온다. 다음 날부터 일꾼이 된다. 주민은 저녁마다 빵 1개를 먹고, 못 먹으면 다음 날 쉰다.', when: '일꾼', res: 'people', n: '+1',
       idle: '집에는 일꾼을 보내지 않아요. 여기 사는 주민이 일꾼이에요.' },
+    fishing: { desc: '일꾼을 보내면 낚시를 해서 금화 3개를 번다. 강이나 우물 옆에 지어야 고기가 문다. 집 옆에는 지을 수 없다(조용한 물가).', when: '물가 옆 일꾼 1명', res: 'gold', n: '+3' },
+    inn: { desc: '손님이 머무는 곳이라 주민 1명이 이사 온다. 다음 날부터 일꾼이 된다. 주민은 저녁마다 빵 1개를 먹는다. 낚시터 옆에 지어도 된다.', when: '일꾼', res: 'people', n: '+1',
+      idle: '여관에는 일꾼을 보내지 않아요. 여기 머무는 주민이 일꾼이에요.' },
     well: { desc: '일꾼이 필요 없다. 밭 옆에 지으면 그 밭을 돕는다. 얼마나 돕는지는 지어 보면 안다.', when: '밭 옆에 지으면', text: '밭을 돕는다', page: 'wet', known: { when: '옆 밭', res: 'grain', n: '×2' },
       idle: '우물은 일꾼이 필요 없어요. 밭 옆에 있으면 그 밭을 도와요.' },
     mill: { desc: '일꾼이 필요 없다. 빵집 옆에 지으면 그 빵집을 돕는다. 얼마나 돕는지는 지어 보면 안다.', when: '빵집 옆에 지으면', text: '빵집을 돕는다', page: 'flour', known: { when: '옆 빵집이 구울 때', res: 'bread', n: '+1' },
@@ -74,15 +77,22 @@
     wet: { name: '물 댄 밭', a: 'field', b: 'well', hint: '밭이 목말라 보이던데. 옆에 뭘 파 줬더라?', text: '우물 옆 밭은 일꾼이 한 번 갈 때마다 곡식이 2개씩 쌓인다.', memo: '물 주는 걸 까먹고 밭 탓만 한 게 30년이다.' },
     oven: { name: '큰 화덕', a: 'bakery', b: 'field', hint: '빵집은 밭에 둘러싸일수록 신이 났지. 몇 군데였더라?', text: '빵집이 한 번에 밭 세 곳의 곡식을 구우면 빵 1개가 덤으로 나온다.', memo: '불은 한 번 땔 때 많이 굽는 거야. 장작이 아깝잖니.' },
     flour: { name: '고운 가루', a: 'bakery', b: 'mill', hint: '방앗간은 혼자 두면 바람만 쐰다. 누구 옆이었더라?', text: '방앗간 옆 빵집은 구울 때마다 빵 1개가 더 나온다.', memo: '곱게 빻으면 같은 밀로 빵이 하나 더 나와. 밀순이한테는 비밀이다.' },
+    guest: { name: '여관 손님', a: 'inn', b: 'fishing', hint: '낚시터 옆에 사람이 오가면 입질이 끊긴다더라. 근데 어떤 사람은 괜찮았지.', text: '낚시터 옆에 여관이 있으면, 손님이 낚시를 거들어서 낚시터에서 금화가 1개 더 나온다.', memo: '영감이 말은 많은데 손님이 오면 또 좋아해. 낚싯대 잡는 손도 늘고.' },
     snack: { name: '과일 새참', a: 'house', b: 'orchard', hint: '빵 말고도 배 채울 게 있었는데. 집 옆에 뭘 심었더라?', text: '과수원 옆 집에 사는 주민은 과일을 먹어서 저녁에 빵을 먹지 않는다.', memo: '담 너머로 손만 뻗으면 사과였지. 그 집 애들은 밥을 안 먹었어.' }
   };
-  ST.PAGE_ORDER = ['wet', 'oven', 'flour', 'snack'];
+  ST.PAGE_ORDER = ['wet', 'oven', 'flour', 'snack', 'guest'];
   // 떠돌이 상인의 꾸러미. sure는 꼭 들어 있는 조각, or는 그중 하나가 들어 있다.
   ST.PACKS = [
     { id: 'farm', name: '밭 꾸러미', cost: 3, sure: ['field'], or: ['field', 'well'] },
     { id: 'shop', name: '일터 꾸러미', cost: 4, sure: ['field'], or: ['mill', 'bakery'] },
-    { id: 'town', name: '마을 꾸러미', cost: 4, sure: ['house'], or: ['house', 'orchard'] }
+    { id: 'town', name: '마을 꾸러미', cost: 4, sure: ['house'], or: ['house', 'orchard'] },
+    { id: 'lake', name: '강가 꾸러미', cost: 4, sure: ['inn'], or: ['fishing', 'house'] }
   ];
+  // 의뢰가 파는 꾸러미. 의뢰의 work.packs에 적은 것만, 없으면 앞의 세 가지만 판다.
+  ST.packsFor = function (q) {
+    var ids = (q && q.work && q.work.packs) || ['farm', 'shop', 'town'];
+    return ST.PACKS.filter(function (p) { return ids.indexOf(p.id) >= 0; });
+  };
   // 일꾼 규칙의 깜짝 이벤트. 주마다 사흘째 아침에 하나씩 나온다. 선택지의 뜻은 js/engine.js의 W.choose에 있다.
   ST.WEVENTS = {
     parcel: { art: ['grandma'], title: '할머니의 소포', text: '온천에서 소포가 왔다. 쪽지에는 "둘 중 하나만 가져라. 욕심내면 두부 준다."',
@@ -101,6 +111,8 @@
   ST.workGoalText = function (g) {
     if (g.t === 'pages') return '한 판에 노트 ' + g.n + '쪽 채우기';
     if (g.t === 'res') return '주민 ' + g.n + '명 맞이하기';
+    if (g.t === 'gold') return '마지막 장날에 금화 ' + g.n + '개 이상 갖고 있기';
+    if (g.t === 'near') return '여관을 낚시터 옆에 짓기';
     return '';
   };
   ST.PIECE_ORDER = ['field', 'orchard', 'fishing', 'bakery', 'mill', 'brewery', 'house', 'inn', 'tower', 'well', 'plaza', 'bell'];
@@ -198,11 +210,25 @@
         '혼자가 편해. 정말이야. 누가 물어봤냐고? 아무도 안 물어봤지.',
         '(영감이 낚시터 둘과 낡은 여관 하나를 내놓았다.)'
       ],
-      rule: 'quiet', ruleText: '낚시터 옆에는 집을 못 지어요. 여관과 망루는 괜찮아요', ground: 'day',
+      rule: 'quiet', ruleText: '낚시터 옆에는 집을 못 지어요(낚시터를 집 옆에 짓는 것도 안 돼요). 여관은 괜찮아요. 마지막 장날에는 주민 4명과 금화 6개가 있어야 해요', ground: 'day',
       terrain: { 10: 'water', 11: 'water', 12: 'water', 4: 'tree', 24: 'rock' },
       lend: ['fishing', 'fishing', 'inn'], limit: 8,
       goals: [{ r: 'gold', n: 6 }, { r: 'people', n: 4 }],
       bonus: [{ r: 'gold', n: 9 }, { t: 'adj', a: 'inn', b: 'fishing' }],
+      // 일꾼 규칙. 낚시터는 물가(강, 우물) 옆에서 일꾼을 보내면 금화가 나온다. 집은 낚시터 옆에 못 짓지만 여관은 된다(여관 손님 조합).
+      // people, needGold는 마지막 장날에 있어야 하는 주민 수와 금화.
+      work: { perWeek: 5, quota: [3, 6, 10], gold: 0, people: 4, needGold: 6, packs: ['farm', 'shop', 'lake'],
+        start: { fishing: 2, inn: 1, field: 2, bakery: 1, house: 1 },
+        todo: [
+          { id: 'fish', text: '낚시터를 물가에 짓고 일꾼을 보내 금화 얻기', gold: 2 },
+          { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'inn', text: '여관을 지어 손님 맞이하기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 }
+        ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
+        bonus: [{ t: 'gold', n: 9 }, { t: 'near', a: 'inn', b: 'fishing' }] },
+      workTip: '낚시터는 물가에 붙여야 돈이 돼. 강 옆이나 우물 옆이다. 그리고 집은 낚시터 옆에 못 짓는다고 영감이 그러더라. 집은 싫다고 했지, 여관이 싫다고는 안 했어.',
       tip: '낚시터는 물가에 붙여야 돈이 돼. 그리고 잘 들어 봐. 영감이 집은 싫다고 했지, 여관이 싫다고는 안 했어.',
       win: ['여관 손님이 낚시를 좀 하더군.', '말이 많아. 시끄러워.', '내일 또 오라고 했네.'],
       fail: '이래서는 낚싯밥 값도 안 나와.',

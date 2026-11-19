@@ -5,7 +5,12 @@ require('../js/data.js');
 const ST = globalThis.ST, W = ST.work, QN = +(process.argv[2] || 1), q = ST.QUESTS[QN - 1];
 
 // 조각 종류별로 놓을 자리(앞에서부터). smart는 조합이 생기게, plain은 밭을 빵집 옆에만.
-const SLOTS = QN === 2 ? {
+const SLOTS = QN === 3 ? {
+  // 3번(낚시꾼): 10, 11, 12번 칸이 강. 낚시터는 강 옆(5, 6, 7, 15, 16, 17, 13), 여관은 낚시터 옆, 집은 낚시터에서 먼 칸.
+  // plain은 집을 낚시터 옆에 놓으려 해서(지어지지 않는다) 규칙을 무시하는 경우를 본다.
+  smart: { fishing: [6, 16, 5, 15], inn: [1, 21, 0, 20], bakery: [18, 8], field: [13, 17, 19, 23, 9, 3], well: [14, 22], mill: [24, 2], house: [3, 9, 14, 8, 23, 19, 22, 2], orchard: [24, 4] },
+  plain: { fishing: [6, 16, 5, 15], inn: [1, 21, 0, 20], bakery: [18, 8], field: [13, 17, 19, 23, 9, 3], well: [14, 22], mill: [24, 2], house: [1, 7, 11, 15, 17, 21, 0, 20], orchard: [24, 4] }
+} : QN === 2 ? {
   // 2번(쌍둥이): 가운데 줄(2, 7, 12, 17, 22)은 담. 집은 왼쪽과 오른쪽을 번갈아, plain은 왼쪽부터 채워 담 규칙을 어긴다.
   smart: { bakery: [6, 8], field: [1, 5, 11, 3, 9, 13, 10, 14], well: [0, 4, 16, 18], mill: [15, 19], house: [20, 24, 21, 23, 15, 19, 10, 14], orchard: [16, 18, 0, 4] },
   plain: { bakery: [6, 8], field: [1, 5, 11, 3, 9, 13], well: [16, 18], mill: [15, 19], house: [0, 10, 15, 20, 16, 21, 4, 14], orchard: [24, 23] }
@@ -21,14 +26,15 @@ function placeAll(s, kind) {
 }
 function count(s, id) { return s.board.filter(x => x && x.k === 'b' && x.id === id).length + (s.inv[id] || 0); }
 function shop(s, kind) {
-  const P = {}; ST.PACKS.forEach(p => P[p.id] = p);
+  const P = {}; ST.packsFor(q).forEach(p => P[p.id] = p); P.town = P.town || P.lake;
   for (let n = 0; n < 6; n++) {
     let want = null;
     if (kind === 'plain') { if (count(s, 'field') < 4) want = P.farm; }
     else if (count(s, 'field') < 3 || count(s, 'well') < 1) want = P.farm;
     else if (count(s, 'mill') < 1) want = P.shop;
-    else if (count(s, 'house') < (QN === 2 ? 6 : 3)) want = P.town;
-    if (!want || s.gold < want.cost) return;
+    else if (QN === 3 ? count(s, 'house') + count(s, 'inn') < 4 : count(s, 'house') < (QN === 2 ? 6 : 3)) want = QN === 3 ? P.lake : P.town;
+    const keep = s.week >= s.quota.length - 1 ? s.minGold : 0; // 마지막 주에는 장날에 필요한 금화를 남겨 둔다
+    if (!want || s.gold - keep < want.cost) return;
     W.buy(s, want); placeAll(s, kind);
   }
 }
@@ -42,6 +48,7 @@ function workDay(s) {
       if (b.id === 'bakery') { const t = W.takeable(s, c), f = W.adj(s, c, 'field'); v = t >= f ? 10 + t : (W.daysLeft(s) === 1 ? 5 + t : 0); }
       else if (b.id === 'field') v = (W.adj(s, c, 'bakery') ? 4 : 0.5) - b.w;
       else if (b.id === 'orchard') v = 1;
+      else if (b.id === 'fishing') v = s.gold < 8 ? 4.2 : 0.5;
       if (v > bv) { bv = v; best = c; }
     }
     if (best < 0) break;
@@ -50,7 +57,7 @@ function workDay(s) {
 }
 function randomDay(s, r) {
   for (const id in s.inv) while (s.inv[id] > 0) { const e = []; s.board.forEach((x, i) => { if (!x) e.push(i); }); W.build(s, id, e[r() % e.length]); }
-  const p = ST.PACKS[r() % ST.PACKS.length]; if (s.gold >= p.cost) W.buy(s, p);
+  const PK = ST.packsFor(q), p = PK[r() % PK.length]; if (s.gold >= p.cost) W.buy(s, p);
   for (let n = 0; n < 20 && W.idle(s); n++) W.work(s, r() % 25);
 }
 function run(kind, seed, quota) {
@@ -65,7 +72,7 @@ function run(kind, seed, quota) {
     else { placeAll(s, kind); shop(s, kind); workDay(s); }
     const before = s.stat.baked; W.endDay(s); total = s.stat.baked;
   }
-  return { why: s.market && (s.market.uneven ? '담' : s.market.few ? '주민' : s.market.short ? '빵' : ''), week: s.week, won: s.won, baked: total, stars: W.evaluate(s, q).stars, res: W.residents(s), pages: s.found.length };
+  return { why: s.market && (s.market.uneven ? '담' : s.market.few ? '주민' : s.market.poor ? '금화' : s.market.short ? '빵' : ''), week: s.week, won: s.won, baked: total, stars: W.evaluate(s, q).stars, res: W.residents(s), pages: s.found.length };
 }
 const quota = process.argv[3] ? process.argv[3].split(',').map(Number) : null;
 console.log('장날 요구량:', (quota || q.work.quota).join(', '));
@@ -75,5 +82,5 @@ console.log('장날 요구량:', (quota || q.work.quota).join(', '));
   const pct = f => Math.round(R.filter(f).length / R.length * 100) + '%';
   console.log(kind.padEnd(7), '통과', pct(r => r.won), '| 1주', pct(r => r.week >= 1), '2주', pct(r => r.week >= 2),
     '| 구운 빵', avg(r => r.baked), '별', avg(r => r.stars), '주민', avg(r => r.res), '노트', avg(r => r.pages),
-    '| 실패 까닭 빵', R.filter(r => r.why === '빵').length, '담', R.filter(r => r.why === '담').length, '주민', R.filter(r => r.why === '주민').length);
+    '| 실패 까닭 빵', R.filter(r => r.why === '빵').length, '담', R.filter(r => r.why === '담').length, '주민', R.filter(r => r.why === '주민').length, '금화', R.filter(r => r.why === '금화').length);
 });
