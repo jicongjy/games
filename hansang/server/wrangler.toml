@@ -1,0 +1,16 @@
+name = "hansang"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+[vars]
+# 이 주소들에서 온 브라우저 접속만 받는다 (쉼표로 구분)
+ALLOWED_ORIGINS = "https://jicongjy.github.io,http://localhost:8000,http://localhost:8765"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# 무료 요금제는 SQLite 저장소 방식만 지원한다
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

@@ -196,6 +196,7 @@ export function viewFor(state, player) {
     opponentLanes: state.lanes[opp],
     market: state.market,
     justDiscarded: state.justDiscarded,
+    scores: scores(state), // 코스 줄은 둘 다 공개 정보라서 지금까지 점수도 공개
   };
   if (state.over) {
     view.result = {
