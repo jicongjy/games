@@ -60,7 +60,7 @@ function workDay(s) {
       const b = s.board[c];
       if (!b || b.k !== 'b' || W.canWork(s, c)) continue;
       let v = 0;
-      if (b.id === 'bakery' && QN === 5 && s.week === s.quota.length - 1 && W.daysLeft(s) === 1 && W.stock(s) <= s.minGrain) continue;
+      if (b.id === 'bakery' && QN === 5 && s.week === s.quota.length - 1 && W.daysLeft(s) === 1 && W.stock(s) - W.takeable(s, c) < s.minGrain) continue;  // 마지막 장날에 밭에 곡식을 남기려고, 가져간 뒤에도 남을 때만 굽는다
       if (b.id === 'bakery') { const t = W.takeable(s, c), f = W.adj(s, c, 'field'); v = t >= f ? 10 + t : (W.daysLeft(s) === 1 ? 5 + t : 0); }
       else if (b.id === 'field') v = (W.adj(s, c, 'bakery') ? 4 : 0.5) - b.w;
       else if (b.id === 'orchard') v = QN === 5 ? (s.gold < 4 ? 3.9 : 0.5) : 1;
