@@ -276,11 +276,24 @@
         '예산? 예산은 마음속에 있지. 조각은 여섯 개만 쓰게.',
         '아, 그리고 광장에는 봉 선생 동상을 세울 걸세.'
       ],
-      rule: 'six', ruleText: '조각을 6개만 가져갈 수 있어요', ground: 'day',
+      rule: 'six', ruleText: '이 땅에는 조각을 6개까지만 지을 수 있어요(가진 것이 더 많아도 6개만 골라 지어요). 마지막 장날에는 주민 2명, 금화 3개, 밭에 쌓인 곡식 2개가 한꺼번에 있어야 해요', ground: 'day',
       terrain: { 10: 'water', 11: 'water', 13: 'water', 14: 'water', 4: 'rock' },
       lend: [], limit: 6,
       goals: [{ r: 'grain', n: 2 }, { r: 'bread', n: 4 }, { r: 'people', n: 2 }, { r: 'gold', n: 3 }],
       bonus: [{ r: 'gold', n: 6 }, { r: 'people', n: 5 }],
+      // 일꾼 규칙. 땅에 지을 수 있는 조각은 pieces개까지라서, 가진 조각 중 어떤 여섯을 지을지 고르는 게 핵심이다(짐 6개를 옮긴 것).
+      // 마지막 장날에 people(주민), needGold(금화), needGrain(밭에 쌓인 곡식)이 한꺼번에 있어야 한다. 빵은 장날마다 내는 것이 곧 그 조건이다.
+      work: { perWeek: 5, quota: [3, 6, 9], gold: 0, people: 2, needGold: 3, needGrain: 2, pieces: 6,
+        start: { field: 3, bakery: 1, house: 2, well: 1, orchard: 1 },
+        todo: [
+          { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'house', text: '집을 지어 주민 맞이하기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 }
+        ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
+        bonus: [{ t: 'gold', n: 6 }, { t: 'res', n: 4 }] },
+      workTip: '조각은 여섯 개만 쓴다고 했지. 가진 건 여덟 개니까 둘은 빼야 해. 밭은 곡식도 내고 빵집도 먹여 살리잖니. 한 조각이 두 가지 일을 하게 놓아 봐. 그리고 마지막 장날에는 빵을 다 굽지 말고 곡식 두 개는 밭에 남겨 둬라.',
       tip: '여섯 개로 네 가지를 다 채워야 해. 조각 하나가 두 가지 일을 하게 놓아 봐. 밭은 곡식도 내고 빵집도 먹여 살리잖니.',
       win: ['여섯 개로 이걸 다! 역시 봉 선생 핏줄이야.', '동상은 자네 것도 하나 세우지.'],
       fail: '허허, 이래서는 군청에 보고를 못 하네.',

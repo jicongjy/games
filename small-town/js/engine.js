@@ -498,7 +498,7 @@
 
   W.newGame = function (quest, seed) {
     var c = quest.work, s = {
-      q: quest.id, rule: quest.rule || null, minPeople: c.people || 0, minGold: c.needGold || 0,
+      q: quest.id, rule: quest.rule || null, minPeople: c.people || 0, minGold: c.needGold || 0, minGrain: c.needGrain || 0, limit: c.pieces || 0, placed: 0,
       rs: (seed | 0) || 1, day: 1, week: 0, perWeek: c.perWeek, quota: c.quota.slice(),
       board: [], inv: {}, gold: c.gold || 0, bread: 0,
       workers: [{ t: 'hero', used: false }, { t: 'donkey', used: false }],
@@ -558,6 +558,8 @@
 
   // 조용한 물가(rule 'quiet'): 낚시터 옆에는 집을 못 짓는다. 여관과 망루는 괜찮다. 까닭을 돌려주고, 지을 수 있으면 빈 글
   W.buildWhy = function (s, id, cell) {
+    // 예산은 마음속에(rule 'six'): 한 판에 놓을 수 있는 조각은 정해진 개수까지
+    if (s.limit && s.placed >= s.limit) return '조각은 ' + s.limit + '개만 쓰게. 예산은 마음속에 있다네.';
     if (s.rule !== 'quiet') return '';
     if (id === 'house' && adj(s, cell, 'fishing')) return '낚시터 옆에는 집을 못 지어요. 여관은 괜찮아요.';
     if (id === 'fishing' && adj(s, cell, 'house')) return '집 옆에는 낚시터를 못 지어요. 사람 소리에 입질이 끊겨요.';
@@ -584,7 +586,7 @@
   W.build = function (s, id, cell) {
     if (!W.canBuild(s, id, cell)) return false;
     begin(s);
-    s.inv[id]--;
+    s.inv[id]--; s.placed++;
     s.board[cell] = { k: 'b', id: id, w: 0 };
     if (id === 'house' || id === 'inn') s.workers.push({ t: 'res', home: cell, used: true, fresh: true });
     todos(s);
@@ -597,6 +599,8 @@
     for (var k = 0; k < ns.length; k++) { var x = s.board[ns[k]]; if (isB(x) && x.id === 'field' && x.w > 0) n++; }
     return n;
   };
+  // 밭마다 쌓여 있는 곡식의 합
+  W.stock = function (s) { var n = 0; for (var i = 0; i < 25; i++) if (isB(s.board[i]) && s.board[i].id === 'field') n += s.board[i].w; return n; };
   // 일꾼을 보낼 수 있으면 빈 글, 아니면 까닭
   W.canWork = function (s, cell) {
     var b = s.board[cell];
@@ -721,6 +725,10 @@
       }
       if (last && W.residents(s) < s.minPeople) {
         s.market = { week: s.week, need: need, short: 0, few: true, people: W.residents(s) };
+        s.failed = true; s.phase = 'over'; return true;
+      }
+      if (last && W.stock(s) < s.minGrain) {
+        s.market = { week: s.week, need: need, short: 0, grain: true, stock: W.stock(s) };
         s.failed = true; s.phase = 'over'; return true;
       }
       if (s.gold < s.minGold && last) {

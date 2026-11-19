@@ -767,6 +767,7 @@
   // 일꾼 규칙에서 장날에 실패한 까닭
   function failText(m) {
     if (m.uneven) return '담 양쪽 주민이 왼쪽 ' + m.L + '명, 오른쪽 ' + m.R + '명이라 차이가 1명을 넘었어요.';
+    if (m.grain) return '밭에 쌓인 곡식이 ' + m.stock + '개뿐이에요. 마지막 장날에는 ' + Q.work.needGrain + '개가 남아 있어야 해요.';
     if (m.poor) return '금화가 ' + m.gold + '개뿐이에요. 마지막 장날에는 ' + Q.work.needGold + '개가 있어야 해요.';
     if (m.few) return '주민이 ' + m.people + '명뿐이에요. 마지막 장날에는 ' + Q.work.people + '명이 있어야 해요.';
     return '장날에 빵이 ' + m.short + '개 모자랐어요.';
@@ -820,6 +821,9 @@
     });
     h += '<span class="cnt">' + idle + '명 남음</span></span></div>';
 
+    if (s.limit) {
+      h += '<div class="wtodo"><span><b>지은 조각</b> ' + s.placed + ' / ' + s.limit + '개</span><span class="rw">' + (s.placed >= s.limit ? '더는 못 지어요' : '조각 ' + (s.limit - s.placed) + '개 남음') + '</span></div>';
+    }
     if (s.rule === 'wall') {
       var sd = W.sides(s), bad = W.uneven(s);
       h += '<div class="wtodo"><span><b>담 양쪽 주민</b> 왼쪽 ' + sd.L + ' : 오른쪽 ' + sd.R + '</span><span class="rw">' + (bad ? '차이가 커요' : '좋아요') + '</span></div>';
