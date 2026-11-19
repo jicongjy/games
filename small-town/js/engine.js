@@ -496,9 +496,10 @@
   W.nb = nb;
   W.adj = adj;
 
-  W.newGame = function (quest, seed) {
+  W.newGame = function (quest, seed, relics) {
     var c = quest.work, s = {
-      q: quest.id, rule: quest.rule || null, minPeople: c.people || 0, minGold: c.needGold || 0, minGrain: c.needGrain || 0, limit: c.pieces || 0, placed: 0,
+      relics: (relics || []).slice(), erased: false,
+      q: quest.id, rule: quest.rule || null, minPeople: c.people || 0, minGold: c.needGold || 0, minGrain: c.needGrain || 0, limit: (c.pieces || 0) + ((c.pieces && (relics || []).indexOf('carrot') >= 0) ? 1 : 0), placed: 0,
       rs: (seed | 0) || 1, day: 1, week: 0, perWeek: c.perWeek, quota: c.quota.slice(),
       board: [], inv: {}, gold: c.gold || 0, bread: 0,
       workers: [{ t: 'hero', used: false }, { t: 'donkey', used: false }],
@@ -514,9 +515,36 @@
     for (var e = ev.length - 1; e > 0; e--) { var j = rnd(s, e + 1), tmp = ev[e]; ev[e] = ev[j]; ev[j] = tmp; }
     s.eventsLeft = ev;
     for (var id in c.start) s.inv[id] = c.start[id];
+    // 당근 주머니: 당근을 먹는 동안 두부는 세는 걸 까먹어서 하루에 한 번 더 일한다
+    if (s.relics.indexOf('carrot') >= 0) s.workers.push({ t: 'donkey', used: false, extra: true });
     return s;
   };
 
+  // ── 유물 ──
+  W.has = function (s, id) { return s.relics.indexOf(id) >= 0; };
+  W.CORNERS = { 0: 1, 4: 1, 20: 1, 24: 1 };
+  // 그 칸에서 일꾼이 한 번 일하면 내는 것에 곱하는 수. 낡은 나침반(모서리 칸), 새벽 종(하루의 첫 일)이 각각 2배.
+  W.mult = function (s, cell) {
+    var m = 1;
+    if (W.has(s, 'compass') && W.CORNERS[cell]) m *= 2;
+    if (W.has(s, 'dawnbell') && !Object.keys(s.at).length) m *= 2;
+    return m;
+  };
+  // 돋보기: 상인 꾸러미 값을 금화 1개 깎는다(1개 밑으로는 안 내려간다)
+  W.cost = function (s, pack) { return Math.max(1, pack.cost - (W.has(s, 'magnifier') ? 1 : 0)); };
+  // 몽당연필: 판마다 한 번, 지은 건물을 지우고 그 조각을 돌려받는다. 밭에 쌓인 곡식은 사라지고, 집이면 그 주민도 떠난다.
+  W.canErase = function (s) { return W.has(s, 'pencil') && !s.erased && s.phase === 'play'; };
+  W.erase = function (s, cell) {
+    var b = s.board[cell];
+    if (!W.canErase(s) || !isB(b)) return false;
+    begin(s);
+    s.inv[b.id] = (s.inv[b.id] || 0) + 1;
+    if (s.placed > 0) s.placed--;
+    s.board[cell] = null;
+    s.workers = s.workers.filter(function (w) { return !(w.t === 'res' && w.home === cell); });
+    s.erased = true;
+    return true;
+  };
   W.idle = function (s) { var n = 0; s.workers.forEach(function (w) { if (!w.used) n++; }); return n; };
   // 담(가운데 줄) 규칙: 집이 담 왼쪽(0~1번 줄)과 오른쪽(3~4번 줄)에 각각 몇 채인가
   W.sides = function (s) {
@@ -620,7 +648,12 @@
   W.bakeOut = function (s, cell) {
     var n = W.takeable(s, cell);
     if (!n) return 0;
-    return n + (n >= 3 ? 1 : 0) + (adj(s, cell, 'mill') > 0 ? 1 : 0);
+    return (n + (n >= 3 ? 1 : 0) + (adj(s, cell, 'mill') > 0 ? 1 : 0)) * W.mult(s, cell);
+  };
+  // 지금 양조장에 일꾼을 보내면 나오는 금화(덤 포함)
+  W.brewOut = function (s, cell) {
+    var on = adj(s, cell, 'orchard');
+    return (on * W.BREW + (on >= 2 ? 2 : 0)) * W.mult(s, cell);
   };
   // 일꾼이 필요 없는 건물이 지금 옆 칸을 돕고 있는가
   W.helping = function (s, cell) {
@@ -633,12 +666,12 @@
   W.work = function (s, cell) {
     if (W.canWork(s, cell)) return false;
     begin(s);
-    var b = s.board[cell], who = null, k;
+    var b = s.board[cell], who = null, k, m = W.mult(s, cell);   // 유물 곱은 일하기 전에 정한다(하루의 첫 일인지 봐야 해서)
     for (k = 0; k < s.workers.length; k++) if (!s.workers[k].used) { who = s.workers[k]; break; }
     who.used = true;
     s.at[cell] = who.t;
     if (b.id === 'field') {
-      var wet = adj(s, cell, 'well') > 0, g = Math.min(wet ? 2 : 1, W.CAP - b.w);
+      var wet = adj(s, cell, 'well') > 0, g = Math.min((wet ? 2 : 1) * m, W.CAP - b.w);
       b.w += g; s.stat.grain += g;
       if (wet) find(s, 'wet');
       s.fx.push({ cell: cell, r: 'grain', n: g });
@@ -648,21 +681,24 @@
       var out = n;
       if (n >= 3) { out++; find(s, 'oven'); }
       if (adj(s, cell, 'mill') > 0) { out++; find(s, 'flour'); }
+      out *= m;
       s.bread += out; s.stat.baked += out; s.stat.dayBread += out;
       s.fx.push({ cell: cell, r: 'bread', n: out });
     } else if (b.id === 'brewery') {
       var on = adj(s, cell, 'orchard'), bg = on * W.BREW;
       if (on >= 2) { bg += 2; find(s, 'cask'); }
+      bg *= m;
       s.gold += bg; s.stat.brewed += bg;
       s.fx.push({ cell: cell, r: 'gold', n: bg });
     } else if (b.id === 'fishing') {
       var fg = W.FISH;
       if (adj(s, cell, 'inn') > 0) { fg++; find(s, 'guest'); }
+      fg *= m;
       s.gold += fg; s.stat.fished += fg;
       s.fx.push({ cell: cell, r: 'gold', n: fg });
     } else if (b.id === 'orchard') {
-      s.gold += 2;
-      s.fx.push({ cell: cell, r: 'gold', n: 2 });
+      s.gold += 2 * m;
+      s.fx.push({ cell: cell, r: 'gold', n: 2 * m });
     }
     todos(s);
     return true;
@@ -670,9 +706,9 @@
 
   // 꾸러미: sure는 꼭 들어 있는 조각, or는 그중 하나가 들어 있다
   W.buy = function (s, pack) {
-    if (s.phase !== 'play' || s.gold < pack.cost) return null;
+    if (s.phase !== 'play' || s.gold < W.cost(s, pack)) return null;
     begin(s);
-    s.gold -= pack.cost;
+    s.gold -= W.cost(s, pack);
     var got = pack.sure.slice();
     if (pack.or && pack.or.length) {
       // 둘 중 하나는 번갈아 나온다. 같은 꾸러미를 두 번 사면 둘 다 얻는다
