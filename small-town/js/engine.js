@@ -472,7 +472,9 @@
   W.SELL = 2;    // 빵 1개를 팔면 받는 금화
   W.ERRAND = 1;  // 일꾼 한 명이 상인 심부름을 하면 받는 금화
   W.PAY = 1;     // 장날에 낸 빵 1개마다 의뢰인이 주는 금화
-  W.WORKABLE = { field: 1, bakery: 1, orchard: 1, fishing: 1 };
+  W.WORKABLE = { field: 1, bakery: 1, orchard: 1, fishing: 1, brewery: 1 };
+  W.BREW = 3;    // 양조장에 일꾼을 보내면 옆 과수원 하나마다 나오는 금화
+  W.DWELL = { house: 1, inn: 1 };  // 사람이 사는 건물
   W.FISH = 3;    // 낚시터에 일꾼을 보내면 나오는 금화(물가 옆일 때)
 
   function nb(i) {
@@ -502,7 +504,7 @@
       workers: [{ t: 'hero', used: false }, { t: 'donkey', used: false }],
       phase: 'play', found: [], news: [], fx: [], at: {},
       todo: {}, todoNew: [], todoList: (c.todo || []).map(function (t) { return { id: t.id, gold: t.gold }; }),
-      stat: { grain: 0, baked: 0, bought: 0, dayBread: 0, fished: 0 },
+      stat: { grain: 0, baked: 0, bought: 0, dayBread: 0, fished: 0, brewed: 0 },
       market: null, night: null, won: false, failed: false, event: null, eventsLeft: []
     };
     for (var i = 0; i < 25; i++) s.board.push(null);
@@ -538,6 +540,7 @@
     bake: function (s) { return s.stat.baked > 0; },
     buy: function (s) { return s.stat.bought > 0; },
     house: function (s) { return W.residents(s) > 0; },
+    brew: function (s) { return s.stat.brewed > 0; },
     fish: function (s) { return s.stat.fished > 0; },
     inn: function (s) { return s.board.some(function (x) { return isB(x) && x.id === 'inn'; }); },
     pair: function (s) { var d = W.sides(s); return d.L > 0 && d.R > 0; },
@@ -569,6 +572,14 @@
     }
     return false;
   };
+  // 옆에 사람이 사는 건물(집, 여관)이 몇 채인가
+  W.dwellAdj = function (s, cell) {
+    var ns = nb(cell), n = 0;
+    for (var k = 0; k < ns.length; k++) { var x = s.board[ns[k]]; if (isB(x) && W.DWELL[x.id]) n++; }
+    return n;
+  };
+  // 겨울(rule 'winter'): 밭은 우물 옆에서만 곡식이 쌓인다
+  W.frozen = function (s, cell) { return s.rule === 'winter' && !adj(s, cell, 'well'); };
   W.canBuild = function (s, id, cell) { return s.phase === 'play' && (s.inv[id] || 0) > 0 && !s.board[cell] && !W.buildWhy(s, id, cell); };
   W.build = function (s, id, cell) {
     if (!W.canBuild(s, id, cell)) return false;
@@ -593,6 +604,10 @@
     if (!W.WORKABLE[b.id]) return (ST.PIECES[b.id].work && ST.PIECES[b.id].work.idle) || ST.PIECES[b.id].name + '에는 일꾼을 보내지 않아요.';
     if (!W.idle(s)) return '오늘 일할 일꾼이 없어요. "하루 마치기"를 눌러요.';
     if (b.id === 'field' && b.w >= W.CAP) return '이 밭은 곡식이 가득 쌓였어요. 빵집에서 먼저 구워요.';
+    if (b.id === 'field' && W.frozen(s, cell)) return '겨울이라 우물 옆 밭에서만 곡식이 자라요. 우물을 옆에 지어요.';
+    if (b.id === 'brewery' && s.at[cell]) return '술은 하루에 한 통만 빚어요. 내일 다시 보내요.';
+    if (b.id === 'brewery' && !adj(s, cell, 'orchard')) return '옆에 과수원이 있어야 술을 빚어요.';
+    if (b.id === 'brewery' && !W.dwellAdj(s, cell)) return '술은 마실 사람이 있어야 빚어요. 옆에 집이나 여관이 있어야 해요.';
     if (b.id === 'bakery' && !W.takeable(s, cell)) return '옆 밭에 쌓인 곡식이 없어요. 밭에 먼저 일꾼을 보내요.';
     if (b.id === 'fishing' && !W.water(s, cell)) return '물가가 아니라서 고기가 안 물어요. 강이나 우물 옆에 지어야 해요.';
     return '';
@@ -631,6 +646,11 @@
       if (adj(s, cell, 'mill') > 0) { out++; find(s, 'flour'); }
       s.bread += out; s.stat.baked += out; s.stat.dayBread += out;
       s.fx.push({ cell: cell, r: 'bread', n: out });
+    } else if (b.id === 'brewery') {
+      var on = adj(s, cell, 'orchard'), bg = on * W.BREW;
+      if (on >= 2) { bg += 2; find(s, 'cask'); }
+      s.gold += bg; s.stat.brewed += bg;
+      s.fx.push({ cell: cell, r: 'gold', n: bg });
     } else if (b.id === 'fishing') {
       var fg = W.FISH;
       if (adj(s, cell, 'inn') > 0) { fg++; find(s, 'guest'); }

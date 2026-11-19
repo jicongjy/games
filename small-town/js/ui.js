@@ -708,9 +708,12 @@
   // 조각을 들었을 때 그 칸이 좋은 자리인지: 밭과 빵집은 서로 붙어야 하고, 우물은 밭 옆, 방앗간은 빵집 옆이다
   function spotAt(id, cell) {
     var W = ST.work, n;
-    if (id === 'field') return W.adj(G, cell, 'bakery') ? '빵집 옆' : null;
+    if (id === 'field') return G.rule === 'winter' ? (W.adj(G, cell, 'well') ? '우물 옆' : null) : (W.adj(G, cell, 'bakery') ? '빵집 옆' : null);
     if (id === 'bakery') { n = W.adj(G, cell, 'field'); return n ? '밭 ' + n + '곳' : null; }
     if (id === 'well') return W.adj(G, cell, 'field') ? '밭 옆' : null;
+    if (id === 'brewery') return W.adj(G, cell, 'orchard') && W.dwellAdj(G, cell) ? '과수원 ' + W.adj(G, cell, 'orchard') + '곳' : null;
+    if (id === 'orchard') return W.adj(G, cell, 'brewery') ? '양조장 옆' : null;
+    if (id === 'house') return W.adj(G, cell, 'brewery') ? '양조장 옆' : null;
     if (id === 'mill') return W.adj(G, cell, 'bakery') ? '빵집 옆' : null;
     if (id === 'fishing') return W.water(G, cell) ? '물가 옆' : null;
     if (id === 'inn') return W.adj(G, cell, 'fishing') ? '낚시터 옆' : null;
@@ -856,11 +859,15 @@
           inner += '<span class="wst' + (c.w >= W.CAP ? ' full' : '') + (c.w ? '' : ' none') + '">';
           for (var k = 0; k < W.CAP; k++) inner += '<i' + (k < c.w ? ' class="on"' : '') + '>' + (k < c.w ? img('i_grain') : '') + '</i>';
           inner += '</span>';
-          if (!W.adj(s, i, 'bakery')) inner += '<span class="nst">빵집 없음</span>';
+          if (W.frozen(s, i)) inner += '<span class="nst">우물 없음</span>';
+          else if (!W.adj(s, i, 'bakery')) inner += '<span class="nst">빵집 없음</span>';
         } else if (c.id === 'bakery') {
           // 지금 일꾼을 보내면 나오는 빵
           var bo = W.bakeOut(s, i);
           inner += '<span class="bst' + (bo ? ' on' : '') + '">' + img('i_bread') + (bo ? '+' + bo : '0') + '</span>';
+        } else if (c.id === 'brewery') {
+          var bon = W.adj(s, i, 'orchard'), bok = bon && W.dwellAdj(s, i);
+          inner += '<span class="hst' + (bok ? ' on' : '') + '">' + (!bon ? '과수원 없음' : (!bok ? '사람 없음' : img('i_gold') + '+' + (bon * W.BREW + (bon >= 2 ? 2 : 0)))) + '</span>';
         } else if (c.id === 'fishing' && !W.water(s, i)) {
           inner += '<span class="nst">물가 없음</span>';
         } else if (c.id === 'well' || c.id === 'mill') {
@@ -1214,7 +1221,7 @@
       } else return;
       absorb();
       // 빵집과 떨어진 밭에 일꾼을 보냈으면 다른 안내보다 먼저 알려 준다
-      if (c && c.id === 'field' && !W.adj(G, i, 'bakery')) { V.msg = '이 밭 옆에는 빵집이 없어요. 곡식이 쌓여도 구울 수가 없어요.'; V.good = false; }
+      if (c && c.id === 'field' && G.rule !== 'winter' && !W.adj(G, i, 'bakery')) { V.msg = '이 밭 옆에는 빵집이 없어요. 곡식이 쌓여도 구울 수가 없어요.'; V.good = false; }
       render();
     },
     wundo: function () { if (hist.length) { G = JSON.parse(hist.pop()); sel = null; fx = null; V.msg = null; render(); } },

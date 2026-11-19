@@ -5,7 +5,12 @@ require('../js/data.js');
 const ST = globalThis.ST, W = ST.work, QN = +(process.argv[2] || 1), q = ST.QUESTS[QN - 1];
 
 // 조각 종류별로 놓을 자리(앞에서부터). smart는 조합이 생기게, plain은 밭을 빵집 옆에만.
-const SLOTS = QN === 3 ? {
+const SLOTS = QN === 4 ? {
+  // 4번(양조장): 겨울이라 밭은 우물 옆에서만 자란다. 0, 24는 바위, 8은 소나무. 우물(12) 둘레(7, 11, 13, 17)에 밭을 두고,
+  // 빵집은 밭 둘레, 양조장(15) 옆에 과수원(10, 20)과 집(16)을 둔다. plain은 우물 없이 밭만 늘어놓아 겨울 규칙을 무시한다.
+  smart: { well: [12, 3], field: [7, 11, 13, 17, 2, 4], bakery: [6, 18, 1], brewery: [15], orchard: [10, 20, 22, 21], house: [16, 14, 9, 19, 5], mill: [2, 23], inn: [9, 19] },
+  plain: { well: [22, 23], field: [1, 2, 3, 4, 5, 9], bakery: [6, 18, 7], brewery: [15], orchard: [10, 20, 21], house: [16, 14, 19, 11], mill: [19, 23], inn: [9, 19] }
+} : QN === 3 ? {
   // 3번(낚시꾼): 10, 11, 12번 칸이 강. 낚시터는 강 옆(5, 6, 7, 15, 16, 17, 13), 여관은 낚시터 옆, 집은 낚시터에서 먼 칸.
   // plain은 집을 낚시터 옆에 놓으려 해서(지어지지 않는다) 규칙을 무시하는 경우를 본다.
   smart: { fishing: [6, 16, 5, 15], inn: [1, 21, 0, 20], bakery: [18, 8], field: [13, 17, 19, 23, 9, 3], well: [14, 22], mill: [24, 2], house: [3, 9, 14, 8, 23, 19, 22, 2], orchard: [24, 4] },
@@ -48,6 +53,7 @@ function workDay(s) {
       if (b.id === 'bakery') { const t = W.takeable(s, c), f = W.adj(s, c, 'field'); v = t >= f ? 10 + t : (W.daysLeft(s) === 1 ? 5 + t : 0); }
       else if (b.id === 'field') v = (W.adj(s, c, 'bakery') ? 4 : 0.5) - b.w;
       else if (b.id === 'orchard') v = 1;
+      else if (b.id === 'brewery') v = s.gold < 12 ? 4.2 : 0.5;
       else if (b.id === 'fishing') v = s.gold < 8 ? 4.2 : 0.5;
       if (v > bv) { bv = v; best = c; }
     }
