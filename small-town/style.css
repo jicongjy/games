@@ -252,6 +252,11 @@ img.scnp { width: 56px; height: 56px; background: #2f9e7f; border: 2px solid var
 .v-pack .memo { font-size: 12px; margin-bottom: 8px; }
 
 .v-build .hint { flex-wrap: wrap; }
+button.small.on { background: #fff3c4; outline: 2px solid var(--gold); }
+.relrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 4px; font-size: 11px; color: var(--ink-2); }
+.relrow .rl { display: inline-flex; align-items: center; gap: 3px; background: rgba(253, 246, 227, 0.7); border: 2px solid var(--line); padding: 0 5px 0 3px; }
+.relrow .rl img { width: 14px; height: 14px; object-fit: contain; }
+.panel.relics { margin-top: 8px; }
 .v-build .rl { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; opacity: 0.9; }
 .v-build .rl img { width: 14px; height: 14px; object-fit: contain; }
 .v-build .acts button.small { padding: 4px 7px; }

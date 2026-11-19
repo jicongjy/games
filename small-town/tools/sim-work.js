@@ -1,5 +1,6 @@
 // 일꾼 규칙 난이도 확인 도구. 세 가지 방식으로 자동 플레이해서 장날을 몇 번째까지 넘기는지 센다.
 // 실행: node tools/sim-work.js [의뢰 번호(기본 1)] [장날 요구량(예: 5,10,16)]
+// 유물을 끼고 재려면 RELICS=compass,carrot node tools/sim-work.js 3  (compass dawnbell magnifier pencil carrot. 몽당연필은 자동 플레이가 안 써서 효과가 없다)
 require('../js/engine.js');
 require('../js/data.js');
 const ST = globalThis.ST, W = ST.work, QN = +(process.argv[2] || 1), q = ST.QUESTS[QN - 1];
@@ -48,7 +49,7 @@ function shop(s, kind) {
     else if (count(s, 'mill') < 1) want = P.shop;
     else if (QN === 3 ? count(s, 'house') + count(s, 'inn') < 4 : count(s, 'house') < (QN === 2 ? 6 : 3)) want = QN === 3 ? P.lake : P.town;
     const keep = s.week >= s.quota.length - 1 ? s.minGold : 0; // 마지막 주에는 장날에 필요한 금화를 남겨 둔다
-    if (!want || s.gold - keep < want.cost) return;
+    if (!want || s.gold - keep < W.cost(s, want)) return;
     W.buy(s, want); placeAll(s, kind);
   }
 }
@@ -73,11 +74,11 @@ function workDay(s) {
 }
 function randomDay(s, r) {
   for (const id in s.inv) while (s.inv[id] > 0) { const e = []; s.board.forEach((x, i) => { if (!x) e.push(i); }); if (!W.build(s, id, e[r() % e.length])) break; }
-  const PK = ST.packsFor(q), p = PK[r() % PK.length]; if (s.gold >= p.cost) W.buy(s, p);
+  const PK = ST.packsFor(q), p = PK[r() % PK.length]; if (s.gold >= W.cost(s, p)) W.buy(s, p);
   for (let n = 0; n < 20 && W.idle(s); n++) W.work(s, r() % 25);
 }
 function run(kind, seed, quota) {
-  const s = W.newGame(q, seed);
+  const s = W.newGame(q, seed, (process.env.RELICS || '').split(',').filter(Boolean));
   if (quota) s.quota = quota.slice();
   let x = seed * 7919 + 1; const r = () => (x = (Math.imul(x, 1103515245) + 12345) & 0x7fffffff) >> 8;
   let total = 0;

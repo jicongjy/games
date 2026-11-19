@@ -312,11 +312,26 @@
     h += '<div class="panel cond"><div class="ask"><div class="who">' + portrait(q) + '<span>' + esc(q.who) + '</span></div>' +
       '<p class="bubble">' + esc(q.ask) + '</p></div>' + goalTiles(q) +
       (q.ruleText ? '<div class="rule"><b>이 땅의 규칙</b>' + esc(q.ruleText) + '</div>' : '') + lendHtml(q) + '</div>';
+    if (q.work && save.relics.length) h += relicPick(q);
     h += '<div class="row"><button data-a="map">지도로</button><button data-a="story">이야기 다시 보기</button>' +
       (q.work ? '<button class="primary" style="flex:1" data-a="wstart">출발</button></div>' : '<button class="primary" style="flex:1" data-a="pack">짐 싸기</button></div>');
     return h;
   }
 
+  // 일꾼 규칙: 두부 안장 주머니에 넣을 유물을 고른다(두 개까지). 고른 것은 저장해서 다음 의뢰에도 이어진다.
+  function relicPick(q) {
+    var eq = eqRelics(), h = lesson(q, 'relic') + '<div class="panel relics"><div class="row between"><h2>안장 주머니 (유물)</h2><span>' + eq.length + ' / 2</span></div><div class="rchips">';
+    ST.RELIC_ORDER.forEach(function (id) {
+      if (save.relics.indexOf(id) < 0) return;
+      var on = eq.indexOf(id) >= 0, r = ST.RELICS[id];
+      h += '<button class="small rchip' + (on ? ' on' : '') + '" data-a="wrelic" data-id="' + id + '"' + (!on && eq.length >= 2 ? ' disabled' : '') + ' aria-pressed="' + on + '">' + img(r.sprite) + r.name + '</button>';
+    });
+    h += '</div>';
+    eq.forEach(function (id) { h += '<p class="muted" style="margin:4px 0 0"><b>' + esc(ST.RELICS[id].name) + '</b> ' + esc(ST.RELICS[id].desc) + '</p>'; });
+    if (!eq.length) h += '<p class="muted" style="margin:4px 0 0">가진 유물을 눌러 넣어요. 안 넣어도 돼요.</p>';
+    return h + '</div>';
+  }
+  function eqRelics() { return (save.eq || []).filter(function (r) { return save.relics.indexOf(r) >= 0; }).slice(0, 2); }
   function owned() {
     var n = 0;
     for (var k in save.coll) n += save.coll[k];
@@ -809,6 +824,8 @@
     }
 
     var kp = knownPages(), idle = W.idle(s), left = W.daysLeft(s);
+    var rel = '';
+    s.relics.forEach(function (id) { rel += '<span class="rl" title="' + esc(ST.RELICS[id].desc) + '">' + img(ST.RELICS[id].sprite) + ST.RELICS[id].name + '</span>'; });
     h += '<div class="row between"><div class="light bt">' + (isTut() ? esc(q.title) : esc(q.who) + ' · ' + (wk + 1) + '주차') + '</div>' +
       '<span class="row" style="gap:6px"><button class="small" data-a="wnote">노트 ' + kp.length + '/' + ST.PAGE_ORDER.length + '</button>' +
       (isTut() && !save.tut ? '<button class="small" data-a="tutskip">건너뛰기</button>' : '<button class="small" data-a="quit">그만두기</button>') + '</span></div>';
@@ -835,12 +852,14 @@
       var sd = W.sides(s), bad = W.uneven(s);
       h += '<div class="wtodo"><span><b>담 양쪽 주민</b> 왼쪽 ' + sd.L + ' : 오른쪽 ' + sd.R + '</span><span class="rw">' + (bad ? '차이가 커요' : '좋아요') + '</span></div>';
     }
+    if (rel) h += '<div class="relrow">' + rel + '</div>';
     var cur = null, doneN = 0;
     q.work.todo.forEach(function (t) { if (s.todo[t.id]) doneN++; else if (!cur) cur = t; });
     if (q.work.todo.length) h += '<div class="wtodo"><span><b>해 볼 일</b> ' + (cur ? esc(cur.text) : '다 해 봤어요. 이제 마음대로 지어요.') + '</span>' +
       (cur ? '<span class="rw">' + img('i_gold') + '+' + cur.gold + '</span>' : '') + '</div>';
 
     var msg = V.msg, good = V.good;
+    if (!msg && V.erase) msg = '지울 건물을 눌러요. 그 조각은 돌려받고, 밭에 쌓인 곡식은 사라지고, 집이면 주민도 떠나요. 판마다 한 번만 쓸 수 있어요.';
     if (!msg && s.day === 1 && !s.stat.grain && !(save.stars[q.id] > 0)) msg = sel === null && !s.board.some(function (x) { return x && x.k === 'b'; })
       ? '아래에서 조각을 고르고, 땅의 빈칸을 눌러 지어요.' : '';
     if (!msg && !s.stat.baked && s.stat.grain && idle && !(save.stars[q.id] > 0)) {
@@ -878,7 +897,7 @@
           inner += '<span class="bst' + (bo ? ' on' : '') + '">' + img('i_bread') + (bo ? '+' + bo : '0') + '</span>';
         } else if (c.id === 'brewery') {
           var bon = W.adj(s, i, 'orchard'), bok = bon && W.dwellAdj(s, i);
-          inner += '<span class="hst' + (bok ? ' on' : '') + '">' + (!bon ? '과수원 없음' : (!bok ? '사람 없음' : img('i_gold') + '+' + (bon * W.BREW + (bon >= 2 ? 2 : 0)))) + '</span>';
+          inner += '<span class="hst' + (bok ? ' on' : '') + '">' + (!bon ? '과수원 없음' : (!bok ? '사람 없음' : img('i_gold') + '+' + W.brewOut(s, i))) + '</span>';
         } else if (c.id === 'fishing' && !W.water(s, i)) {
           inner += '<span class="nst">물가 없음</span>';
         } else if (c.id === 'well' || c.id === 'mill') {
@@ -909,7 +928,8 @@
         '<span class="nm">' + ST.PIECES[id].name + (s.inv[id] > 1 ? ' ×' + s.inv[id] : '') + '</span>' + wtag(id) + '</button>';
     });
     h += '</div>';
-    h += '<div class="row acts">' + (isTut() ? '<button class="small' + (ts && ts.shop ? ' pulse' : '') + '" data-a="wshop"' + (ts && (ts.shop || ts.free) ? '' : ' disabled') + '>상인</button>' : '<button class="small" data-a="wshop">상인</button>') + '<button class="small" data-a="wundo"' + (hist.length && (!ts || ts.free) ? '' : ' disabled') + '>되돌리기</button>' +
+    h += '<div class="row acts">' + (isTut() ? '<button class="small' + (ts && ts.shop ? ' pulse' : '') + '" data-a="wshop"' + (ts && (ts.shop || ts.free) ? '' : ' disabled') + '>상인</button>' : '<button class="small" data-a="wshop">상인</button>') + (W.has(s, 'pencil') ? '<button class="small' + (V.erase ? ' on' : '') + '" data-a="werase"' + (W.canErase(s) ? '' : ' disabled') + '>' + (s.erased ? '지우개 씀' : (V.erase ? '지우개 취소' : '지우개')) + '</button>' : '') +
+      '<button class="small" data-a="wundo"' + (hist.length && (!ts || ts.free) ? '' : ' disabled') + '>되돌리기</button>' +
       '<button class="primary' + ((ts ? ts.end && !ts.free : !idle) ? ' pulse' : '') + '" style="flex:1" data-a="wend"' + (ts && !ts.end ? ' disabled' : '') + '>' + (left === 1 ? '하루 마치고 장날 가기' : '하루 마치기') + '</button></div>';
 
     if (V.shop) {
@@ -919,7 +939,7 @@
       if (isTut() && ts) h += coach(ts);
       if (V.got) h += '<div class="got"><span>나왔다!</span>' + V.got.map(function (id) { return '<span class="g1">' + img(id, null, 16) + ST.PIECES[id].name + '</span>'; }).join('') + '</div>';
       ST.packsFor(q).forEach(function (p, n) {
-        h += '<button class="choice pk" data-a="wbuy" data-i="' + n + '"' + (s.gold >= p.cost && tb ? '' : ' disabled') + '><span class="pk-l"><b>' + esc(p.name) + '</b>' + packHtml(p) + '</span><span class="pk-c">' + img('i_gold') + p.cost + '</span></button>';
+        h += '<button class="choice pk" data-a="wbuy" data-i="' + n + '"' + (s.gold >= W.cost(s, p) && tb ? '' : ' disabled') + '><span class="pk-l"><b>' + esc(p.name) + '</b>' + packHtml(p) + '</span><span class="pk-c">' + img('i_gold') + W.cost(s, p) + (W.cost(s, p) < p.cost ? '<small> (돋보기)</small>' : '') + '</span></button>';
       });
       h += '<p class="muted" style="margin:0">꾸러미에는 앞의 조각 하나와, 뒤의 둘 중 하나가 들어 있어요. 둘 중 하나는 번갈아 나와요.</p>';
       h += '<div class="earn"><b>금화 버는 법</b>' +
@@ -1112,7 +1132,7 @@
   // 새 판을 편다. 튜토리얼이면 손에 들어오는 순서를 정해 둔다.
   function newBoard(bag) {
     if (Q.work) {
-      G = ST.work.newGame(Q, (Date.now() % 100000) + 1);
+      G = ST.work.newGame(Q, (Date.now() % 100000) + 1, isTut() ? [] : eqRelics());
       tut = isTut() ? { pre: 0, ack: false, gack: false, errClosed: false } : null; hist = []; sel = null; fx = null;
       go('work');
       return;
@@ -1208,7 +1228,13 @@
     tutorial: function () { startTut(); },
     // 일꾼 규칙
     noop: function () {},
-    wstart: function () { draft = { bag: {}, relics: [] }; newBoard([]); },
+    wstart: function () { draft = { bag: {}, relics: eqRelics() }; newBoard([]); },
+    wrelic: function (d) {
+      var eq = eqRelics(), k = eq.indexOf(d.id);
+      if (k >= 0) eq.splice(k, 1); else if (eq.length < 2) eq.push(d.id);
+      save.eq = eq; persist(); render();
+    },
+    werase: function () { if (G && ST.work.canErase(G)) { V.erase = !V.erase; sel = null; V.msg = null; render(); } },
     wpiece: function (d) {
       var ts = wtStep();
       if (ts && !ts.free && ts.piece !== d.id) return;
@@ -1221,6 +1247,15 @@
         if (ts.piece ? (sel !== ts.piece || ts.cells.indexOf(i) < 0) : !(ts.work && ts.work.indexOf(i) >= 0)) return;
       }
       V.msg = null; V.good = false;
+      if (V.erase) {
+        if (c && c.k === 'b') {
+          if (!W.erase(G, i)) return;
+          hist.push(snap); V.erase = false; sel = null;
+          V.msg = '지웠어요. 그 조각이 짐으로 돌아왔어요. 다시 지어요.'; V.good = true;
+          absorb(); render();
+        }
+        return;
+      }
       if (sel !== null && !c) {
         if (!W.build(G, sel, i)) { var bw = W.buildWhy(G, sel, i); if (bw) { V.msg = bw; render(); } return; }
         hist.push(snap);
