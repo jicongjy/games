@@ -495,7 +495,8 @@
 
   W.newGame = function (quest, seed) {
     var c = quest.work, s = {
-      q: quest.id, rs: (seed | 0) || 1, day: 1, week: 0, perWeek: c.perWeek, quota: c.quota.slice(),
+      q: quest.id, rule: quest.rule || null, minPeople: c.people || 0,
+      rs: (seed | 0) || 1, day: 1, week: 0, perWeek: c.perWeek, quota: c.quota.slice(),
       board: [], inv: {}, gold: c.gold || 0, bread: 0,
       workers: [{ t: 'hero', used: false }, { t: 'donkey', used: false }],
       phase: 'play', found: [], news: [], fx: [], at: {},
@@ -514,6 +515,21 @@
   };
 
   W.idle = function (s) { var n = 0; s.workers.forEach(function (w) { if (!w.used) n++; }); return n; };
+  // 담(가운데 줄) 규칙: 집이 담 왼쪽(0~1번 줄)과 오른쪽(3~4번 줄)에 각각 몇 채인가
+  W.sides = function (s) {
+    var L = 0, R = 0;
+    s.workers.forEach(function (w) {
+      if (w.t !== 'res') return;
+      var col = w.home % N;
+      if (col < 2) L++; else if (col > 2) R++;
+    });
+    return { L: L, R: R };
+  };
+  W.uneven = function (s) {
+    if (s.rule !== 'wall') return false;
+    var d = W.sides(s);
+    return Math.abs(d.L - d.R) > 1;
+  };
   W.residents = function (s) { var n = 0; s.workers.forEach(function (w) { if (w.t === 'res') n++; }); return n; };
 
   var CHECK = {
@@ -521,6 +537,7 @@
     bake: function (s) { return s.stat.baked > 0; },
     buy: function (s) { return s.stat.bought > 0; },
     house: function (s) { return W.residents(s) > 0; },
+    pair: function (s) { var d = W.sides(s); return d.L > 0 && d.R > 0; },
     page1: function (s) { return s.found.length >= 1; },
     bake4: function (s) { return s.stat.dayBread >= 4; },
     page3: function (s) { return s.found.length >= 3; }
@@ -652,6 +669,15 @@
     s.market = null;
     if (s.day % s.perWeek === 0) {
       var need = s.quota[s.week];
+      var last = s.week === s.quota.length - 1, sd = W.sides(s);
+      if (W.uneven(s)) {
+        s.market = { week: s.week, need: need, short: 0, uneven: true, L: sd.L, R: sd.R };
+        s.failed = true; s.phase = 'over'; return true;
+      }
+      if (last && W.residents(s) < s.minPeople) {
+        s.market = { week: s.week, need: need, short: 0, few: true, people: W.residents(s) };
+        s.failed = true; s.phase = 'over'; return true;
+      }
       if (s.bread < need) {
         s.market = { week: s.week, need: need, short: need - s.bread };
         s.failed = true; s.phase = 'over'; return true;

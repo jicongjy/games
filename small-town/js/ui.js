@@ -258,7 +258,7 @@
     q.lend.forEach(function (id) { cnt[id] = (cnt[id] || 0) + 1; });
     var parts = [];
     for (var id in cnt) parts.push(ST.PIECES[id].name + ' ' + cnt[id] + '개');
-    return '<p class="muted">의뢰인이 내놓은 조각: ' + parts.join(', ') + ' (짐 개수에 안 들어가요)</p>';
+    return '<p class="muted">의뢰인이 내놓은 조각: ' + parts.join(', ') + (q.work ? ' (처음부터 가지고 시작해요)' : ' (짐 개수에 안 들어가요)') + '</p>';
   }
 
   // 의뢰 소개를 한 컷씩으로 나눈다: 길 위에서, 등장 카드, 의뢰인의 말
@@ -759,10 +759,16 @@
     h += '<i>+</i><span class="or">' + p.or.map(function (id) { return img(id, null, 16); }).join('<em>나</em>') + '</span></span>';
     return h;
   }
+  // 일꾼 규칙에서 장날에 실패한 까닭
+  function failText(m) {
+    if (m.uneven) return '담 양쪽 주민이 왼쪽 ' + m.L + '명, 오른쪽 ' + m.R + '명이라 차이가 1명을 넘었어요.';
+    if (m.few) return '주민이 ' + m.people + '명뿐이에요. 마지막 장날에는 ' + Q.work.people + '명이 있어야 해요.';
+    return '장날에 빵이 ' + m.short + '개 모자랐어요.';
+  }
   function vWork() {
     var q = Q, s = G, W = ST.work, h = '', i;
     if (s.phase === 'over') {
-      return '<div class="panel center"><p>' + (s.won ? (isTut() ? '장날에 빵 ' + s.market.need + '개를 냈어요!' : '마지막 장날까지 넘겼어요!') : '장날에 빵이 ' + s.market.short + '개 모자랐어요.') + '</p>' +
+      return '<div class="panel center"><p>' + (s.won ? (isTut() ? '장날에 빵 ' + s.market.need + '개를 냈어요!' : '마지막 장날까지 넘겼어요!') : failText(s.market)) + '</p>' +
         '<button class="primary wide" data-a="judge">' + (isTut() ? '할머니에게 보여 주기' : esc(q.who) + '에게 가기') + '</button></div>';
     }
     var wk = s.week, dw = (s.day - 1) % s.perWeek, need = s.quota[wk];
@@ -808,6 +814,10 @@
     });
     h += '<span class="cnt">' + idle + '명 남음</span></span></div>';
 
+    if (s.rule === 'wall') {
+      var sd = W.sides(s), bad = W.uneven(s);
+      h += '<div class="wtodo"><span><b>담 양쪽 주민</b> 왼쪽 ' + sd.L + ' : 오른쪽 ' + sd.R + '</span><span class="rw">' + (bad ? '차이가 커요' : '좋아요') + '</span></div>';
+    }
     var cur = null, doneN = 0;
     q.work.todo.forEach(function (t) { if (s.todo[t.id]) doneN++; else if (!cur) cur = t; });
     if (q.work.todo.length) h += '<div class="wtodo"><span><b>해 볼 일</b> ' + (cur ? esc(cur.text) : '다 해 봤어요. 이제 마음대로 지어요.') + '</span>' +

@@ -165,11 +165,25 @@
         '언니: 그건 이쪽도 마찬가지야.',
         '(둘이 집을 한 채씩 들고 왔다.)'
       ],
-      rule: 'wall', ruleText: '가운데 줄(담)에는 못 지어요. 담 왼쪽과 오른쪽 주민 수가 1명 넘게 차이 나면 안 돼요', ground: 'day',
+      rule: 'wall', ruleText: '가운데 줄(담)에는 못 지어요. 장날마다 담 왼쪽과 오른쪽 주민 수가 1명 넘게 차이 나면 안 되고, 마지막 장날에는 주민이 4명 이상이어야 해요', ground: 'day',
       terrain: { 2: 'wall', 7: 'wall', 12: 'wall', 17: 'wall', 22: 'wall' },
       lend: ['house', 'house'], limit: 8,
       goals: [{ r: 'people', n: 4 }, { t: 'balance' }],
       bonus: [{ r: 'people', n: 6 }, { r: 'bread', n: 4 }],
+      // 일꾼 규칙. 주민이 곧 일꾼이라서, 집을 늘리면 일손은 늘지만 빵도 더 먹는다. people은 마지막 장날에 필요한 주민 수.
+      // 담(rule 'wall')은 장날마다 양쪽 주민 수를 본다.
+      work: { perWeek: 5, quota: [4, 8, 12], gold: 0, people: 4, start: { field: 3, bakery: 1, well: 1, house: 2 },
+        todo: [
+          { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'house', text: '집을 지어 주민 맞이하기', gold: 2 },
+          { id: 'pair', text: '담 양쪽에 집을 하나씩 짓기', gold: 3 },
+          { id: 'buy', text: '상인에게 꾸러미 사기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 }
+        ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
+        bonus: [{ t: 'res', n: 6 }, { t: 'pages', n: 2 }] },
+      workTip: '주민이 곧 일꾼이야. 집을 지으면 일손이 느는데 빵도 더 먹는다. 그리고 담 양쪽은 장날마다 사람 수를 맞춰야 한다. 집은 짝으로 지어라.',
       tip: '집은 붙여 지어야 해. 한 채면 한 명인데 붙이면 식구가 늘거든. 양쪽을 똑같이 맞추는 게 요령이야.',
       win: ['언니: 저쪽 집 지붕 색이 우리랑 똑같네.', '동생: 언니가 따라 한 거잖아.', '(20년 만에 나눈 첫 대화였다.)'],
       fail: '한쪽이 더 많잖아요! 이러면 20년 더 싸워요.',
