@@ -1,15 +1,38 @@
 // 일꾼 규칙 난이도 확인 도구. 세 가지 방식으로 자동 플레이해서 장날을 몇 번째까지 넘기는지 센다.
-// 실행: node tools/sim-work.js
+// 실행: node tools/sim-work.js [의뢰 번호(기본 1)] [장날 요구량(예: 5,10,16)]
 require('../js/engine.js');
 require('../js/data.js');
-const ST = globalThis.ST, W = ST.work, q = ST.QUESTS[0];
+const ST = globalThis.ST, W = ST.work, QN = +(process.argv[2] || 1), q = ST.QUESTS[QN - 1];
 
 // 조각 종류별로 놓을 자리(앞에서부터). smart는 조합이 생기게, plain은 밭을 빵집 옆에만.
-const SLOTS = {
+const SLOTS = QN === 5 ? {
+  // 5번(이장님): 10, 11, 13, 14는 강, 4는 바위. 조각은 6개만 지을 수 있다. smart는 가진 조각 중 빵집, 밭 둘, 집 둘, 과수원을 고른다.
+  smart: { bakery: [6], field: [1, 7, 5], house: [20, 21, 22], orchard: [16, 17], well: [2], mill: [3] },
+  plain: { bakery: [6], field: [1, 7, 5], house: [20, 21, 22], orchard: [16, 17], well: [2], mill: [3] }
+} : QN === 4 ? {
+  // 4번(양조장): 겨울이라 밭은 우물 옆에서만 자란다. 0, 24는 바위, 8은 소나무. 우물(12) 둘레(7, 11, 13, 17)에 밭을 두고,
+  // 빵집은 밭 둘레, 양조장(15) 옆에 과수원(10, 20)과 집(16)을 둔다. plain은 우물 없이 밭만 늘어놓아 겨울 규칙을 무시한다.
+  smart: { well: [12, 3], field: [7, 11, 13, 17, 2, 4], bakery: [6, 18, 1], brewery: [15], orchard: [10, 20, 22, 21], house: [16, 14, 9, 19, 5], mill: [2, 23], inn: [9, 19] },
+  plain: { well: [22, 23], field: [1, 2, 3, 4, 5, 9], bakery: [6, 18, 7], brewery: [15], orchard: [10, 20, 21], house: [16, 14, 19, 11], mill: [19, 23], inn: [9, 19] }
+} : QN === 3 ? {
+  // 3번(낚시꾼): 10, 11, 12번 칸이 강. 낚시터는 강 옆(5, 6, 7, 15, 16, 17, 13), 여관은 낚시터 옆, 집은 낚시터에서 먼 칸.
+  // plain은 집을 낚시터 옆에 놓으려 해서(지어지지 않는다) 규칙을 무시하는 경우를 본다.
+  smart: { fishing: [6, 16, 5, 15], inn: [1, 21, 0, 20], bakery: [18, 8], field: [13, 17, 19, 23, 9, 3], well: [14, 22], mill: [24, 2], house: [3, 9, 14, 8, 23, 19, 22, 2], orchard: [24, 4] },
+  plain: { fishing: [6, 16, 5, 15], inn: [1, 21, 0, 20], bakery: [18, 8], field: [13, 17, 19, 23, 9, 3], well: [14, 22], mill: [24, 2], house: [1, 7, 11, 15, 17, 21, 0, 20], orchard: [24, 4] }
+} : QN === 2 ? {
+  // 2번(쌍둥이): 가운데 줄(2, 7, 12, 17, 22)은 담. 집은 왼쪽과 오른쪽을 번갈아, plain은 왼쪽부터 채워 담 규칙을 어긴다.
+  smart: { bakery: [6, 8], field: [1, 5, 11, 3, 9, 13, 10, 14], well: [0, 4, 16, 18], mill: [15, 19], house: [20, 24, 21, 23, 15, 19, 10, 14], orchard: [16, 18, 0, 4] },
+  plain: { bakery: [6, 8], field: [1, 5, 11, 3, 9, 13], well: [16, 18], mill: [15, 19], house: [0, 10, 15, 20, 16, 21, 4, 14], orchard: [24, 23] }
+} : {
   smart: { bakery: [12, 2], field: [7, 11, 13, 1, 3], well: [6, 8], mill: [17, 0], house: [21, 23, 16, 18, 15, 19], orchard: [22, 10, 14] },
   plain: { bakery: [12, 2], field: [7, 11, 13, 17, 1, 3], well: [24, 23], mill: [21, 22], house: [0, 5, 10, 15, 9, 14], orchard: [19, 18] }
 };
+const PICK5 = ['bakery', 'field', 'field', 'house', 'house', 'orchard']; // 5번: smart가 고르는 여섯 조각
 function placeAll(s, kind) {
+  if (QN === 5 && kind === 'smart') {
+    for (const id of PICK5) { if (s.inv[id] > 0) { const c = (SLOTS.smart[id] || []).find(x => !s.board[x]); if (c !== undefined) W.build(s, id, c); } }
+    return;
+  }
   for (const id in s.inv) while (s.inv[id] > 0) {
     const c = (SLOTS[kind][id] || []).find(x => !s.board[x]);
     if (c === undefined || !W.build(s, id, c)) break;
@@ -17,14 +40,15 @@ function placeAll(s, kind) {
 }
 function count(s, id) { return s.board.filter(x => x && x.k === 'b' && x.id === id).length + (s.inv[id] || 0); }
 function shop(s, kind) {
-  const P = {}; ST.PACKS.forEach(p => P[p.id] = p);
+  const P = {}; ST.packsFor(q).forEach(p => P[p.id] = p); P.town = P.town || P.lake;
   for (let n = 0; n < 6; n++) {
     let want = null;
     if (kind === 'plain') { if (count(s, 'field') < 4) want = P.farm; }
     else if (count(s, 'field') < 3 || count(s, 'well') < 1) want = P.farm;
     else if (count(s, 'mill') < 1) want = P.shop;
-    else if (count(s, 'house') < 3) want = P.town;
-    if (!want || s.gold < want.cost) return;
+    else if (QN === 3 ? count(s, 'house') + count(s, 'inn') < 4 : count(s, 'house') < (QN === 2 ? 6 : 3)) want = QN === 3 ? P.lake : P.town;
+    const keep = s.week >= s.quota.length - 1 ? s.minGold : 0; // 마지막 주에는 장날에 필요한 금화를 남겨 둔다
+    if (!want || s.gold - keep < want.cost) return;
     W.buy(s, want); placeAll(s, kind);
   }
 }
@@ -35,9 +59,12 @@ function workDay(s) {
       const b = s.board[c];
       if (!b || b.k !== 'b' || W.canWork(s, c)) continue;
       let v = 0;
+      if (b.id === 'bakery' && QN === 5 && s.week === s.quota.length - 1 && W.daysLeft(s) === 1 && W.stock(s) <= s.minGrain) continue;
       if (b.id === 'bakery') { const t = W.takeable(s, c), f = W.adj(s, c, 'field'); v = t >= f ? 10 + t : (W.daysLeft(s) === 1 ? 5 + t : 0); }
       else if (b.id === 'field') v = (W.adj(s, c, 'bakery') ? 4 : 0.5) - b.w;
-      else if (b.id === 'orchard') v = 1;
+      else if (b.id === 'orchard') v = QN === 5 ? (s.gold < 4 ? 3.9 : 0.5) : 1;
+      else if (b.id === 'brewery') v = s.gold < 12 ? 4.2 : 0.5;
+      else if (b.id === 'fishing') v = s.gold < 8 ? 4.2 : 0.5;
       if (v > bv) { bv = v; best = c; }
     }
     if (best < 0) break;
@@ -45,8 +72,8 @@ function workDay(s) {
   }
 }
 function randomDay(s, r) {
-  for (const id in s.inv) while (s.inv[id] > 0) { const e = []; s.board.forEach((x, i) => { if (!x) e.push(i); }); W.build(s, id, e[r() % e.length]); }
-  const p = ST.PACKS[r() % ST.PACKS.length]; if (s.gold >= p.cost) W.buy(s, p);
+  for (const id in s.inv) while (s.inv[id] > 0) { const e = []; s.board.forEach((x, i) => { if (!x) e.push(i); }); if (!W.build(s, id, e[r() % e.length])) break; }
+  const PK = ST.packsFor(q), p = PK[r() % PK.length]; if (s.gold >= p.cost) W.buy(s, p);
   for (let n = 0; n < 20 && W.idle(s); n++) W.work(s, r() % 25);
 }
 function run(kind, seed, quota) {
@@ -61,14 +88,15 @@ function run(kind, seed, quota) {
     else { placeAll(s, kind); shop(s, kind); workDay(s); }
     const before = s.stat.baked; W.endDay(s); total = s.stat.baked;
   }
-  return { week: s.week, won: s.won, baked: total, stars: W.evaluate(s, q).stars, res: W.residents(s), pages: s.found.length };
+  return { why: s.market && (s.market.uneven ? '담' : s.market.few ? '주민' : s.market.grain ? '곡식' : s.market.poor ? '금화' : s.market.short ? '빵' : ''), week: s.week, won: s.won, baked: total, stars: W.evaluate(s, q).stars, res: W.residents(s), pages: s.found.length };
 }
-const quota = process.argv[2] ? process.argv[2].split(',').map(Number) : null;
+const quota = process.argv[3] ? process.argv[3].split(',').map(Number) : null;
 console.log('장날 요구량:', (quota || q.work.quota).join(', '));
 ['random', 'plain', 'smart'].forEach(kind => {
   const R = []; for (let i = 1; i <= 300; i++) R.push(run(kind, i, quota));
   const avg = f => (R.reduce((a, r) => a + f(r), 0) / R.length).toFixed(1);
   const pct = f => Math.round(R.filter(f).length / R.length * 100) + '%';
   console.log(kind.padEnd(7), '통과', pct(r => r.won), '| 1주', pct(r => r.week >= 1), '2주', pct(r => r.week >= 2),
-    '| 구운 빵', avg(r => r.baked), '별', avg(r => r.stars), '주민', avg(r => r.res), '노트', avg(r => r.pages));
+    '| 구운 빵', avg(r => r.baked), '별', avg(r => r.stars), '주민', avg(r => r.res), '노트', avg(r => r.pages),
+    '| 실패 까닭 빵', R.filter(r => r.why === '빵').length, '담', R.filter(r => r.why === '담').length, '주민', R.filter(r => r.why === '주민').length, '금화', R.filter(r => r.why === '금화').length, '곡식', R.filter(r => r.why === '곡식').length);
 });

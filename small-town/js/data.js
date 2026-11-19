@@ -63,6 +63,10 @@
     orchard: { desc: '일꾼을 보내면 과일을 따서 금화 2개를 번다.', when: '일꾼 1명', res: 'gold', n: '+2' },
     house: { desc: '주민 1명이 이사 온다. 다음 날부터 일꾼이 된다. 주민은 저녁마다 빵 1개를 먹고, 못 먹으면 다음 날 쉰다.', when: '일꾼', res: 'people', n: '+1',
       idle: '집에는 일꾼을 보내지 않아요. 여기 사는 주민이 일꾼이에요.' },
+    fishing: { desc: '일꾼을 보내면 낚시를 해서 금화 3개를 번다. 강이나 우물 옆에 지어야 고기가 문다. 집 옆에는 지을 수 없다(조용한 물가).', when: '물가 옆 일꾼 1명', res: 'gold', n: '+3' },
+    inn: { desc: '손님이 머무는 곳이라 주민 1명이 이사 온다. 다음 날부터 일꾼이 된다. 주민은 저녁마다 빵 1개를 먹는다. 낚시터 옆에 지어도 된다.', when: '일꾼', res: 'people', n: '+1',
+      idle: '여관에는 일꾼을 보내지 않아요. 여기 머무는 주민이 일꾼이에요.' },
+    brewery: { desc: '일꾼을 보내면 옆 과수원 하나마다 금화 3개를 번다(하루에 한 번만). 옆에 과수원과, 술 마실 사람이 사는 집이나 여관이 있어야 한다.', when: '옆 과수원마다', res: 'gold', n: '+3' },
     well: { desc: '일꾼이 필요 없다. 밭 옆에 지으면 그 밭을 돕는다. 얼마나 돕는지는 지어 보면 안다.', when: '밭 옆에 지으면', text: '밭을 돕는다', page: 'wet', known: { when: '옆 밭', res: 'grain', n: '×2' },
       idle: '우물은 일꾼이 필요 없어요. 밭 옆에 있으면 그 밭을 도와요.' },
     mill: { desc: '일꾼이 필요 없다. 빵집 옆에 지으면 그 빵집을 돕는다. 얼마나 돕는지는 지어 보면 안다.', when: '빵집 옆에 지으면', text: '빵집을 돕는다', page: 'flour', known: { when: '옆 빵집이 구울 때', res: 'bread', n: '+1' },
@@ -74,15 +78,23 @@
     wet: { name: '물 댄 밭', a: 'field', b: 'well', hint: '밭이 목말라 보이던데. 옆에 뭘 파 줬더라?', text: '우물 옆 밭은 일꾼이 한 번 갈 때마다 곡식이 2개씩 쌓인다.', memo: '물 주는 걸 까먹고 밭 탓만 한 게 30년이다.' },
     oven: { name: '큰 화덕', a: 'bakery', b: 'field', hint: '빵집은 밭에 둘러싸일수록 신이 났지. 몇 군데였더라?', text: '빵집이 한 번에 밭 세 곳의 곡식을 구우면 빵 1개가 덤으로 나온다.', memo: '불은 한 번 땔 때 많이 굽는 거야. 장작이 아깝잖니.' },
     flour: { name: '고운 가루', a: 'bakery', b: 'mill', hint: '방앗간은 혼자 두면 바람만 쐰다. 누구 옆이었더라?', text: '방앗간 옆 빵집은 구울 때마다 빵 1개가 더 나온다.', memo: '곱게 빻으면 같은 밀로 빵이 하나 더 나와. 밀순이한테는 비밀이다.' },
+    guest: { name: '여관 손님', a: 'inn', b: 'fishing', hint: '낚시터 옆에 사람이 오가면 입질이 끊긴다더라. 근데 어떤 사람은 괜찮았지.', text: '낚시터 옆에 여관이 있으면, 손님이 낚시를 거들어서 낚시터에서 금화가 1개 더 나온다.', memo: '영감이 말은 많은데 손님이 오면 또 좋아해. 낚싯대 잡는 손도 늘고.' },
+    cask: { name: '큰 술통', a: 'brewery', b: 'orchard', hint: '양조장은 과수원에 둘러싸일수록 신이 났지. 몇 군데였더라?', text: '양조장이 한 번에 과수원 두 곳 이상을 끼고 빚으면 금화가 2개 덤으로 나온다.', memo: '과일을 한꺼번에 으깨야 술통이 가득 차. 아껴 담으면 맛이 없다.' },
     snack: { name: '과일 새참', a: 'house', b: 'orchard', hint: '빵 말고도 배 채울 게 있었는데. 집 옆에 뭘 심었더라?', text: '과수원 옆 집에 사는 주민은 과일을 먹어서 저녁에 빵을 먹지 않는다.', memo: '담 너머로 손만 뻗으면 사과였지. 그 집 애들은 밥을 안 먹었어.' }
   };
-  ST.PAGE_ORDER = ['wet', 'oven', 'flour', 'snack'];
+  ST.PAGE_ORDER = ['wet', 'oven', 'flour', 'snack', 'guest', 'cask'];
   // 떠돌이 상인의 꾸러미. sure는 꼭 들어 있는 조각, or는 그중 하나가 들어 있다.
   ST.PACKS = [
     { id: 'farm', name: '밭 꾸러미', cost: 3, sure: ['field'], or: ['field', 'well'] },
     { id: 'shop', name: '일터 꾸러미', cost: 4, sure: ['field'], or: ['mill', 'bakery'] },
-    { id: 'town', name: '마을 꾸러미', cost: 4, sure: ['house'], or: ['house', 'orchard'] }
+    { id: 'town', name: '마을 꾸러미', cost: 4, sure: ['house'], or: ['house', 'orchard'] },
+    { id: 'lake', name: '강가 꾸러미', cost: 4, sure: ['inn'], or: ['fishing', 'house'] }
   ];
+  // 의뢰가 파는 꾸러미. 의뢰의 work.packs에 적은 것만, 없으면 앞의 세 가지만 판다.
+  ST.packsFor = function (q) {
+    var ids = (q && q.work && q.work.packs) || ['farm', 'shop', 'town'];
+    return ST.PACKS.filter(function (p) { return ids.indexOf(p.id) >= 0; });
+  };
   // 일꾼 규칙의 깜짝 이벤트. 주마다 사흘째 아침에 하나씩 나온다. 선택지의 뜻은 js/engine.js의 W.choose에 있다.
   ST.WEVENTS = {
     parcel: { art: ['grandma'], title: '할머니의 소포', text: '온천에서 소포가 왔다. 쪽지에는 "둘 중 하나만 가져라. 욕심내면 두부 준다."',
@@ -101,6 +113,8 @@
   ST.workGoalText = function (g) {
     if (g.t === 'pages') return '한 판에 노트 ' + g.n + '쪽 채우기';
     if (g.t === 'res') return '주민 ' + g.n + '명 맞이하기';
+    if (g.t === 'gold') return '마지막 장날에 금화 ' + g.n + '개 이상 갖고 있기';
+    if (g.t === 'near') return '여관을 낚시터 옆에 짓기';
     return '';
   };
   ST.PIECE_ORDER = ['field', 'orchard', 'fishing', 'bakery', 'mill', 'brewery', 'house', 'inn', 'tower', 'well', 'plaza', 'bell'];
@@ -165,11 +179,25 @@
         '언니: 그건 이쪽도 마찬가지야.',
         '(둘이 집을 한 채씩 들고 왔다.)'
       ],
-      rule: 'wall', ruleText: '가운데 줄(담)에는 못 지어요. 담 왼쪽과 오른쪽 주민 수가 1명 넘게 차이 나면 안 돼요', ground: 'day',
+      rule: 'wall', ruleText: '가운데 줄(담)에는 못 지어요. 장날마다 담 왼쪽과 오른쪽 주민 수가 1명 넘게 차이 나면 안 되고, 마지막 장날에는 주민이 4명 이상이어야 해요', ground: 'day',
       terrain: { 2: 'wall', 7: 'wall', 12: 'wall', 17: 'wall', 22: 'wall' },
       lend: ['house', 'house'], limit: 8,
       goals: [{ r: 'people', n: 4 }, { t: 'balance' }],
       bonus: [{ r: 'people', n: 6 }, { r: 'bread', n: 4 }],
+      // 일꾼 규칙. 주민이 곧 일꾼이라서, 집을 늘리면 일손은 늘지만 빵도 더 먹는다. people은 마지막 장날에 필요한 주민 수.
+      // 담(rule 'wall')은 장날마다 양쪽 주민 수를 본다.
+      work: { perWeek: 5, quota: [4, 8, 12], gold: 0, people: 4, start: { field: 3, bakery: 1, well: 1, house: 2 },
+        todo: [
+          { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'house', text: '집을 지어 주민 맞이하기', gold: 2 },
+          { id: 'pair', text: '담 양쪽에 집을 하나씩 짓기', gold: 3 },
+          { id: 'buy', text: '상인에게 꾸러미 사기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 }
+        ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
+        bonus: [{ t: 'res', n: 6 }, { t: 'pages', n: 2 }] },
+      workTip: '주민이 곧 일꾼이야. 집을 지으면 일손이 느는데 빵도 더 먹는다. 그리고 담 양쪽은 장날마다 사람 수를 맞춰야 한다. 집은 짝으로 지어라.',
       tip: '집은 붙여 지어야 해. 한 채면 한 명인데 붙이면 식구가 늘거든. 양쪽을 똑같이 맞추는 게 요령이야.',
       win: ['언니: 저쪽 집 지붕 색이 우리랑 똑같네.', '동생: 언니가 따라 한 거잖아.', '(20년 만에 나눈 첫 대화였다.)'],
       fail: '한쪽이 더 많잖아요! 이러면 20년 더 싸워요.',
@@ -184,11 +212,25 @@
         '혼자가 편해. 정말이야. 누가 물어봤냐고? 아무도 안 물어봤지.',
         '(영감이 낚시터 둘과 낡은 여관 하나를 내놓았다.)'
       ],
-      rule: 'quiet', ruleText: '낚시터 옆에는 집을 못 지어요. 여관과 망루는 괜찮아요', ground: 'day',
+      rule: 'quiet', ruleText: '낚시터 옆에는 집을 못 지어요(낚시터를 집 옆에 짓는 것도 안 돼요). 여관은 괜찮아요. 마지막 장날에는 주민 4명과 금화 6개가 있어야 해요', ground: 'day',
       terrain: { 10: 'water', 11: 'water', 12: 'water', 4: 'tree', 24: 'rock' },
       lend: ['fishing', 'fishing', 'inn'], limit: 8,
       goals: [{ r: 'gold', n: 6 }, { r: 'people', n: 4 }],
       bonus: [{ r: 'gold', n: 9 }, { t: 'adj', a: 'inn', b: 'fishing' }],
+      // 일꾼 규칙. 낚시터는 물가(강, 우물) 옆에서 일꾼을 보내면 금화가 나온다. 집은 낚시터 옆에 못 짓지만 여관은 된다(여관 손님 조합).
+      // people, needGold는 마지막 장날에 있어야 하는 주민 수와 금화.
+      work: { perWeek: 5, quota: [3, 6, 10], gold: 0, people: 4, needGold: 6, packs: ['farm', 'shop', 'lake'],
+        start: { fishing: 2, inn: 1, field: 2, bakery: 1, house: 1 },
+        todo: [
+          { id: 'fish', text: '낚시터를 물가에 짓고 일꾼을 보내 금화 얻기', gold: 2 },
+          { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'inn', text: '여관을 지어 손님 맞이하기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 }
+        ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
+        bonus: [{ t: 'gold', n: 9 }, { t: 'near', a: 'inn', b: 'fishing' }] },
+      workTip: '낚시터는 물가에 붙여야 돈이 돼. 강 옆이나 우물 옆이다. 그리고 집은 낚시터 옆에 못 짓는다고 영감이 그러더라. 집은 싫다고 했지, 여관이 싫다고는 안 했어.',
       tip: '낚시터는 물가에 붙여야 돈이 돼. 그리고 잘 들어 봐. 영감이 집은 싫다고 했지, 여관이 싫다고는 안 했어.',
       win: ['여관 손님이 낚시를 좀 하더군.', '말이 많아. 시끄러워.', '내일 또 오라고 했네.'],
       fail: '이래서는 낚싯밥 값도 안 나와.',
@@ -202,11 +244,25 @@
         '왜 겨울에 왔냐고요? 가을에는 제가 바빴어요. 술 마시느라.',
         '(양조장 하나와 과수원 하나를 내놓았다.)'
       ],
-      rule: 'winter', ruleText: '겨울이라 밭은 우물 옆에서만 자라요', ground: 'snow',
+      rule: 'winter', ruleText: '겨울이라 밭은 우물 옆에서만 곡식이 자라요. 양조장은 옆에 과수원과 집(또는 여관)이 있어야 돌아가요. 마지막 장날에는 금화 10개가 있어야 해요', ground: 'snow',
       terrain: { 0: 'rock', 8: 'pine', 24: 'rock' },
       lend: ['brewery', 'orchard'], limit: 8,
       goals: [{ r: 'gold', n: 10 }, { r: 'grain', n: 4 }],
       bonus: [{ r: 'gold', n: 14 }, { r: 'grain', n: 6 }],
+      // 일꾼 규칙. 겨울에는 우물 옆 밭에만 곡식이 쌓인다. 양조장은 옆 과수원마다 금화를 내고, 옆에 사람이 사는 집(여관)이 있어야 돌아간다.
+      // needGold는 마지막 장날에 있어야 하는 금화.
+      work: { perWeek: 5, quota: [3, 7, 10], gold: 0, needGold: 10,
+        start: { brewery: 1, orchard: 1, field: 2, well: 1, bakery: 1, house: 1 },
+        todo: [
+          { id: 'grain', text: '우물 옆 밭에 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'brew', text: '양조장 옆에 과수원과 집을 두고 술 빚기', gold: 3 },
+          { id: 'buy', text: '상인에게 꾸러미 사기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 }
+        ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
+        bonus: [{ t: 'gold', n: 14 }, { t: 'pages', n: 2 }] },
+      workTip: '겨울 밭은 우물 옆에서만 자라. 우물 하나에 밭을 여럿 붙여 봐. 양조장은 옆에 과수원도 있어야 하고, 사람도 살아야 돌아간단다. 술은 마실 사람이 있어야 빚는 거야.',
       tip: '겨울 밭은 우물 옆에서만 자라. 우물 하나에 밭을 여럿 붙여 봐. 그리고 양조장은 옆에 사람이 살아야 돌아간단다.',
       win: ['됐다! 이제 석 달 동안 맛만 보면 됩니다.', '맛보는 것도 일이에요.'],
       fail: '이걸로는 한 통도 못 빚어요. 에취!',
@@ -220,11 +276,24 @@
         '예산? 예산은 마음속에 있지. 조각은 여섯 개만 쓰게.',
         '아, 그리고 광장에는 봉 선생 동상을 세울 걸세.'
       ],
-      rule: 'six', ruleText: '조각을 6개만 가져갈 수 있어요', ground: 'day',
+      rule: 'six', ruleText: '이 땅에는 조각을 6개까지만 지을 수 있어요(가진 것이 더 많아도 6개만 골라 지어요). 마지막 장날에는 주민 2명, 금화 3개, 밭에 쌓인 곡식 2개가 한꺼번에 있어야 해요', ground: 'day',
       terrain: { 10: 'water', 11: 'water', 13: 'water', 14: 'water', 4: 'rock' },
       lend: [], limit: 6,
       goals: [{ r: 'grain', n: 2 }, { r: 'bread', n: 4 }, { r: 'people', n: 2 }, { r: 'gold', n: 3 }],
       bonus: [{ r: 'gold', n: 6 }, { r: 'people', n: 5 }],
+      // 일꾼 규칙. 땅에 지을 수 있는 조각은 pieces개까지라서, 가진 조각 중 어떤 여섯을 지을지 고르는 게 핵심이다(짐 6개를 옮긴 것).
+      // 마지막 장날에 people(주민), needGold(금화), needGrain(밭에 쌓인 곡식)이 한꺼번에 있어야 한다. 빵은 장날마다 내는 것이 곧 그 조건이다.
+      work: { perWeek: 5, quota: [3, 6, 9], gold: 0, people: 2, needGold: 3, needGrain: 2, pieces: 6,
+        start: { field: 3, bakery: 1, house: 2, well: 1, orchard: 1 },
+        todo: [
+          { id: 'grain', text: '밭을 짓고 일꾼을 보내 곡식 얻기', gold: 2 },
+          { id: 'bake', text: '빵집을 밭 옆에 짓고 빵 굽기', gold: 3 },
+          { id: 'house', text: '집을 지어 주민 맞이하기', gold: 2 },
+          { id: 'page1', text: '조각을 붙여 지어 노트 한 쪽 채우기', gold: 3 }
+        ],
+        events: ['parcel', 'donkey', 'neighbor', 'rain', 'peddler', 'traveler'],
+        bonus: [{ t: 'gold', n: 6 }, { t: 'res', n: 4 }] },
+      workTip: '조각은 여섯 개만 쓴다고 했지. 가진 건 여덟 개니까 둘은 빼야 해. 밭은 곡식도 내고 빵집도 먹여 살리잖니. 한 조각이 두 가지 일을 하게 놓아 봐. 그리고 마지막 장날에는 빵을 다 굽지 말고 곡식 두 개는 밭에 남겨 둬라.',
       tip: '여섯 개로 네 가지를 다 채워야 해. 조각 하나가 두 가지 일을 하게 놓아 봐. 밭은 곡식도 내고 빵집도 먹여 살리잖니.',
       win: ['여섯 개로 이걸 다! 역시 봉 선생 핏줄이야.', '동상은 자네 것도 하나 세우지.'],
       fail: '허허, 이래서는 군청에 보고를 못 하네.',
@@ -287,7 +356,8 @@
       id: 't0', who: '튜토리얼', title: '할머니 집 마당', portraits: ['grandma'],
       rule: null, ruleText: '', ground: 'day', terrain: { 4: 'tree', 20: 'pine' },
       lend: [], limit: 8, goals: [], bonus: [],
-      work: { perWeek: 3, quota: [2], gold: 0, start: { field: 2, bakery: 1, well: 1 }, todo: [], events: [], bonus: [] },
+      // 금화 3개로 시작하고 밭은 하나만 준다. 둘째 밭은 첫날에 상인에게서 사 온다(금화 쓰는 법). 파는 꾸러미는 밭 꾸러미 하나뿐이다.
+      work: { perWeek: 3, quota: [2], gold: 3, packs: ['farm'], start: { field: 1, bakery: 1, well: 1 }, todo: [], events: [], bonus: [] },
       workTip: '', tip: '', rewards: [{ p: 'house' }]
     },
     cells: { field1: 11, bakery: 12, field2: 13, well: 6 },
@@ -300,7 +370,14 @@
     bakery: '이제 빵집. 밭 바로 옆에 붙여 지어야 해. 빵집은 옆 칸 밭의 곡식만 가져오거든.',
     work1: '건물은 저 혼자 일하지 않아. 밭을 눌러서 일꾼을 보내 봐.',
     bake1: '밭 밑에 한 칸이 찼지? 곡식이 한 개 쌓인 거야. 이번에는 빵집을 눌러. 그 곡식을 가져다 빵으로 굽는다.',
-    why: '빵 냄새 나지? 밭에서 곡식을 얻고, 빵집에서 굽는다. 이게 전부야. 일꾼 둘이 다 일했으니 오늘은 여기까지다.',
+    why: '빵 냄새 나지? 밭에서 곡식을 얻고, 빵집에서 굽는다. 이게 전부야. 일꾼 둘이 다 일했네.',
+    gold: '위에 금화 3개 보이지? 할미가 넣어 둔 용돈이야. 금화로는 떠돌이 상인한테서 조각을 살 수 있어. 내일 놓을 밭이 모자라니까 지금 사 두자.',
+    shop: '아래 "상인" 단추를 눌러 봐.',
+    buy: '꾸러미를 골라 봐. 밭 꾸러미는 금화 3개야. 앞에 있는 밭은 꼭 들어 있고, 뒤의 둘 중 하나는 운이다.',
+    bought: '밭이 들어왔네! 필요한 조각은 이렇게 금화로 사면 돼. 금화는 이제 없지만 걱정 마라. 벌 수 있어. "닫기"를 눌러.',
+    errand: '일꾼이 하나 남았네. 상인 심부름을 보내면 금화를 번다. 한 번 해 보자. "상인" 단추를 눌러.',
+    errand2: '"심부름 보내기"를 눌러. 일꾼이 하루를 쓰는 대신 금화 1개를 받는다.',
+    errandDone: '금화 1개 생겼지? 장날에 빵을 내면 1개마다 금화 1개를 더 받아. 남는 빵은 상인한테 팔 수도 있어. 하나에 금화 2개다. 장날 빵은 남겨 둬라. "닫기"를 눌러.',
     end1: '"하루 마치기"를 눌러. 밭에 남은 곡식은 내일도 그대로 있으니 걱정 마라.',
     field2: '둘째 날이다. 빵집은 옆 밭마다 곡식을 하나씩 가져와. 밭이 둘이면 한 번에 빵 두 개지. 남은 밭을 빵집 반대편에 놓아 봐.',
     well: '우물도 하나 파자. 우물은 일꾼이 필요 없어. 밭 옆에 있기만 하면 돼. 반짝이는 칸에 놓아 봐.',
