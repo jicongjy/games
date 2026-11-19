@@ -4,7 +4,7 @@
 }
 *{box-sizing:border-box;margin:0}
 html{background:var(--bg)}
-body{font-family:"Pretendard","Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;color:var(--ink);min-height:100vh}
+body{font-family:"Pretendard Variable",Pretendard,"Noto Sans KR","Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;color:var(--ink);min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 button:focus-visible,input:focus-visible{outline:3px solid #2F5FD0;outline-offset:2px}
 #app{max-width:980px;margin:0 auto;padding:14px 12px 40px}
