@@ -2,7 +2,7 @@
 
 마감 전에 두 요리사가 같은 시장 재료로 5개 코스를 차려내는 2인 실시간 웹 카드게임.
 
-- 상태: 한 기기 모드와 온라인 2인 모드 구현 완료. 온라인 서버는 Cloudflare에 배포됨(`wss://hansang.hansang-server.workers.dev`, `config.js`의 `SERVER_URL`).
+- 상태: 한 기기 모드와 온라인 2인 모드 구현 완료. 화면은 밤 분위기의 가로형(폰 가로 화면, PC)이다. 온라인 서버는 Cloudflare에 배포됨(`wss://hansang.hansang-server.workers.dev`, `config.js`의 `SERVER_URL`).
 - 기획서: `docs/plan.md`
 - 카드 디자인 시안: `docs/card-sample.png` (원본 `docs/card-sample.html`)
 - localStorage 키는 `hansang:키` 형식을 쓴다.
@@ -20,3 +20,12 @@
 - 통합 확인: `node server/integration.mjs ws://localhost:8787` (두 클라이언트가 한 판을 끝까지 둠)
 - 배포: `cd hansang/server && npx wrangler login && npx wrangler deploy`. 나온 주소(`https://hansang.<계정>.workers.dev`)를 `wss://`로 바꿔 `config.js`의 `SERVER_URL`에 넣는다. `wrangler.toml`의 `ALLOWED_ORIGINS`에는 게임을 서비스하는 주소(GitHub Pages)가 들어 있다.
 - 방은 6시간 동안 아무 일이 없으면 삭제된다. 무료 요금제 한도는 Cloudflare 요금 문서를 확인한다.
+
+## 화면과 디자인 (v2)
+
+- 가로형 전용: 모든 크기가 `--u`(화면 단위) 기준이라 폰 가로(844×390)와 PC에서 같은 구조로 보인다. 세로로 들면 "폰을 가로로 돌려 주세요" 안내가 뜬다(`index.html`의 `.rotate`).
+- 글씨는 Pretendard 400 한 가지만 쓴다. 둥글기는 6px 안팎이고, 글자는 최소로 줄였다(코스 이름, 예약 글자 없음).
+- 예약은 예약 손님 그림과 `×2`, 코스 줄에는 지금 배수(`×2`, `×3`)로 나타낸다.
+- 밤 풍경(`scene.js`): 문 닫기 직전의 식당 거리. 별 반짝임, 창문 불빛, 굴뚝 연기, 마감 팻말 흔들림은 CSS 움직임이고, 움직임 줄이기 설정을 켜면 모두 꺼진다.
+- 규칙 보기는 표지 오른쪽 위 `?`, 대결 화면 왼쪽 아래 `?`에서 연다.
+- 디자인 시안은 `docs/`가 아니라 Claude 디자인 캔버스에서 관리했다(이 저장소에는 없음).

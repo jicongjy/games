@@ -1,4 +1,4 @@
-// 카드 표시용 데이터: 코스 이름, 색, 단계 이름, 아이콘(SVG), 예약 문구
+// 카드 표시용 데이터: 코스 이름, 색, 단계 이름, 아이콘(SVG)
 // 모든 그림은 이 파일에서 직접 만든 도형이다. 외부 이미지를 쓰지 않는다.
 
 export const THEME = {
@@ -17,15 +17,8 @@ export const STEP_NAMES = {
   sweet: { 2: '밀가루 체치기', 3: '참기름 섞기', 4: '반죽하기', 5: '모양 내기', 6: '기름 온도 맞추기', 7: '튀기기', 8: '조청 시럽 끓이기', 9: '꿀에 담그기', 10: '잣 올려 내기' },
 };
 
-export const RESERVE_TEXT = {
-  ban: '나물 한 접시, 오늘 책임져 주세요',
-  guk: '뜨끈한 국물, 오늘 책임져 주세요',
-  fish: '노릇한 생선 한 마리, 오늘 책임져 주세요',
-  meat: '달큰한 불고기, 오늘 책임져 주세요',
-  sweet: '달콤한 마무리, 오늘 책임져 주세요',
-};
-
-export const cardTitle = (card) => (card.step === 0 ? '단골 예약' : STEP_NAMES[card.course][card.step]);
+// 예약 카드는 글자 없이 예약 손님 그림과 ×2로 나타낸다.
+export const cardTitle = (card) => (card.step === 0 ? '' : STEP_NAMES[card.course][card.step]);
 
 const ICONS = {
   ban: `<path d="M100 18C150 58 150 140 100 182C50 140 50 58 100 18Z" fill="#1F5A2A"/><path d="M62 120C30 100 22 62 40 40C70 54 80 90 62 120Z" fill="#2F7A3A"/><path d="M138 120C170 100 178 62 160 40C130 54 120 90 138 120Z" fill="#2F7A3A"/><path d="M100 40V170" stroke="#A5CF4A" stroke-width="6" stroke-linecap="round"/>`,
@@ -35,13 +28,11 @@ const ICONS = {
   sweet: `<rect x="30" y="30" width="140" height="140" rx="34" fill="#8A4B1F"/><rect x="52" y="52" width="96" height="96" rx="22" fill="none" stroke="#F5D9A8" stroke-width="5"/><circle cx="100" cy="100" r="14" fill="#F5D9A8"/><circle cx="72" cy="72" r="6" fill="#F5D9A8"/><circle cx="128" cy="72" r="6" fill="#F5D9A8"/><circle cx="72" cy="128" r="6" fill="#F5D9A8"/><circle cx="128" cy="128" r="6" fill="#F5D9A8"/>`,
 };
 
-const BURST = '100,8 118,44 152,24 150,64 190,66 166,98 198,124 158,134 168,174 130,162 116,196 100,164 84,196 70,162 32,174 42,134 2,124 34,98 10,66 50,64 48,24 82,44';
+// 예약 손님: 코스 색 옷을 입고, 앞에 코스 색 점이 찍힌 탁상 팻말을 둔다.
+const guest = (color) => `<path d="M26 196C26 144 58 116 100 116C142 116 174 144 174 196Z" fill="${color}"/><circle cx="100" cy="76" r="36" fill="#F0C8A0"/><path d="M62 74C60 38 88 24 108 28C132 32 140 54 138 76C126 58 100 50 62 74Z" fill="#3a2a22"/><circle cx="87" cy="80" r="3.5" fill="#3a2a22"/><circle cx="113" cy="80" r="3.5" fill="#3a2a22"/><path d="M89 94Q100 104 111 94" stroke="#3a2a22" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M68 150L132 150L124 190L76 190Z" fill="#ffffff"/><circle cx="100" cy="168" r="7" fill="${color}"/>`;
 
 export function iconSvg(card) {
-  if (card.step === 0) {
-    const t = THEME[card.course];
-    return `<svg viewBox="0 0 200 200" aria-hidden="true"><polygon points="${BURST}" fill="${t.color}"/><text x="100" y="112" text-anchor="middle" font-size="${t.name.length > 3 ? 28 : 34}" font-weight="900" fill="${t.ink}" font-family="inherit">${t.name}</text></svg>`;
-  }
+  if (card.step === 0) return `<svg viewBox="0 0 200 200" aria-hidden="true">${guest(THEME[card.course].color)}</svg>`;
   return `<svg viewBox="0 0 200 200" aria-hidden="true">${ICONS[card.course]}</svg>`;
 }
 
