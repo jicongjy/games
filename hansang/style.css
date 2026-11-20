@@ -247,3 +247,5 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 @keyframes swing{0%,100%{transform:rotate(var(--r, 0deg))}50%{transform:rotate(calc(var(--r, 0deg) * -.6))}}
 
 .intro .igo{position:relative;width:calc(var(--u) * 160);animation:fadein .4s .9s both}
+
+.board.shield .hand{visibility:hidden}
