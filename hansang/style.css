@@ -214,20 +214,37 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 /* ---------- 판 시작 때 심사위원 과제 소개 ---------- */
 .intro{position:fixed;inset:0;z-index:25;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u) * 22);cursor:pointer}
 .ibg{position:absolute;inset:0;background:rgba(5,8,20,.95);animation:fadein .35s both}
-.itop,.icards,.igo{position:relative}
-.itop{text-align:center;animation:fadein .4s .05s both}
+.itop,.itop{text-align:center;animation:fadein .4s .05s both}
 .itt{display:block;font-size:calc(var(--u) * 28);color:var(--cream);text-shadow:0 0 8px rgba(255,210,63,.55),0 0 28px rgba(255,210,63,.3)}
 .its{display:block;margin-top:calc(var(--u) * 6);font-size:max(13px, calc(var(--u) * 15));color:var(--gold)}
-.icards{display:flex;gap:calc(var(--u) * 12)}
-.icard{width:calc(var(--u) * 148);min-height:calc(var(--u) * 118);border:1px solid rgba(255,241,220,.45);border-radius:calc(var(--u) * 8);background:#1b2447;padding:calc(var(--u) * 12);display:flex;flex-direction:column;align-items:center;gap:calc(var(--u) * 10);text-align:center;animation:icardin .55s cubic-bezier(.2,.8,.2,1) both}
-.icard .ichip{display:flex;align-items:center;justify-content:center;gap:calc(var(--u) * 6);width:100%;height:calc(var(--u) * 40);border-radius:calc(var(--u) * 6);background:var(--gold);color:var(--ink);font-size:calc(var(--u) * 20);line-height:1}
-.icard .ichip .dot{display:inline-block;width:calc(var(--u) * 14);height:calc(var(--u) * 14);border-radius:3px}
-.icard .ichip .dots{display:inline-flex;gap:3px}
-.icard .ichip .dots b{display:block;width:calc(var(--u) * 8);height:calc(var(--u) * 8);border-radius:2px;background:currentColor}
-.icard .itext{font-size:max(12px, calc(var(--u) * 14));line-height:1.35;color:var(--cream);word-break:keep-all}
 .igo{font-size:max(12px, calc(var(--u) * 13));color:var(--sub);animation:blink 1.6s ease-in-out infinite}
 .tchip.hide{opacity:0}
 .cnote{font-size:var(--fs-s);color:var(--sub);line-height:1.4;margin-top:calc(var(--u) * -2)}
 @keyframes fadein{from{opacity:0}}
-@keyframes icardin{from{opacity:0;transform:translateY(calc(var(--u) * 24)) scale(.92)}}
 @keyframes blink{50%{opacity:.4}}
+
+/* 점수를 숨기고 카드 장수를 칸으로 보여 준다 */
+.cnt{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:calc(var(--u) * 3);max-width:92%;min-height:calc(var(--u) * 12)}
+.cnt i{display:block;width:calc(var(--u) * 7);height:calc(var(--u) * 11);min-width:4px;min-height:7px;border-radius:2px;background:currentColor;opacity:.92}
+.cnt i.r{background:transparent;box-shadow:inset 0 0 0 1px currentColor}
+.chip .cnt{max-width:86%}
+.lane.empty .cnt{opacity:0}
+.panel.narrow{width:min(calc(var(--u) * 320), 94vw)}
+.panel.narrow .detail{display:block}
+.detail .who .n{margin-left:auto;font-size:var(--fs-s);color:var(--muted)}
+
+/* 판 시작 소개: 식당 주문서 */
+.icards{position:relative;display:flex;gap:calc(var(--u) * 14);padding-top:calc(var(--u) * 18)}
+.icards::before{content:"";position:absolute;left:calc(var(--u) * -18);right:calc(var(--u) * -18);top:calc(var(--u) * 8);height:calc(var(--u) * 5);border-radius:calc(var(--u) * 3);background:linear-gradient(#aab3d4,#6f7898);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.icard{position:relative;width:calc(var(--u) * 140);transform-origin:50% 0;transform:rotate(var(--r, 0deg));filter:drop-shadow(0 calc(var(--u) * 8) calc(var(--u) * 10) rgba(0,0,0,.45));animation:ticketin .7s cubic-bezier(.2,.9,.25,1.15) var(--d, 0s) both,swing 5s ease-in-out calc(var(--d, 0s) + .8s) infinite}
+.icard .paper{--s:calc(var(--u) * 12);position:relative;display:flex;flex-direction:column;align-items:center;gap:calc(var(--u) * 10);min-height:calc(var(--u) * 150);padding:calc(var(--u) * 26) calc(var(--u) * 12) calc(var(--u) * 30);background:#F7F1E6;color:var(--ink);text-align:center;border-radius:calc(var(--u) * 3) calc(var(--u) * 3) 0 0;-webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50% / var(--s) 100%;mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50% / var(--s) 100%}
+.icard .pin{position:absolute;top:calc(var(--u) * 8);left:50%;width:calc(var(--u) * 9);height:calc(var(--u) * 9);margin-left:calc(var(--u) * -4.5);border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,#8d96bd 55%,#3a4268)}
+.icard .ichip{display:flex;align-items:center;justify-content:center;gap:calc(var(--u) * 6);width:calc(var(--u) * 84);height:calc(var(--u) * 42);border-radius:calc(var(--u) * 6);background:#1b2447;color:var(--gold);font-size:calc(var(--u) * 20);line-height:1;box-shadow:inset 0 0 0 2px rgba(255,210,63,.35)}
+.icard .ichip .dot{display:inline-block;width:calc(var(--u) * 14);height:calc(var(--u) * 14);border-radius:3px}
+.icard .ichip .dots{display:inline-flex;gap:3px}
+.icard .ichip .dots b{display:block;width:calc(var(--u) * 8);height:calc(var(--u) * 8);border-radius:2px;background:currentColor}
+.icard .itext{font-size:max(12px, calc(var(--u) * 14));line-height:1.4;color:#2a2620;word-break:keep-all}
+.icard .stamp{position:absolute;right:calc(var(--u) * 7);top:calc(var(--u) * 7);transform:rotate(8deg);border:2px solid var(--red);color:var(--red);border-radius:calc(var(--u) * 5);padding:0 calc(var(--u) * 6);font-size:max(11px, calc(var(--u) * 13));line-height:1.35;opacity:.9}
+.igo{font-size:max(12px, calc(var(--u) * 13));color:var(--sub);animation:blink 1.6s ease-in-out infinite;position:relative}
+@keyframes ticketin{from{opacity:0;transform:translateY(calc(var(--u) * -90)) rotate(calc(var(--r, 0deg) * 3))}}
+@keyframes swing{0%,100%{transform:rotate(var(--r, 0deg))}50%{transform:rotate(calc(var(--r, 0deg) * -.6))}}
