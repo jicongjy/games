@@ -65,6 +65,7 @@
 </head>
 <body>
 <!-- 자바스크립트가 시작하기 전(또는 실행하지 못하는 검색 로봇과 스크린 리더)을 위한 같은 내용의 설명. 게임이 시작되면 이 내용은 화면으로 바뀐다. -->
+<div id="stage">
 <main id="app">
   <div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap">
     <h1>차려내라! 한 상</h1>
@@ -77,10 +78,6 @@
     </ul>
   </div>
 </main>
-<div class="rotate" role="alert">
-  <svg viewBox="0 0 96 96" aria-hidden="true"><rect x="30" y="10" width="36" height="76" rx="6" fill="none" stroke="#FFF1DC" stroke-width="3"/><circle cx="48" cy="77" r="3" fill="#FFF1DC"/><rect x="40" y="16" width="16" height="3" rx="1.5" fill="#FFF1DC"/></svg>
-  <p>폰을 가로로 돌려 주세요</p>
-  <small>가로 화면에서 더 잘 보여요</small>
 </div>
 <noscript>이 게임은 자바스크립트가 필요합니다. 브라우저에서 자바스크립트를 켜 주세요.</noscript>
 <script type="module" src="./game.js"></script>
