@@ -126,8 +126,8 @@ const RULES = `
       <li>예약 손님(×2)은 숫자 카드보다 먼저 내요. 한 명 늘 때마다 배수가 1씩 올라요.</li>
       <li>코스 점수 = (숫자 합 − 20) × 배수. 시작하지 않은 코스는 0점이에요.</li>
       <li>코스에 카드 8장 이상이면 별 +20점.</li>
-      <li>코스는 5개, 6코스 모드에서는 면이 더해져요.</li>
-      <li>판마다 심사위원 과제 5장이 공개돼요. 채우면 +10점. 먼저 채우는 과제는 먼저 한 사람이, 마감 때 비교하는 과제는 가장 앞선 사람이 받고, 동점이면 아무도 못 받아요.</li>
+      <li>5코스는 기본 규칙이에요. 6코스(확장)에는 면 코스와 심사위원 과제가 더해져요.</li>
+      <li>6코스에서는 판마다 심사위원 과제 5장이 공개돼요. 채우면 +10점. 먼저 채우는 과제는 먼저 한 사람이, 마감 때 비교하는 과제는 가장 앞선 사람이 받고, 동점이면 아무도 못 받아요.</li>
       <li>방금 내려놓은 카드는 같은 차례에 다시 못 가져와요.</li>
       <li>창고의 마지막 카드를 가져오면 마감, 한 판이 끝나요.</li>
     </ul>
@@ -151,8 +151,8 @@ function homeHtml() {
 }
 
 const courseNote = () => `<p class="cnote">${courseCount === 6
-  ? '5코스에 면 추가 · 카드 72장'
-  : '밑반찬, 국·탕, 생선구이, 불고기, 후식 · 카드 60장'}</p>`;
+  ? '면, 심사위원 과제 추가 · 카드 72장'
+  : '기본 규칙 · 카드 60장'}</p>`;
 
 function introHtml() {
   const ctx = getCtx();
@@ -165,7 +165,7 @@ function introHtml() {
     <div class="ibg"></div>
     <div class="itop"><span class="itt">이번 판 심사위원 과제</span><span class="its">채우면 한 장당 +10점</span></div>
     <div class="icards">${cards}</div>
-    <div class="igo">눌러서 시작</div>
+    <button class="btn igo" data-act="intro-go">시작</button>
   </div>`;
 }
 
@@ -213,8 +213,8 @@ function dismissIntro() {
 }
 
 const courseToggle = () => `<div class="seg" role="group" aria-label="코스 수">
-  <button class="${courseCount === 5 ? 'on' : ''}" data-act="set-courses" data-n="5" aria-pressed="${courseCount === 5}">5코스</button>
-  <button class="${courseCount === 6 ? 'on' : ''}" data-act="set-courses" data-n="6" aria-pressed="${courseCount === 6}">6코스</button>
+  <button class="${courseCount === 5 ? 'on' : ''}" data-act="set-courses" data-n="5" aria-pressed="${courseCount === 5}">5코스 · 기본</button>
+  <button class="${courseCount === 6 ? 'on' : ''}" data-act="set-courses" data-n="6" aria-pressed="${courseCount === 6}">6코스 · 확장</button>
 </div>`;
 
 function taskChipsHtml(ctx) {
@@ -429,7 +429,7 @@ function overHtml() {
   }).join('');
   const bp = r.bonusPoints ?? [0, 0];
   const bpText = (n) => (n ? `+${n}` : '0');
-  const bonusRow = `<div class="tr" style="--c:#FFD23F"><i></i><span class="${bp[0] >= bp[1] ? 'hi' : 'lo'}">${bpText(bp[0])}</span><span class="${bp[1] >= bp[0] ? 'hi' : 'lo'}">${bpText(bp[1])}</span></div>`;
+  const bonusRow = !(r.bonus ?? []).length ? '' : `<div class="tr" style="--c:#FFD23F"><i></i><span class="${bp[0] >= bp[1] ? 'hi' : 'lo'}">${bpText(bp[0])}</span><span class="${bp[1] >= bp[0] ? 'hi' : 'lo'}">${bpText(bp[1])}</span></div>`;
   const headline = w === null ? '무승부' : online ? (w === me ? '내가 이겼어요!' : `${esc(nm[w])}님 승리`) : `${esc(nm[w])}님 승리`;
 
   let again = '<button class="btn" data-act="again">한 판 더</button>';

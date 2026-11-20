@@ -217,11 +217,9 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 .itop,.itop{text-align:center;animation:fadein .4s .05s both}
 .itt{display:block;font-size:calc(var(--u) * 28);color:var(--cream);text-shadow:0 0 8px rgba(255,210,63,.55),0 0 28px rgba(255,210,63,.3)}
 .its{display:block;margin-top:calc(var(--u) * 6);font-size:max(13px, calc(var(--u) * 15));color:var(--gold)}
-.igo{font-size:max(12px, calc(var(--u) * 13));color:var(--sub);animation:blink 1.6s ease-in-out infinite}
 .tchip.hide{opacity:0}
 .cnote{font-size:var(--fs-s);color:var(--sub);line-height:1.4;margin-top:calc(var(--u) * -2)}
 @keyframes fadein{from{opacity:0}}
-@keyframes blink{50%{opacity:.4}}
 
 /* 점수를 숨기고 카드 장수를 칸으로 보여 준다 */
 .cnt{display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:calc(var(--u) * 3);max-width:92%;min-height:calc(var(--u) * 12)}
@@ -245,6 +243,7 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 .icard .ichip .dots b{display:block;width:calc(var(--u) * 8);height:calc(var(--u) * 8);border-radius:2px;background:currentColor}
 .icard .itext{font-size:max(12px, calc(var(--u) * 14));line-height:1.4;color:#2a2620;word-break:keep-all}
 .icard .stamp{position:absolute;right:calc(var(--u) * 7);top:calc(var(--u) * 7);transform:rotate(8deg);border:2px solid var(--red);color:var(--red);border-radius:calc(var(--u) * 5);padding:0 calc(var(--u) * 6);font-size:max(11px, calc(var(--u) * 13));line-height:1.35;opacity:.9}
-.igo{font-size:max(12px, calc(var(--u) * 13));color:var(--sub);animation:blink 1.6s ease-in-out infinite;position:relative}
 @keyframes ticketin{from{opacity:0;transform:translateY(calc(var(--u) * -90)) rotate(calc(var(--r, 0deg) * 3))}}
 @keyframes swing{0%,100%{transform:rotate(var(--r, 0deg))}50%{transform:rotate(calc(var(--r, 0deg) * -.6))}}
+
+.intro .igo{position:relative;width:calc(var(--u) * 160);animation:fadein .4s .9s both}

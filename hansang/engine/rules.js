@@ -116,7 +116,7 @@ export function shuffle(cards, rng = Math.random) {
   return a;
 }
 
-// options.courses: 5(기본) 또는 6
+// options.courses: 5(기본 규칙) 또는 6(확장: 면과 심사위원 과제)
 export function newGame(rng = Math.random, options = {}) {
   const courses = courseList(options.courses === 6 ? 6 : 5);
   const deck = shuffle(makeDeck(courses), rng);
@@ -127,7 +127,10 @@ export function newGame(rng = Math.random, options = {}) {
   }
   const lanes = [0, 1].map(() => Object.fromEntries(courses.map((c) => [c, []])));
   const market = Object.fromEntries(courses.map((c) => [c, []])); // 마지막 원소가 맨 위
-  const bonus = shuffle(taskPool(courses), rng).slice(0, TASKS_PER_GAME).map((id) => ({ id, claimedBy: null }));
+  // 5코스는 기본 규칙이라 과제가 없고, 6코스(확장)에서만 심사위원 과제 5장을 공개한다.
+  const bonus = courses.length === 6
+    ? shuffle(taskPool(courses), rng).slice(0, TASKS_PER_GAME).map((id) => ({ id, claimedBy: null }))
+    : [];
   return {
     courses, // 이번 판의 코스 목록
     deck, // 마지막 원소가 맨 위
