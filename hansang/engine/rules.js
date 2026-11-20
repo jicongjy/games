@@ -36,7 +36,7 @@ const FIRST_TASKS = {
   deep5: 5, // 한 코스에 카드 5장
   star: STAR_CARDS, // 별을 먼저 받기(한 코스 8장)
 };
-const END_TASKS = ['lowhand', 'mostcourses', 'mostrsv', 'mostcards'];
+const END_TASKS = ['lowhand', 'mostcourses', 'mostrsv', 'mostcards', 'bestplain'];
 
 export function taskPool(courses) {
   return [
@@ -83,6 +83,10 @@ export function taskMeasure(id, state, p) {
     case 'lowhand': return state.hands[p].reduce((s, c) => s + c.step, 0);
     case 'mostrsv': return lanes.reduce((n, l) => n + l.filter((c) => c.step === 0).length, 0);
     case 'mostcards': return lanes.reduce((n, l) => n + l.length, 0);
+    case 'bestplain': { // 예약 손님이 없는 코스 중 숫자 합이 가장 큰 코스의 합 (없으면 0)
+      const sums = lanes.filter((l) => l.length > 0 && !l.some((c) => c.step === 0)).map((l) => l.reduce((s, c) => s + c.step, 0));
+      return sums.length ? Math.max(...sums) : 0;
+    }
     default: return 0;
   }
 }

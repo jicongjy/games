@@ -190,3 +190,26 @@ test('무작위로 끝까지 5코스, 6코스 각 60판: 카드 수 보존, 과�
     }
   }
 });
+
+test('마감 과제(예약 없는 코스의 최고 합): 예약이 있는 코스는 합이 커도 세지 않는다', () => {
+  const s = setup('bestplain', {
+    lanes0: { ban: [card('ban', 2), card('ban', 3), card('ban', 4)] }, // 예약 없음, 합 9
+    lanes1: { guk: [card('guk', 0, 1), card('guk', 10), card('guk', 9)], fish: [card('fish', 3), card('fish', 4)] }, // 예약 코스(합 19)는 제외, 예약 없는 코스 합 7
+  });
+  const e = finish(s);
+  assert.deepEqual(e.bonus[0].values, [9, 7]);
+  assert.equal(e.bonus[0].claimedBy, 0);
+});
+
+test('예약 없는 코스가 아예 없으면 0이고, 둘 다 0이면 아무도 받지 못한다', () => {
+  const s = setup('bestplain', {
+    lanes0: { ban: [card('ban', 0, 1), card('ban', 5)] },
+    lanes1: {},
+  });
+  const e = finish(s);
+  assert.deepEqual(e.bonus[0].values, [0, 0]);
+  assert.equal(e.bonus[0].claimedBy, null);
+  assert.ok(taskPool(COURSES_5).includes('bestplain'));
+  assert.equal(taskPool(COURSES_5).length, 16);
+  assert.equal(taskPool(COURSES_6).length, 17);
+});

@@ -61,6 +61,7 @@ export function taskUi(id) {
     case 'lowhand': return { chip: '패↓', text: '마감 때 손패 숫자 합이 가장 작은 사람', unit: '' };
     case 'mostcourses': return { chip: '코스↑', text: '마감 때 시작한 코스가 가장 많은 사람', unit: '코스' };
     case 'mostrsv': return { chip: '손님↑', text: '마감 때 예약 손님을 가장 많이 받은 사람', unit: '명' };
+    case 'bestplain': return { chip: '합↑', text: '마감 때 예약 손님 없는 코스 중 숫자 합이 가장 큰 사람', unit: '' };
     case 'mostcards': return { chip: '카드↑', text: '마감 때 코스에 낸 카드가 가장 많은 사람', unit: '장' };
     default: return { chip: '?', text: id, unit: '' };
   }
