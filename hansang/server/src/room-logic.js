@@ -12,6 +12,7 @@ export function createRoom() {
     status: 'waiting', // waiting | playing | over
     rematch: [false, false],
     games: 0, // 지금까지 시작한 판 수 (선공 번갈아 정하는 데 씀)
+    settings: { courses: 5 }, // 방장이 정한 코스 수 (5 또는 6)
   };
 }
 
@@ -21,14 +22,15 @@ const cleanName = (name, fallback) => {
 };
 
 export function startGame(room, rng = Math.random) {
-  room.game = newGame(rng);
+  room.game = newGame(rng, { courses: room.settings?.courses === 6 ? 6 : 5 });
   room.game.turn = room.games % 2; // 판마다 선공을 번갈아
   room.games += 1;
   room.status = 'playing';
   room.rematch = [false, false];
 }
 
-export function join(room, { token, name }, rng = Math.random) {
+// courses는 방을 처음 만드는 사람(첫 입장)만 정할 수 있다.
+export function join(room, { token, name, courses }, rng = Math.random) {
   if (typeof token !== 'string' || token.length < 8 || token.length > 64) {
     return { ok: false, error: '잘못된 접속 정보입니다' };
   }
@@ -40,6 +42,7 @@ export function join(room, { token, name }, rng = Math.random) {
   }
   const free = room.players.findIndex((p) => !p);
   if (free < 0) return { ok: false, error: '방이 가득 찼어요' };
+  if (free === 0) room.settings = { courses: courses === 6 ? 6 : 5 };
   room.players[free] = { token, name: cleanName(name, `요리사 ${free + 1}`), connected: true };
   if (room.players[0] && room.players[1] && !room.game) startGame(room, rng);
   return { ok: true, seat: free };
@@ -81,6 +84,7 @@ export function payload(room, seat) {
     names: room.players.map((p) => (p ? p.name : null)),
     opponentConnected: !!(room.players[opp] && room.players[opp].connected),
     rematch: room.rematch,
+    settings: room.settings ?? { courses: 5 },
     view: room.game ? viewFor(room.game, seat) : null,
   };
 }
