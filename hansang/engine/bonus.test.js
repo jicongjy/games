@@ -42,16 +42,31 @@ test('5코스는 60장 창고 44장, 6코스는 72장 창고 56장(면 포함)',
   assert.deepEqual(newGame(seeded(1), { courses: 7 }).courses, COURSES_5); // 이상한 값은 5코스
 });
 
-test('과제는 5장이 겹치지 않게 뽑히고, 5코스에는 면 과제가 없다', () => {
+test('6코스(확장)는 과제 5장이 겹치지 않게 뽑히고, 5코스(기본)에는 과제가 없다', () => {
   for (let seed = 1; seed <= 30; seed++) {
-    const g = newGame(seeded(seed));
+    const g = newGame(seeded(seed), { courses: 6 });
     assert.equal(g.bonus.length, TASKS_PER_GAME);
     assert.equal(new Set(g.bonus.map((b) => b.id)).size, TASKS_PER_GAME);
     assert.ok(g.bonus.every((b) => b.claimedBy === null));
-    assert.ok(!g.bonus.some((b) => b.id === 'first3:noodle'));
+    assert.equal(newGame(seeded(seed)).bonus.length, 0);
+    assert.equal(newGame(seeded(seed), { courses: 5 }).bonus.length, 0);
   }
   assert.ok(taskPool(COURSES_6).includes('first3:noodle'));
   assert.ok(!taskPool(COURSES_5).includes('first3:noodle'));
+});
+
+test('5코스는 기본 규칙: 과제 점수가 없고 총점은 코스 점수의 합', () => {
+  const rng = seeded(21);
+  let s = newGame(rng);
+  let guard = 0;
+  while (!s.over) {
+    assert.ok(++guard < 4000);
+    const acts = legalActions(s, s.turn);
+    s = apply(s, s.turn, acts[Math.floor(rng() * acts.length)]).state;
+  }
+  assert.deepEqual(bonusPoints(s), [0, 0]);
+  assert.deepEqual(scores(s), laneTotals(s));
+  assert.deepEqual(viewFor(s, 0).bonus, []);
 });
 
 test('코스별 선착: 조리 카드 3장을 먼저 낸 사람이 받고, 뒤따른 사람은 못 받는다', () => {

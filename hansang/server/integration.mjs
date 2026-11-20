@@ -29,7 +29,7 @@ b.join(); await sleep(300);
 assert(a.last.status === 'playing' && b.last.status === 'playing' && b.last.seat === 1, '둘이 들어오면 시작');
 const want = Number(process.env.COURSES || 5);
 assert(a.last.view.courses.length === want && b.last.view.courses.length === want, `코스 수 ${want}`);
-assert(a.last.view.bonus.length === 5, '과제 5장');
+assert(a.last.view.bonus.length === (want === 6 ? 5 : 0), want === 6 ? '6코스는 과제 5장' : '5코스는 과제 없음');
 assert(a.last.view.deckCount === (want === 6 ? 56 : 44), '창고 장수');
 
 // 숨김 정보 확인: 서로의 view에 상대 패 카드 id가 없어야 한다
