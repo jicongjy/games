@@ -1,0 +1,17 @@
+{
+  "name": "차려내라! 한 상",
+  "short_name": "한 상",
+  "description": "마감 직전 식당에서 두 요리사가 한 상을 차려내는 2인 카드게임",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0b1024",
+  "theme_color": "#0b1024",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>차려내라! 한 상</title>
+  <rect width="64" height="64" rx="8" fill="#0b1024"/>
+  <!-- 마감 식당 차양: 5코스 색 줄무늬와 물결 가장자리 -->
+  <g>
+    <rect x="4" y="12" width="11.2" height="20" fill="#A5CF4A"/><circle cx="9.6" cy="32" r="5.6" fill="#A5CF4A"/>
+    <rect x="15.2" y="12" width="11.2" height="20" fill="#F28C28"/><circle cx="20.8" cy="32" r="5.6" fill="#F28C28"/>
+    <rect x="26.4" y="12" width="11.2" height="20" fill="#2F5FD0"/><circle cx="32" cy="32" r="5.6" fill="#2F5FD0"/>
+    <rect x="37.6" y="12" width="11.2" height="20" fill="#E0402F"/><circle cx="43.2" cy="32" r="5.6" fill="#E0402F"/>
+    <rect x="48.8" y="12" width="11.2" height="20" fill="#F2A7C0"/><circle cx="54.4" cy="32" r="5.6" fill="#F2A7C0"/>
+  </g>
+  <!-- 불 켜진 문과 빨간 마감 팻말(점) -->
+  <rect x="22" y="40" width="20" height="20" fill="#FFD23F"/>
+  <circle cx="32" cy="50" r="4" fill="#E0402F"/>
+</svg>

@@ -36,3 +36,11 @@
 - 판마다 심사위원 과제 5장이 공개되고, 채우면 한 장당 +10점이다. 마감 때 비교하는 과제는 동점이면 아무도 받지 못한다.
 - 자세한 규칙은 `docs/rules-v2.md`.
 - 서버(`server/`)가 과제 판정을 하므로, 온라인 모드에서 쓰려면 Worker를 다시 배포해야 한다.
+
+## 아이콘, 공유 미리보기, 검색 정보
+
+- 파비콘은 마감 식당 차양(5코스 색 줄무늬 + 불 켜진 문과 빨간 마감 점)이다. 글자는 넣지 않았다. `favicon.svg`, `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`(홈 화면), `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`.
+- 공유 이미지는 `og.png`(1200×630, 밤 풍경 + 제목). 카카오톡, 페이스북, 슬랙, 트위터 미리보기에 쓰인다.
+- `index.html`에 제목, 설명, canonical, Open Graph, Twitter 카드, 구조화 데이터(JSON-LD, VideoGame), 홈 화면용 `manifest.webmanifest`(가로 고정, 남색 배경)가 들어 있다. 자바스크립트를 실행하지 못하는 검색 로봇을 위해 같은 내용의 소개 글도 `#app` 안에 둔다(게임이 시작되면 화면으로 바뀐다).
+- 다시 만들 때: `tools/make-assets.mjs`(사용법은 파일 맨 위). 주소(`jicongjy.github.io/games/hansang/`)가 바뀌면 `index.html`의 canonical, og:url, og:image, JSON-LD를 같이 고쳐야 한다.
+- `robots.txt`, `sitemap.xml`은 도메인 맨 위(`jicongjy.github.io/`)에만 둘 수 있어서 이 저장소에는 없다.
