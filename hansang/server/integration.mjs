@@ -15,7 +15,7 @@ function client(name, token) {
     if (m.t === 'state') c.last = m; else if (m.t === 'error') c.errors.push(m);
   };
   c.send = (o) => c.ws.send(JSON.stringify(o));
-  c.join = () => c.send({ t: 'join', name, token });
+  c.join = () => c.send({ t: 'join', name, token, courses: Number(process.env.COURSES || 5) });
   return c;
 }
 const assert = (cond, msg) => { if (!cond) { console.error('FAIL:', msg); process.exit(1); } };
@@ -27,12 +27,16 @@ a.join(); await sleep(300);
 assert(a.last && a.last.status === 'waiting' && a.last.seat === 0, 'A가 대기 상태여야 함');
 b.join(); await sleep(300);
 assert(a.last.status === 'playing' && b.last.status === 'playing' && b.last.seat === 1, '둘이 들어오면 시작');
+const want = Number(process.env.COURSES || 5);
+assert(a.last.view.courses.length === want && b.last.view.courses.length === want, `코스 수 ${want}`);
+assert(a.last.view.bonus.length === 5, '과제 5장');
+assert(a.last.view.deckCount === (want === 6 ? 56 : 44), '창고 장수');
 
 // 숨김 정보 확인: 서로의 view에 상대 패 카드 id가 없어야 한다
 const aHand = a.last.view.myHand.map((c) => c.id);
 const bText = JSON.stringify(b.last);
 assert(aHand.every((id) => !bText.includes(`"${id}"`)), '상대 패 노출됨');
-assert(b.last.view.opponentHandCount === 8 && b.last.view.deckCount === 44, '장수 정보');
+assert(b.last.view.opponentHandCount === 8 && b.last.view.deckCount === (want === 6 ? 56 : 44), '장수 정보');
 
 // 세 번째 사람은 거절
 const c3 = client('구경꾼', 'token-cccccccc-3'); await c3.ready; c3.join(); await sleep(300);

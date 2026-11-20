@@ -107,3 +107,36 @@ test('진행 중 재대결 요청은 거절', () => {
   const room = twoPlayers();
   assert.equal(rematch(room, 0).ok, false);
 });
+
+test('방장이 정한 코스 수로 시작하고, 두 번째 사람이 다른 값을 보내도 무시한다', () => {
+  const room = createRoom();
+  join(room, { token: T1, name: '지영', courses: 6 }, seeded(2));
+  join(room, { token: T2, name: '민수', courses: 5 }, seeded(2));
+  assert.equal(room.settings.courses, 6);
+  assert.equal(room.game.courses.length, 6);
+  assert.equal(room.game.deck.length, 56);
+  assert.equal(payload(room, 1).settings.courses, 6);
+  assert.equal(payload(room, 1).view.courses.length, 6);
+  assert.equal(payload(room, 0).view.bonus.length, 5);
+});
+
+test('코스 수를 안 정하거나 이상한 값이면 5코스', () => {
+  const a = createRoom();
+  join(a, { token: T1, name: 'a' }); join(a, { token: T2, name: 'b' });
+  assert.equal(a.game.courses.length, 5);
+  const b = createRoom();
+  join(b, { token: T1, name: 'a', courses: 99 }); join(b, { token: T2, name: 'b' });
+  assert.equal(b.game.courses.length, 5);
+});
+
+test('재대결해도 코스 수 설정이 유지되고 과제는 새로 뽑힌다', () => {
+  const room = createRoom();
+  join(room, { token: T1, name: 'a', courses: 6 }, seeded(3));
+  join(room, { token: T2, name: 'b' }, seeded(3));
+  const first = room.game.bonus.map((b) => b.id).join(',');
+  room.status = 'over';
+  rematch(room, 0, seeded(99)); rematch(room, 1, seeded(99));
+  assert.equal(room.game.courses.length, 6);
+  assert.notEqual(room.game.bonus.map((b) => b.id).join(','), first);
+  assert.ok(room.game.bonus.every((b) => b.claimedBy === null));
+});

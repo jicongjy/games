@@ -2,10 +2,15 @@
 // 화면, 서버, 테스트가 같은 코드를 쓴다. 빌드 없이 브라우저(ES module)와 Node에서 모두 동작한다.
 // 모든 함수는 상태를 바꾸지 않고 새 상태를 돌려준다.
 
-export const COURSES = ['ban', 'guk', 'fish', 'meat', 'sweet'];
+// 코스: 5코스 모드와 6코스 모드(면이 추가됨). 식사 순서대로 늘어놓는다.
+export const COURSES_5 = ['ban', 'guk', 'fish', 'meat', 'sweet'];
+export const COURSES_6 = ['ban', 'guk', 'noodle', 'fish', 'meat', 'sweet'];
+export const COURSES = COURSES_5; // 5코스 기본값(기존 코드 호환)
+export const courseList = (n) => (n === 6 ? COURSES_6 : COURSES_5);
 export const COURSE_NAMES = {
   ban: '밑반찬',
   guk: '국·탕',
+  noodle: '면',
   fish: '생선구이',
   meat: '불고기',
   sweet: '후식',
@@ -17,11 +22,76 @@ export const MAX_STEP = 10;
 export const BASE_COST = 20; // 기본 재료비
 export const STAR_CARDS = 8; // 별 한 개를 받는 카드 수 (예약 카드 포함)
 export const STAR_BONUS = 20;
+export const TASK_BONUS = 10; // 심사위원 과제 한 장당 점수
+export const TASKS_PER_GAME = 5; // 한 판에 공개하는 과제 수
 
+// ---------- 심사위원 과제 ----------
+// kind 'first': 조건을 먼저 채운 사람이 그 자리에서 받는다.
+// kind 'end'  : 마감 때 비교해서 가장 앞선 사람이 받는다. 동점이면 아무도 받지 못한다.
+const FIRST_TASKS = {
+  seq3: 3, // 한 코스에 연속 숫자 3장
+  seq5: 5, // 한 코스에 연속 숫자 5장
+  wide3: 3, // 코스 3개 시작
+  wide4: 4, // 코스 4개 시작
+  deep5: 5, // 한 코스에 카드 5장
+  star: STAR_CARDS, // 별을 먼저 받기(한 코스 8장)
+};
+const END_TASKS = ['lowhand', 'mostcourses', 'mostrsv', 'mostcards'];
+
+export function taskPool(courses) {
+  return [
+    ...courses.map((c) => `first3:${c}`), // 코스별로 조리 카드 3장을 먼저
+    ...Object.keys(FIRST_TASKS),
+    ...END_TASKS,
+  ];
+}
+
+export function taskInfo(id) {
+  const [base, course] = id.split(':');
+  if (base === 'first3') return { id, base, kind: 'first', target: 3, course };
+  if (base in FIRST_TASKS) return { id, base, kind: 'first', target: FIRST_TASKS[base] };
+  return { id, base, kind: 'end', target: null, lowerIsBetter: base === 'lowhand' };
+}
+
+const stepsOf = (lane) => lane.filter((c) => c.step > 0);
+const startedCount = (state, p) => state.courses.filter((c) => state.lanes[p][c].length > 0).length;
+
+// 숫자 하나로 환산한 진행 정도. 첫 번째 종류는 목표와 비교하고, 두 번째 종류는 서로 비교한다.
+export function taskMeasure(id, state, p) {
+  const info = taskInfo(id);
+  const lanes = state.courses.map((c) => state.lanes[p][c]);
+  switch (info.base) {
+    case 'first3': return stepsOf(state.lanes[p][info.course]).length;
+    case 'seq3':
+    case 'seq5': {
+      let best = 0;
+      for (const lane of lanes) {
+        const s = stepsOf(lane).map((c) => c.step);
+        let run = 0;
+        for (let i = 0; i < s.length; i++) {
+          run = i > 0 && s[i] === s[i - 1] + 1 ? run + 1 : 1;
+          if (run > best) best = run;
+        }
+      }
+      return best;
+    }
+    case 'wide3':
+    case 'wide4':
+    case 'mostcourses': return startedCount(state, p);
+    case 'deep5':
+    case 'star': return Math.max(...lanes.map((l) => l.length));
+    case 'lowhand': return state.hands[p].reduce((s, c) => s + c.step, 0);
+    case 'mostrsv': return lanes.reduce((n, l) => n + l.filter((c) => c.step === 0).length, 0);
+    case 'mostcards': return lanes.reduce((n, l) => n + l.length, 0);
+    default: return 0;
+  }
+}
+
+// ---------- 덱과 새 판 ----------
 // step 0 = 단골 예약, 2~10 = 조리 단계
-export function makeDeck() {
+export function makeDeck(courses = COURSES_5) {
   const deck = [];
-  for (const course of COURSES) {
+  for (const course of courses) {
     for (let i = 1; i <= RESERVATIONS_PER_COURSE; i++) {
       deck.push({ id: `${course}-r${i}`, course, step: 0 });
     }
@@ -42,20 +112,25 @@ export function shuffle(cards, rng = Math.random) {
   return a;
 }
 
-export function newGame(rng = Math.random) {
-  const deck = shuffle(makeDeck(), rng);
+// options.courses: 5(기본) 또는 6
+export function newGame(rng = Math.random, options = {}) {
+  const courses = courseList(options.courses === 6 ? 6 : 5);
+  const deck = shuffle(makeDeck(courses), rng);
   const hands = [[], []];
   for (let i = 0; i < HAND_SIZE; i++) {
     hands[0].push(deck.pop());
     hands[1].push(deck.pop());
   }
-  const lanes = [0, 1].map(() => Object.fromEntries(COURSES.map((c) => [c, []])));
-  const market = Object.fromEntries(COURSES.map((c) => [c, []])); // 마지막 원소가 맨 위
+  const lanes = [0, 1].map(() => Object.fromEntries(courses.map((c) => [c, []])));
+  const market = Object.fromEntries(courses.map((c) => [c, []])); // 마지막 원소가 맨 위
+  const bonus = shuffle(taskPool(courses), rng).slice(0, TASKS_PER_GAME).map((id) => ({ id, claimedBy: null }));
   return {
+    courses, // 이번 판의 코스 목록
     deck, // 마지막 원소가 맨 위
     hands,
     lanes, // lanes[플레이어][코스] = 낸 카드 순서
     market,
+    bonus, // 이번 판의 심사위원 과제 { id, claimedBy }
     turn: 0,
     phase: 'play', // 'play'(내기) -> 'draw'(가져오기)
     justDiscarded: null, // 이번 차례에 좌판에 내려놓은 카드 id
@@ -91,13 +166,49 @@ export function laneDetail(lane) {
   };
 }
 
+// 과제로 받은 점수
+export function bonusPoints(state) {
+  return [0, 1].map((p) => state.bonus.filter((b) => b.claimedBy === p).length * TASK_BONUS);
+}
+
+// 코스 점수만 더한 값
+export function laneTotals(state) {
+  return [0, 1].map((p) => state.courses.reduce((s, c) => s + scoreLane(state.lanes[p][c]), 0));
+}
+
+// 총점 = 코스 점수 + 과제 점수
 export function scores(state) {
-  return [0, 1].map((p) => COURSES.reduce((s, c) => s + scoreLane(state.lanes[p][c]), 0));
+  const lanes = laneTotals(state);
+  const bonus = bonusPoints(state);
+  return [lanes[0] + bonus[0], lanes[1] + bonus[1]];
 }
 
 export function winner(state) {
   const [a, b] = scores(state);
   return a === b ? null : a > b ? 0 : 1;
+}
+
+// 방금 카드를 낸 사람이 먼저 채운 '선착' 과제를 가져간다.
+function claimFirst(state, player) {
+  for (const b of state.bonus) {
+    if (b.claimedBy !== null) continue;
+    const info = taskInfo(b.id);
+    if (info.kind === 'first' && taskMeasure(b.id, state, player) >= info.target) b.claimedBy = player;
+  }
+}
+
+// 마감 때 비교하는 과제를 정한다. 동점이면 아무도 받지 못한다.
+function settleEnd(state) {
+  for (const b of state.bonus) {
+    const info = taskInfo(b.id);
+    if (info.kind !== 'end') continue;
+    const v = [taskMeasure(b.id, state, 0), taskMeasure(b.id, state, 1)];
+    b.values = v;
+    if (v[0] === v[1]) b.claimedBy = null;
+    else if (info.lowerIsBetter) b.claimedBy = v[0] < v[1] ? 0 : 1;
+    else b.claimedBy = v[0] > v[1] ? 0 : 1;
+    b.settled = true;
+  }
 }
 
 const fail = (error) => ({ ok: false, error });
@@ -123,6 +234,7 @@ export function apply(state, player, action) {
       }
       next.lanes[player][card.course].push(card);
       next.justDiscarded = null;
+      claimFirst(next, player);
     } else {
       next.market[card.course].push(card);
       next.justDiscarded = card.id;
@@ -137,7 +249,7 @@ export function apply(state, player, action) {
     if (action.from === 'deck') {
       if (next.deck.length === 0) return fail('식재료 창고가 비었습니다');
       next.hands[player].push(next.deck.pop());
-    } else if (COURSES.includes(action.from)) {
+    } else if (state.courses.includes(action.from)) {
       const pile = next.market[action.from];
       if (pile.length === 0) return fail('그 좌판은 비어 있습니다');
       if (pile[pile.length - 1].id === state.justDiscarded) {
@@ -151,7 +263,10 @@ export function apply(state, player, action) {
     next.phase = 'play';
     next.turn = 1 - player;
     // 창고의 마지막 카드를 뽑는 순간 마감
-    if (next.deck.length === 0) next.over = true;
+    if (next.deck.length === 0) {
+      next.over = true;
+      settleEnd(next);
+    }
     return { ok: true, state: next };
   }
 
@@ -171,7 +286,7 @@ export function legalActions(state, player) {
     }
   } else {
     if (state.deck.length > 0) out.push({ type: 'draw', from: 'deck' });
-    for (const c of COURSES) {
+    for (const c of state.courses) {
       const pile = state.market[c];
       if (pile.length > 0 && pile[pile.length - 1].id !== state.justDiscarded) {
         out.push({ type: 'draw', from: c });
@@ -181,11 +296,28 @@ export function legalActions(state, player) {
   return out;
 }
 
+// 화면에 보여 줄 과제 한 장. 상대 손패 합처럼 숨겨진 값은 null로 돌려준다.
+function bonusView(state, player, b) {
+  const info = taskInfo(b.id);
+  const hidden = info.base === 'lowhand' && !state.over;
+  const progress = [0, 1].map((p) => (hidden && p !== player ? null : taskMeasure(b.id, state, p)));
+  return {
+    id: b.id,
+    kind: info.kind,
+    course: info.course ?? null,
+    target: info.target,
+    claimedBy: b.claimedBy,
+    progress,
+    settled: !!b.settled,
+  };
+}
+
 // 플레이어에게 보여 줄 상태. 덱 순서와 상대 패는 숨긴다.
 export function viewFor(state, player) {
   const opp = 1 - player;
   const view = {
     you: player,
+    courses: state.courses,
     turn: state.turn,
     phase: state.phase,
     over: state.over,
@@ -196,15 +328,20 @@ export function viewFor(state, player) {
     opponentLanes: state.lanes[opp],
     market: state.market,
     justDiscarded: state.justDiscarded,
+    bonus: state.bonus.map((b) => bonusView(state, player, b)), // 과제 목록과 진행 상황
+    bonusPoints: bonusPoints(state),
     scores: scores(state), // 코스 줄은 둘 다 공개 정보라서 지금까지 점수도 공개
   };
   if (state.over) {
     view.result = {
       scores: scores(state),
+      laneTotals: laneTotals(state),
+      bonusPoints: bonusPoints(state),
       winner: winner(state),
       lanes: [0, 1].map((p) =>
-        Object.fromEntries(COURSES.map((c) => [c, laneDetail(state.lanes[p][c])])),
+        Object.fromEntries(state.courses.map((c) => [c, laneDetail(state.lanes[p][c])])),
       ),
+      bonus: state.bonus.map((b) => ({ ...bonusView(state, player, b), values: b.values ?? null })),
     };
   }
   return view;

@@ -31,7 +31,7 @@ export class Room extends DurableObject {
 
     const att = ws.deserializeAttachment() || {};
     if (msg.t === 'join') {
-      const r = join(this.room, { token: msg.token, name: msg.name });
+      const r = join(this.room, { token: msg.token, name: msg.name, courses: msg.courses });
       if (!r.ok) { this.send(ws, { t: 'error', fatal: true, error: r.error }); return; }
       ws.serializeAttachment({ seat: r.seat });
       await this.save();

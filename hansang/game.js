@@ -2,7 +2,7 @@
 import {
   COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, STAR_CARDS, BASE_COST,
 } from './engine/rules.js';
-import { THEME, cardTitle, iconSvg, courseIcon } from './cards-data.js';
+import { THEME, cardTitle, iconSvg, courseIcon, taskUi } from './cards-data.js';
 import { nightScene } from './scene.js';
 import { serverUrl } from './config.js';
 
@@ -17,6 +17,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const minus = (n) => (n < 0 ? `−${-n}` : String(n));
 const signed = (n) => (n > 0 ? `+${n}` : minus(n));
+// 옛 서버(코스 수, 과제가 없는 상태)와도 깨지지 않게 기본값을 채운다
+const norm = (v) => ({ ...v, courses: v.courses ?? COURSES, bonus: v.bonus ?? [], bonusPoints: v.bonusPoints ?? [0, 0] });
 
 let names = ['요리사 1', '요리사 2']; // 한 기기 모드 이름
 try {
@@ -30,10 +32,13 @@ let game = null; // 한 기기 모드의 게임 상태
 let net = null; // 온라인 모드 상태
 let selected = null;
 let cover = false; // 한 기기 모드의 차례 넘김 가림 화면
-let sheet = null; // null | {type:'lane', player, course} | {type:'score'} | {type:'rules'}
+let sheet = null; // null | {type:'lane', player, course} | {type:'score'} | {type:'tasks'} | {type:'rules'}
 let starPop = null;
 let pendingFly = null;
 let toastTimer = null;
+let courseCount = Number(store.get('courses')) === 6 ? 6 : 5; // 코스 수 (5 또는 6)
+const draft = {}; // 입력 중인 값(화면이 다시 그려져도 유지)
+let seenClaims = {}; // 이미 알린 과제 달성
 
 function toast(msg) {
   document.querySelector('.toast')?.remove();
@@ -96,9 +101,9 @@ function oppChipHtml(ctx, course) {
 function getCtx() {
   if (mode === 'local') {
     const me = game.turn;
-    return { v: viewFor(game, me), me, nm: names, myTurn: true, online: false };
+    return { v: norm(viewFor(game, me)), me, nm: names, myTurn: true, online: false };
   }
-  const v = net.view;
+  const v = norm(net.view);
   return { v, me: net.seat, nm: net.names, myTurn: v.turn === net.seat && !v.over, online: true };
 }
 
@@ -114,6 +119,8 @@ const RULES = `
       <li>예약 손님(×2)은 숫자 카드보다 먼저 내요. 한 명 늘 때마다 배수가 1씩 올라요.</li>
       <li>코스 점수 = (숫자 합 − 20) × 배수. 시작하지 않은 코스는 0점이에요.</li>
       <li>코스에 카드 8장 이상이면 별 +20점.</li>
+      <li>코스는 5개, 6코스 모드에서는 면이 더해져요.</li>
+      <li>판마다 심사위원 과제 5장이 공개돼요. 채우면 +10점. 먼저 채우는 과제는 먼저 한 사람이, 마감 때 비교하는 과제는 가장 앞선 사람이 받고, 동점이면 아무도 못 받아요.</li>
       <li>방금 내려놓은 카드는 같은 차례에 다시 못 가져와요.</li>
       <li>창고의 마지막 카드를 가져오면 마감, 한 판이 끝나요.</li>
     </ul>
@@ -136,13 +143,63 @@ function homeHtml() {
   </div>`;
 }
 
+const courseToggle = () => `<div class="seg" role="group" aria-label="코스 수">
+  <button class="${courseCount === 5 ? 'on' : ''}" data-act="set-courses" data-n="5" aria-pressed="${courseCount === 5}">5코스</button>
+  <button class="${courseCount === 6 ? 'on' : ''}" data-act="set-courses" data-n="6" aria-pressed="${courseCount === 6}">6코스</button>
+</div>`;
+
+function taskChipsHtml(ctx) {
+  const { v, me } = ctx;
+  return v.bonus.map((b) => {
+    const ui = taskUi(b.id);
+    const cls = b.claimedBy === null ? '' : b.claimedBy === me ? ' me' : ' opp';
+    return `<button class="tchip${cls}" data-act="tasks" aria-label="${esc(ui.text)}">${ui.chip}</button>`;
+  }).join('');
+}
+
+function tasksSheetHtml(ctx) {
+  const { v, me, nm } = ctx;
+  const rows = v.bonus.map((b) => {
+    const ui = taskUi(b.id);
+    const cls = b.claimedBy === null ? '' : b.claimedBy === me ? ' me' : ' opp';
+    const mine = b.progress[me];
+    const theirs = b.progress[1 - me];
+    const fmt = (n) => (n === null || n === undefined ? '?' : String(b.kind === 'first' ? Math.min(n, b.target) : n));
+    const prog = b.kind === 'first'
+      ? `<span class="pg">${fmt(mine)}/${b.target}</span><span class="pg dim">${fmt(theirs)}/${b.target}</span>`
+      : `<span class="pg">${fmt(mine)}</span><span class="pg dim">${fmt(theirs)}</span>`;
+    const owner = b.claimedBy === null ? '<span class="own"></span>' : `<span class="own${b.claimedBy === me ? ' me' : ''}">✓ ${esc(nm[b.claimedBy])}</span>`;
+    return `<div class="trow"><span class="tchip static${cls}">${ui.chip}</span><span class="ttext">${esc(ui.text)}</span>${prog}${owner}</div>`;
+  }).join('');
+  return `<div class="backdrop" data-act="close"></div>
+  <div class="panel tasks" role="dialog" aria-label="심사위원 과제">
+    <button class="x" data-act="close" aria-label="닫기">✕</button>
+    <div class="thead"><span class="tt">심사위원 과제 +10</span><span class="pg">${esc(nm[me])}</span><span class="pg dim">${esc(nm[1 - me])}</span><span class="own"></span></div>
+    ${rows}
+    <p class="note" style="margin-top:calc(var(--u) * 10)">마감 때 비교하는 과제는 동점이면 아무도 받지 못해요</p>
+  </div>`;
+}
+
+// 과제를 누가 처음 채웠는지 알려 준다
+function notifyBonus(v, me, nm, online) {
+  if (!v.bonus) return;
+  for (const b of v.bonus) {
+    const prev = seenClaims[b.id] ?? null;
+    if (prev === null && b.claimedBy !== null && !v.over) {
+      toast(online && b.claimedBy === me ? '과제 달성! +10' : `${nm[b.claimedBy]} 과제 달성 +10`);
+    }
+    seenClaims[b.id] = b.claimedBy;
+  }
+}
+
 function localSetupHtml() {
   return `<div class="screen">${nightScene()}
     <button class="back" data-act="home" aria-label="처음으로">←</button>
     <div class="side">
       <div class="form">
-        <input id="n0" class="field" maxlength="10" value="${esc(names[0])}" placeholder="먼저 시작하는 사람" aria-label="첫 번째 요리사 이름" autocomplete="off">
-        <input id="n1" class="field" maxlength="10" value="${esc(names[1])}" placeholder="다음 사람" aria-label="두 번째 요리사 이름" autocomplete="off">
+        <input id="n0" class="field" maxlength="10" value="${esc(draft.n0 ?? names[0])}" placeholder="먼저 시작하는 사람" aria-label="첫 번째 요리사 이름" autocomplete="off">
+        <input id="n1" class="field" maxlength="10" value="${esc(draft.n1 ?? names[1])}" placeholder="다음 사람" aria-label="두 번째 요리사 이름" autocomplete="off">
+        ${courseToggle()}
         <button class="btn" data-act="start-local">시작</button>
       </div>
     </div>
@@ -155,10 +212,11 @@ function lobbyHtml() {
     <button class="back" data-act="home" aria-label="처음으로">←</button>
     <div class="side">
       <div class="form">
-        <input id="oname" class="field" maxlength="10" value="${esc(store.get('oname') || '')}" placeholder="내 이름" aria-label="내 이름" autocomplete="off">
+        <input id="oname" class="field" maxlength="10" value="${esc(draft.oname ?? (store.get('oname') || ''))}" placeholder="내 이름" aria-label="내 이름" autocomplete="off">
+        ${courseToggle()}
         <button class="btn" data-act="create-room">방 만들기</button>
         <span class="or">또는</span>
-        <input id="ocode" class="field" maxlength="6" value="${esc(code)}" placeholder="방 코드" aria-label="방 코드" autocomplete="off" style="text-transform:uppercase">
+        <input id="ocode" class="field" maxlength="6" value="${esc(draft.ocode ?? code)}" placeholder="방 코드" aria-label="방 코드" autocomplete="off" style="text-transform:uppercase">
         <button class="btn ghost" data-act="join-room">들어가기</button>
       </div>
     </div>
@@ -171,6 +229,7 @@ function waitHtml() {
     <div class="side">
       <p class="sub" style="margin:0">친구에게 코드를 알려 주세요</p>
       <div class="code">${esc(net.code)}</div>
+      <p class="note" style="margin:0 0 calc(var(--u) * 14)">${net.courses ?? courseCount}코스</p>
       <div class="menu">
         <button class="btn" data-act="copy-link" data-link="${esc(link)}">초대 링크 복사</button>
         <button class="btn ghost" data-act="leave">나가기</button>
@@ -194,14 +253,15 @@ function coverHtml(ctx) {
 function sheetHtml(ctx) {
   if (!sheet) return '';
   if (sheet.type === 'rules') return RULES;
+  if (sheet.type === 'tasks') return tasksSheetHtml(ctx);
   const { v, me, nm } = ctx;
   if (sheet.type === 'score') {
     return `<div class="backdrop" data-act="close"></div>
     <div class="panel" role="dialog" aria-label="점수">
       <button class="x" data-act="close" aria-label="닫기">✕</button>
       <div class="scoresheet">
-        <div>${esc(nm[0])}<b>${minus(v.scores[0])}</b></div>
-        <div>${esc(nm[1])}<b>${minus(v.scores[1])}</b></div>
+        <div>${esc(nm[0])}<b>${minus(v.scores[0])}</b>${v.bonusPoints[0] ? `<small>과제 +${v.bonusPoints[0]}</small>` : ''}</div>
+        <div>${esc(nm[1])}<b>${minus(v.scores[1])}</b>${v.bonusPoints[1] ? `<small>과제 +${v.bonusPoints[1]}</small>` : ''}</div>
       </div>
     </div>`;
   }
@@ -239,7 +299,8 @@ function playHtml() {
   const urgent = v.deckCount <= 10;
   const deckTarget = drawing && v.deckCount > 0;
 
-  const cols = COURSES.map((course) => {
+  const courses = v.courses;
+  const cols = courses.map((course) => {
     const pile = v.market[course];
     const top = pile[pile.length - 1];
     const t = THEME[course];
@@ -255,7 +316,7 @@ function playHtml() {
     return `<div class="col">${oppChipHtml(ctx, course)}${pileHtml}${laneHtml(v.myLanes, course, { target: laneTarget, player: me })}</div>`;
   }).join('');
 
-  const hand = v.myHand.slice().sort((a, b) => COURSES.indexOf(a.course) - COURSES.indexOf(b.course) || a.step - b.step)
+  const hand = v.myHand.slice().sort((a, b) => courses.indexOf(a.course) - courses.indexOf(b.course) || a.step - b.step)
     .map((card) => cardHtml(card, {
       tag: 'button',
       extra: `data-card="${card.id}" aria-pressed="${card.id === selected}" ${playing ? '' : 'disabled'}`,
@@ -278,6 +339,7 @@ function playHtml() {
       ${deck}
       <div class="pips"><i class="pip${myTurn ? ' on' : ''}"></i><i class="pip${drawing ? ' go' : ''}"></i></div>
       <div class="turn">${turnText}</div>
+      <div class="tasks">${taskChipsHtml(ctx)}</div>
       <div class="grow"></div>
       <button class="scores" data-act="score" aria-label="점수 보기">
         <div class="sc me"><span>${esc(nm[me])}</span><span>${minus(v.scores[me])}</span></div>
@@ -286,7 +348,7 @@ function playHtml() {
       <button class="rhelp" data-act="rules" aria-label="규칙 보기">?</button>
     </aside>
     <main class="main">
-      <div class="cols">${cols}</div>
+      <div class="cols" style="--n:${courses.length}">${cols}</div>
       <div class="hand">${hand}</div>
     </main>
   </div>${sheetHtml(ctx)}${!online && cover ? coverHtml(ctx) : ''}`;
@@ -307,11 +369,14 @@ function overHtml() {
   const { v, nm, me, online } = ctx;
   const r = v.result;
   const w = r.winner;
-  const rows = COURSES.map((c) => {
+  const rows = v.courses.map((c) => {
     const a = r.lanes[0][c].started ? r.lanes[0][c].score : 0;
     const b = r.lanes[1][c].started ? r.lanes[1][c].score : 0;
     return `<div class="tr" style="--c:${THEME[c].color}"><i></i><span class="${a >= b ? 'hi' : 'lo'}">${minus(a)}</span><span class="${b >= a ? 'hi' : 'lo'}">${minus(b)}</span></div>`;
   }).join('');
+  const bp = r.bonusPoints ?? [0, 0];
+  const bpText = (n) => (n ? `+${n}` : '0');
+  const bonusRow = `<div class="tr" style="--c:#FFD23F"><i></i><span class="${bp[0] >= bp[1] ? 'hi' : 'lo'}">${bpText(bp[0])}</span><span class="${bp[1] >= bp[0] ? 'hi' : 'lo'}">${bpText(bp[1])}</span></div>`;
   const headline = w === null ? '무승부' : online ? (w === me ? '내가 이겼어요!' : `${esc(nm[w])}님 승리`) : `${esc(nm[w])}님 승리`;
 
   let again = '<button class="btn" data-act="again">한 판 더</button>';
@@ -336,7 +401,7 @@ function overHtml() {
     </div>
     <div class="rtable">
       <div class="th"><span></span><span>${esc(nm[0])}</span><span>${esc(nm[1])}</span></div>
-      ${rows}
+      ${rows}${bonusRow}
     </div>
   </div>`;
 }
@@ -385,7 +450,8 @@ function runPendingFly() {
 // ---------- 한 기기 모드 ----------
 function startLocal() {
   mode = 'local';
-  game = newGame();
+  game = newGame(Math.random, { courses: courseCount });
+  seenClaims = {};
   selected = null;
   cover = true;
   sheet = null;
@@ -411,6 +477,7 @@ function actLocal(action) {
     const after = game.lanes[turnBefore][movedCard.course].length;
     if (before < STAR_CARDS && after >= STAR_CARDS) starPop = movedCard.course;
   }
+  notifyBonus(viewFor(game, game.turn), game.turn, names, false);
   render();
   if (movedCard) fly(movedCard, fromRect, action.type === 'play' ? `[data-mylane="${movedCard.course}"]` : `[data-pile="${movedCard.course}"]`);
 }
@@ -427,7 +494,7 @@ function enterOnline(code, name) {
   store.set('oname', name);
   net = {
     code, name, token, ws: null, seat: null, names: [null, null], view: null, status: 'waiting',
-    connected: false, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
+    connected: false, courses: courseCount, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
   };
   try { history.replaceState(null, '', `?room=${code}`); } catch (e) { /* 무시 */ }
   screen = 'wait';
@@ -443,7 +510,7 @@ function openSocket() {
   ws.onopen = () => {
     net.connected = true;
     net.retry = 0;
-    ws.send(JSON.stringify({ t: 'join', name: net.name, token: net.token }));
+    ws.send(JSON.stringify({ t: 'join', name: net.name, token: net.token, courses: courseCount }));
     clearInterval(net.ping);
     net.ping = setInterval(() => { if (ws.readyState === 1) ws.send('{"t":"ping"}'); }, 25000);
     render();
@@ -473,13 +540,16 @@ function onState(m) {
   net.opponentConnected = m.opponentConnected;
   net.rematch = m.rematch;
   net.view = m.view;
+  net.courses = m.settings?.courses ?? 5;
   if (m.status === 'waiting') { screen = 'wait'; render(); return; }
   if (prev && m.view) {
-    for (const c of COURSES) {
+    for (const c of (m.view.courses ?? COURSES)) {
       if (prev.myLanes[c].length < STAR_CARDS && m.view.myLanes[c].length >= STAR_CARDS) starPop = c;
     }
   }
   const wasPlaying = screen === 'play';
+  if (m.view && (!wasPlaying || (prev && prev.over && !m.view.over))) seenClaims = {};
+  if (m.view) notifyBonus(m.view, m.seat, net.names, true);
   screen = m.status === 'over' ? 'over' : 'play';
   if (screen === 'play' && !wasPlaying) { selected = null; sheet = null; }
   if (screen === 'over') sheet = null;
@@ -566,6 +636,8 @@ app.addEventListener('click', (e) => {
       return;
     case 'score': sheet = { type: 'score' }; render(); return;
     case 'rules': sheet = { type: 'rules' }; render(); return;
+    case 'tasks': sheet = { type: 'tasks' }; render(); return;
+    case 'set-courses': courseCount = Number(d.n) === 6 ? 6 : 5; store.set('courses', String(courseCount)); render(); return;
     case 'close': sheet = null; render(); return;
     default:
   }
@@ -582,6 +654,8 @@ app.addEventListener('click', (e) => {
 app.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && sheet) { sheet = null; render(); }
 });
+
+app.addEventListener('input', (e) => { if (e.target.id) draft[e.target.id] = e.target.value; });
 
 // 테스트와 디버깅용
 window.__hansang = {

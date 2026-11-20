@@ -100,7 +100,7 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 .scores .me{color:var(--cream)}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u) * 14)}
-.cols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--gap)}
+.cols{display:grid;grid-template-columns:repeat(var(--n,5),minmax(0,1fr));gap:var(--gap)}
 .col{display:flex;flex-direction:column;gap:var(--gap);min-width:0}
 .chip{position:relative;width:100%;height:calc(var(--u) * 48);border-radius:var(--r);background:var(--c);color:var(--k);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}
 .chip.empty{background:color-mix(in srgb,var(--c) 26%,#0f1329);color:var(--muted)}
@@ -157,7 +157,7 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 .rules li{list-style:none;word-break:keep-all;position:relative;padding-left:calc(var(--u) * 16);font-size:max(13px, calc(var(--u) * 14));line-height:1.55;margin-top:calc(var(--u) * 6)}
 .rules li::before{content:"";position:absolute;left:0;top:.6em;width:calc(var(--u) * 6);height:calc(var(--u) * 6);min-width:5px;min-height:5px;border-radius:50%;background:var(--gold)}
 .rules .btn{margin-top:calc(var(--u) * 14)}
-.toast{position:fixed;left:50%;bottom:calc(var(--u) * 24);transform:translateX(-50%);z-index:40;background:var(--gold);color:var(--ink);padding:calc(var(--u) * 9) calc(var(--u) * 16);border-radius:var(--r);font-size:var(--fs-m);max-width:90vw}
+.toast{position:fixed;left:50%;top:calc(var(--u) * 10);transform:translateX(-50%);pointer-events:none;z-index:40;background:var(--gold);color:var(--ink);padding:calc(var(--u) * 9) calc(var(--u) * 16);border-radius:var(--r);font-size:var(--fs-m);max-width:90vw}
 .fly{position:fixed;z-index:35;pointer-events:none;margin:0}
 
 /* ---------- 결과 ---------- */
@@ -171,7 +171,7 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 .result .acts{display:flex;gap:var(--gap);margin-top:calc(var(--u) * 22)}
 .result .acts .btn{width:auto;min-width:calc(var(--u) * 110);padding-left:calc(var(--u) * 24);padding-right:calc(var(--u) * 24)}
 .rtable{position:absolute;right:max(calc(var(--u) * 44), 8vw);top:50%;transform:translateY(-50%);width:calc(var(--u) * 320);z-index:2;background:rgba(12,16,36,.95);border:1px solid rgba(255,241,220,.2);border-radius:calc(var(--u) * 8);padding:calc(var(--u) * 12) calc(var(--u) * 18);backdrop-filter:blur(6px)}
-.rtable .tr{display:grid;grid-template-columns:calc(var(--u) * 24) 1fr 1fr;align-items:center;padding:calc(var(--u) * 9) 0;border-top:1px solid rgba(255,241,220,.12);font-size:calc(var(--u) * 20);text-align:right;letter-spacing:-.02em}
+.rtable .tr{display:grid;grid-template-columns:calc(var(--u) * 24) 1fr 1fr;align-items:center;padding:calc(var(--u) * 6) 0;border-top:1px solid rgba(255,241,220,.12);font-size:calc(var(--u) * 19);text-align:right;letter-spacing:-.02em}
 .rtable .th{display:grid;grid-template-columns:calc(var(--u) * 24) 1fr 1fr;padding-bottom:calc(var(--u) * 8);font-size:var(--fs-s);color:var(--muted);text-align:right}
 .rtable .th span,.rtable .tr span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rtable i{display:block;width:calc(var(--u) * 12);height:calc(var(--u) * 12);border-radius:3px;background:var(--c)}
@@ -182,3 +182,27 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 @keyframes glint{0%,100%{opacity:.75;transform:scale(.92)}50%{opacity:1;transform:scale(1.1)}}
 @keyframes starpop{0%{transform:scale(.2) rotate(-40deg);opacity:0}50%{transform:scale(1.8) rotate(10deg);opacity:1}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.scene .smoke{opacity:.15}}
+
+/* ---------- 심사위원 과제, 코스 수 선택 ---------- */
+.tasks{display:flex;flex-direction:column;gap:calc(var(--u) * 4);width:100%}
+.tchip{display:flex;align-items:center;justify-content:center;gap:calc(var(--u) * 3);width:100%;height:calc(var(--u) * 22);min-height:18px;border-radius:var(--r);border:1px solid rgba(255,241,220,.35);background:rgba(255,241,220,.05);color:var(--cream);font-size:max(10px, calc(var(--u) * 11));line-height:1;letter-spacing:-.02em}
+.tchip.me{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.tchip.opp{opacity:.38;border-style:dashed}
+.tchip .dot{display:inline-block;width:calc(var(--u) * 8);height:calc(var(--u) * 8);min-width:6px;min-height:6px;border-radius:2px}
+.tchip .dots{display:inline-flex;gap:2px}
+.tchip .dots b{display:block;width:calc(var(--u) * 5);height:calc(var(--u) * 5);min-width:4px;min-height:4px;border-radius:1px;background:currentColor}
+.tchip.static{width:calc(var(--u) * 44);height:calc(var(--u) * 26);flex:none}
+.panel.tasks{width:min(calc(var(--u) * 580), 94vw)}
+.thead,.trow{display:grid;grid-template-columns:calc(var(--u) * 44) 1fr calc(var(--u) * 46) calc(var(--u) * 46) calc(var(--u) * 66);gap:calc(var(--u) * 8);align-items:center}
+.thead{padding-bottom:calc(var(--u) * 8);font-size:var(--fs-s);color:var(--muted)}
+.thead .tt{grid-column:1 / 3;color:var(--cream);font-size:max(14px, calc(var(--u) * 17))}
+.trow{padding:calc(var(--u) * 7) 0;border-top:1px solid rgba(255,241,220,.14);font-size:max(12px, calc(var(--u) * 14))}
+.trow .ttext{line-height:1.3;word-break:keep-all}
+.pg{text-align:right;font-size:max(12px, calc(var(--u) * 14))}
+.pg.dim,.thead .dim{color:var(--muted)}
+.own{font-size:var(--fs-s);color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.own.me{color:var(--gold)}
+.seg{display:flex;border:1px solid rgba(255,241,220,.45);border-radius:var(--r);overflow:hidden}
+.seg button{flex:1;text-align:center;padding:calc(var(--u) * 10) 0;font-size:var(--fs-m);color:var(--cream)}
+.seg button.on{background:var(--gold);color:var(--ink)}
+.scoresheet small{display:block;font-size:var(--fs-s);color:var(--gold);margin-top:2px}
