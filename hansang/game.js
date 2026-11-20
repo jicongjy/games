@@ -43,7 +43,7 @@ let toastTimer = null;
 let courseCount = Number(store.get('courses')) === 6 ? 6 : 5; // 코스 수 (5 또는 6)
 let intro = null; // 판 시작 때 과제 소개 { ids, leaving }
 let introTimer = null;
-let introPending = false; // 한 기기 모드: 첫 차례 가림 화면을 넘긴 뒤에 소개
+let introThenCover = false; // 한 기기 모드: 과제 소개가 끝나면 첫 번째 플레이어 가림 화면
 const draft = {}; // 입력 중인 값(화면이 다시 그려져도 유지)
 let seenClaims = {}; // 이미 알린 과제 달성
 
@@ -177,6 +177,12 @@ function isFresh(v) {
   return v.deckCount === full && empty(v.myLanes) && empty(v.opponentLanes) && courses.every((c) => v.market[c].length === 0);
 }
 
+function finishIntro() {
+  intro = null;
+  if (introThenCover) { introThenCover = false; cover = true; }
+  render();
+}
+
 function startIntro() {
   const v = getCtx().v;
   if (!v.bonus.length) return;
@@ -192,7 +198,7 @@ function dismissIntro() {
   const el = document.querySelector('.intro');
   const chips = [...document.querySelectorAll('.rail .tchip')];
   const cards = el ? [...el.querySelectorAll('.icard')] : [];
-  if (!el || reduceMotion() || rotatedStage() || cards.length !== chips.length) { intro = null; render(); return; }
+  if (!el || reduceMotion() || rotatedStage() || cards.length !== chips.length) { finishIntro(); return; }
   intro.leaving = true;
   const done = cards.map((c, i) => {
     const from = c.getBoundingClientRect();
@@ -209,7 +215,7 @@ function dismissIntro() {
   });
   el.querySelector('.ibg')?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 480, delay: 260, fill: 'forwards' });
   el.querySelectorAll('.itop,.igo').forEach((n) => n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, fill: 'forwards' }));
-  Promise.allSettled(done).then(() => { intro = null; render(); });
+  Promise.allSettled(done).then(finishIntro);
 }
 
 const courseToggle = () => `<div class="seg" role="group" aria-label="코스 수">
@@ -391,7 +397,7 @@ function playHtml() {
     ? `<button class="deck deckbtn target${urgent ? ' urgent' : ''}" data-draw="deck" aria-label="식재료 창고에서 가져오기"><span class="tag">+</span>${v.deckCount}</button>`
     : `<div class="deck deckbtn${urgent ? ' urgent' : ''}" aria-label="마감까지 ${v.deckCount}장">${v.deckCount}</div>`;
 
-  const html = `<div class="board${aim ? ' aim' : ''}">${banner}
+  const html = `<div class="board${aim ? ' aim' : ''}${intro && !online ? ' shield' : ''}">${banner}
     <aside class="rail">
       ${deck}
       <div class="pips"><i class="pip${myTurn ? ' on' : ''}"></i><i class="pip${drawing ? ' go' : ''}"></i></div>
@@ -506,11 +512,15 @@ function startLocal() {
   mode = 'local';
   game = newGame(Math.random, { courses: courseCount });
   seenClaims = {};
-  introPending = true;
   selected = null;
-  cover = true;
   sheet = null;
   screen = 'play';
+  cover = true;
+  if (game.bonus.length) { // 6코스: 소개가 먼저, 끝나면 첫 번째 플레이어 가림 화면
+    cover = false;
+    introThenCover = true;
+    startIntro();
+  }
   render();
 }
 
@@ -685,7 +695,7 @@ app.addEventListener('click', (e) => {
       return;
     }
     case 'leave': leaveOnline(); return;
-    case 'reveal': cover = false; if (introPending) { introPending = false; startIntro(); } render(); return;
+    case 'reveal': cover = false; render(); return;
     case 'intro-go': dismissIntro(); return;
     case 'again':
       if (mode === 'online') sendOnline({ t: 'rematch' }); else startLocal();
