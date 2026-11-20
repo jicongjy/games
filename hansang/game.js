@@ -5,6 +5,7 @@ import {
 import { THEME, cardTitle, iconSvg, courseIcon, taskUi } from './cards-data.js';
 import { nightScene } from './scene.js';
 import { serverUrl } from './config.js';
+import { makeTutorialGame, OPP_SCRIPTS, TUT_STEPS } from './tutorial.js';
 
 const PREFIX = 'hansang:';
 const store = {
@@ -44,6 +45,8 @@ let courseCount = Number(store.get('courses')) === 6 ? 6 : 5; // 코스 수 (5 �
 let intro = null; // 판 시작 때 과제 소개 { ids, leaving }
 let introTimer = null;
 let introThenCover = false; // 한 기기 모드: 과제 소개가 끝나면 첫 번째 플레이어 가림 화면
+let tut = null; // 연습 중이면 { game, step, ret, busy, note, friend, ext }
+let askTut = false; // 처음 방문: 연습할지 한 번 묻는다
 const draft = {}; // 입력 중인 값(화면이 다시 그려져도 유지)
 let seenClaims = {}; // 이미 알린 과제 달성
 
@@ -106,6 +109,10 @@ function oppChipHtml(ctx, course) {
 
 // ---------- 맥락: 한 기기 / 온라인 ----------
 function getCtx() {
+  if (tut) {
+    const g = tut.game;
+    return { v: norm(viewFor(g, 0)), me: 0, nm: ['나', '상대'], myTurn: g.turn === 0 && !tut.busy && !g.over, online: false };
+  }
   if (mode === 'local') {
     const me = game.turn;
     return { v: norm(viewFor(game, me)), me, nm: names, myTurn: true, online: false };
@@ -115,7 +122,7 @@ function getCtx() {
 }
 
 // ---------- 화면들 ----------
-const RULES = `
+const rulesHtml = () => `
   <div class="backdrop" data-act="close"></div>
   <div class="panel rules" role="dialog" aria-label="규칙">
     <button class="x" data-act="close" aria-label="닫기">✕</button>
@@ -131,6 +138,7 @@ const RULES = `
       <li>방금 내려놓은 카드는 같은 차례에 다시 못 가져와요.</li>
       <li>창고의 마지막 카드를 가져오면 마감, 한 판이 끝나요.</li>
     </ul>
+    ${!tut && screen !== 'play' ? '<button class="btn ghost" data-act="tut-start">연습해 보기</button>' : ''}
     <button class="btn ghost" data-act="close">닫기</button>
   </div>`;
 
@@ -144,6 +152,7 @@ function homeHtml() {
       <div class="menu">
         <button class="btn" data-act="go-online" ${online ? '' : 'disabled'}>온라인으로</button>
         <button class="btn ghost" data-act="go-local">한 기기에서</button>
+        <button class="link" data-act="tut-start">처음이세요? 연습하기</button>
       </div>
       ${online ? '' : '<p class="note">온라인 서버가 아직 설정되지 않았어요</p>'}
     </div>
@@ -308,6 +317,7 @@ function waitHtml() {
       <p class="note" style="margin:0 0 calc(var(--u) * 14)">${net.courses ?? courseCount}코스</p>
       <div class="menu">
         <button class="btn" data-act="copy-link" data-link="${esc(link)}">초대 링크 복사</button>
+        <button class="btn ghost" data-act="tut-start">기다리는 동안 연습하기</button>
         <button class="btn ghost" data-act="leave">나가기</button>
       </div>
       ${net.connected ? '' : '<p class="note">연결이 끊겼어요. 다시 연결하는 중…</p>'}
@@ -328,7 +338,7 @@ function coverHtml(ctx) {
 
 function sheetHtml(ctx) {
   if (!sheet) return '';
-  if (sheet.type === 'rules') return RULES;
+  if (sheet.type === 'rules') return rulesHtml();
   if (sheet.type === 'tasks') return tasksSheetHtml(ctx);
   const { v, me, nm } = ctx;
   const { player, course } = sheet;
@@ -386,7 +396,7 @@ function playHtml() {
       sel: card.id === selected,
     })).join('');
 
-  const turnText = online ? (myTurn ? '내 차례' : esc(nm[opp])) : `${esc(nm[me])} 차례`;
+  const turnText = tut ? (myTurn ? '내 차례' : '상대') : online ? (myTurn ? '내 차례' : esc(nm[opp])) : `${esc(nm[me])} 차례`;
   const banner = online && !net.connected
     ? '<div class="banner bad">연결이 끊겼어요. 다시 연결하는 중…</div>'
     : online && !net.opponentConnected
@@ -466,6 +476,7 @@ function overHtml() {
 }
 
 function render() {
+  if (tut) { renderTut(); return; }
   if (screen !== 'play') { intro = null; clearTimeout(introTimer); }
   let html;
   if (screen === 'home') html = homeHtml();
@@ -475,8 +486,218 @@ function render() {
   else if (screen === 'over') html = overHtml();
   else html = playHtml();
   // 규칙 창은 어느 화면에서나 열 수 있다 (대결 화면은 playHtml 안에서 처리)
-  if (screen !== 'play' && sheet?.type === 'rules') html += RULES;
+  if (screen !== 'play' && sheet?.type === 'rules') html += rulesHtml();
+  if (askTut && screen === 'home') html += askTutHtml();
   app.innerHTML = html;
+}
+
+// ---------- 연습(튜토리얼) ----------
+const tutTotal = TUT_STEPS.filter((s) => s.kind !== 'done').length;
+
+function askTutHtml() {
+  return `<div class="backdrop"></div>
+  <div class="panel ask" role="dialog" aria-label="연습">
+    <h3>처음이세요?</h3>
+    <p class="note" style="margin:0 0 calc(var(--u) * 16)">카드 몇 장으로 규칙을 익혀 봐요.</p>
+    <button class="btn" data-act="tut-ask-yes">연습해 볼래요</button>
+    <button class="btn ghost" style="margin-top:calc(var(--u) * 10)" data-act="tut-ask-no">괜찮아요</button>
+  </div>`;
+}
+
+function scoreStepHtml() {
+  const g = tut.game;
+  const rows = COURSES.filter((c) => g.lanes[0][c].length).map((c) => {
+    const d = laneDetail(g.lanes[0][c]);
+    return `<div class="tr" style="--c:${THEME[c].color}"><i></i><span class="hi">${minus(d.score)}</span></div>`;
+  }).join('');
+  return `<div class="backdrop"></div>
+  <div class="panel tutscore" role="dialog" aria-label="점수 계산">
+    <h3>점수 계산</h3>
+    <ul>
+      <li>코스 점수 = (숫자 합 − 20) × 배수</li>
+      <li>코스를 시작하면 −20에서 출발해요. 숫자를 20 넘게 쌓아야 점수가 돼요.</li>
+      <li>예약 손님이 있으면 이득도 손해도 ×2예요.</li>
+      <li>카드 8장 이상이면 별 +20점.</li>
+    </ul>
+    <div class="now"><span>지금 내 코스</span>${rows}</div>
+    <button class="btn" data-act="tut-next">다음</button>
+  </div>`;
+}
+
+function coachHtml() {
+  const st = TUT_STEPS[tut.step];
+  const friend = tut.friend
+    ? '<div class="banner friend"><span>친구가 들어왔어요</span><button data-act="tut-go">바로 시작</button></div>' : '';
+  if (st.kind === 'score' && !tut.busy) return `<div class="tuttop">${friend}</div>${scoreStepHtml()}`;
+  const text = tut.busy ? (tut.note || '상대 차례예요') : st.text;
+  const next = st.kind === 'info' && !tut.busy ? '<button class="cnext" data-act="tut-next">다음</button>' : '';
+  return `<div class="tuttop"><div class="coach${tut.busy ? ' wait' : ''}" role="status">
+    <span class="cstep">${Math.min(tut.step + 1, tutTotal)}/${tutTotal}</span><span class="ctext">${text}</span>${next}
+    <button class="cskip" data-act="tut-skip">건너뛰기</button>
+  </div>${friend}</div>`;
+}
+
+function extHtml() {
+  const slides = [
+    ['6코스 (확장)', ['면 코스가 더해져 카드가 72장이 돼요.', '코스가 여섯이라 한 판이 조금 더 길어요.']],
+    ['심사위원 과제', ['판마다 과제 5장이 공개돼요.', '채우면 한 장당 +10점이에요.', '먼저 채우는 과제는 먼저 한 사람이, 마감 때 비교하는 과제는 가장 앞선 사람이 받아요.']],
+  ];
+  const [title, lines] = slides[tut.ext];
+  const last = tut.ext === slides.length - 1;
+  return `<div class="screen">${nightScene()}
+    <div class="side">
+      <h2 class="exth">${title}</h2>
+      <div class="extp">${lines.map((l) => `<p>${l}</p>`).join('')}</div>
+      <div class="menu">
+        <button class="btn" data-act="${last ? 'tut-go' : 'tut-ext-next'}">${last ? '시작하기' : '다음'}</button>
+      </div>
+      <span class="extn">${tut.ext + 1}/${slides.length}</span>
+    </div>
+  </div>`;
+}
+
+function doneHtml() {
+  return `<div class="screen">${nightScene()}
+    <div class="side">
+      <h2 class="exth">연습 끝</h2>
+      <p class="sub">이제 진짜 한 판이에요.</p>
+      <div class="menu">
+        <button class="btn" data-act="tut-go">${tut.ret === 'wait' ? '친구 기다리기' : '시작하기'}</button>
+        <button class="btn ghost" data-act="tut-ext">6코스는 뭐가 달라요?</button>
+        <button class="btn ghost" data-act="tut-again">한 번 더 연습</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderTut() {
+  intro = null; clearTimeout(introTimer);
+  if (tut.ext !== null) { app.innerHTML = extHtml(); return; }
+  if (TUT_STEPS[tut.step].kind === 'done') { app.innerHTML = doneHtml(); return; }
+  app.innerHTML = playHtml() + coachHtml();
+  applyTutFocus();
+}
+
+// 지금 눌러야 할 곳을 빛내고, 나머지 손패는 흐리게
+function applyTutFocus() {
+  const st = TUT_STEPS[tut.step];
+  const board = app.querySelector('.board');
+  if (!board || tut.busy) return;
+  const mark = (sel) => app.querySelectorAll(sel).forEach((n) => n.classList.add('tut-focus'));
+  if (st.kind === 'info') { (st.focus || []).forEach(mark); return; }
+  if (st.kind !== 'act') return;
+  board.classList.add('tutdim');
+  const a = st.allow;
+  (a.cards || []).forEach((id) => mark(`[data-card="${id}"]`));
+  if (a.lane && selected) mark(`[data-lane="${a.lane}"]`);
+  if (a.drop && selected) mark(`[data-drop="${a.drop}"]`);
+  (a.draw || []).forEach((d) => mark(`[data-draw="${d}"]`));
+}
+
+function startTutorial() {
+  const ret = mode === 'online' && net?.ws && screen === 'wait' ? 'wait' : 'home';
+  store.set('tutorial', '1');
+  askTut = false;
+  sheet = null;
+  selected = null;
+  seenClaims = {};
+  tut = { game: makeTutorialGame(), step: 0, ret, busy: false, note: '', friend: false, ext: null };
+  render();
+}
+
+function exitTutorial() {
+  const ret = tut.ret;
+  tut = null;
+  selected = null;
+  sheet = null;
+  if (ret === 'wait' && net) {
+    if (net.last && net.last.status !== 'waiting') { screen = 'wait'; onState(net.last); return; }
+    screen = 'wait';
+  } else {
+    screen = 'home';
+  }
+  render();
+}
+
+function nudge() {
+  const c = app.querySelector('.coach');
+  if (!c) return;
+  c.classList.remove('shake');
+  void c.offsetWidth;
+  c.classList.add('shake');
+}
+
+const NOTE = { discard: '상대가 카드를 좌판에 내려놓았어요', play: '상대가 코스에 카드를 올렸어요', draw: '상대가 한 장 가져갔어요' };
+
+function runOpp(idx) {
+  const mine = tut;
+  const script = OPP_SCRIPTS[idx];
+  const delay = reduceMotion() ? 120 : 800;
+  let i = 0;
+  const next = () => {
+    if (tut !== mine) return;
+    if (i >= script.length) { mine.step += 1; mine.busy = false; mine.note = ''; render(); return; }
+    const a = script[i++];
+    const r = apply(mine.game, 1, a);
+    if (r.ok) mine.game = r.state;
+    mine.note = NOTE[a.type];
+    render();
+    setTimeout(next, delay);
+  };
+  mine.note = '상대 차례예요';
+  render();
+  setTimeout(next, delay);
+}
+
+function tutAct(action) {
+  const st = TUT_STEPS[tut.step];
+  const srcEl = action.cardId ? document.querySelector(`[data-card="${action.cardId}"]`) : null;
+  const fromRect = srcEl?.getBoundingClientRect();
+  const movedCard = action.cardId ? tut.game.hands[0].find((c) => c.id === action.cardId) : null;
+  const r = apply(tut.game, 0, action);
+  if (!r.ok) { toast(r.error); return; }
+  tut.game = r.state;
+  selected = null;
+  if (st.expect !== action.type) { render(); return; }
+  if (st.then !== undefined) {
+    tut.busy = true;
+    render();
+    if (movedCard) fly(movedCard, fromRect, `[data-pile="${movedCard.course}"]`);
+    runOpp(st.then);
+    return;
+  }
+  tut.step += 1;
+  render();
+  if (movedCard) fly(movedCard, fromRect, action.type === 'play' ? `[data-mylane="${movedCard.course}"]` : `[data-pile="${movedCard.course}"]`);
+}
+
+// 연습 중 눌림: 정해진 곳만 받는다
+function tutorialClick(t) {
+  const d = t.dataset;
+  switch (d.act) {
+    case 'tut-next': tut.step += 1; render(); return;
+    case 'tut-skip': exitTutorial(); return;
+    case 'tut-go': exitTutorial(); return;
+    case 'tut-again': tut = { ...tut, game: makeTutorialGame(), step: 0, busy: false, note: '', ext: null }; selected = null; render(); return;
+    case 'tut-ext': tut.ext = 0; render(); return;
+    case 'tut-ext-next': tut.ext += 1; render(); return;
+    case 'rules': sheet = { type: 'rules' }; render(); return;
+    case 'close': sheet = null; render(); return;
+    default:
+  }
+  if (d.act) return;
+  const st = TUT_STEPS[tut.step];
+  if (st.kind !== 'act' || tut.busy) { nudge(); return; }
+  const a = st.allow;
+  if (d.card) {
+    if ((a.cards || []).includes(d.card)) { selected = selected === d.card ? null : d.card; render(); } else nudge();
+  } else if (d.lane) {
+    if (selected && a.lane === d.lane) tutAct({ type: 'play', cardId: selected }); else nudge();
+  } else if (d.drop) {
+    if (selected && a.drop === d.drop) tutAct({ type: 'discard', cardId: selected }); else nudge();
+  } else if (d.draw) {
+    if ((a.draw || []).includes(d.draw)) tutAct({ type: 'draw', from: d.draw }); else nudge();
+  } else nudge();
 }
 
 // ---------- 카드 이동 연출 ----------
@@ -598,6 +819,7 @@ function openSocket() {
 }
 
 function onState(m) {
+  net.last = m;
   const prev = net.view;
   net.seat = m.seat;
   net.names = m.names.map((n, i) => n || `요리사 ${i + 1}`);
@@ -606,6 +828,7 @@ function onState(m) {
   net.rematch = m.rematch;
   net.view = m.view;
   net.courses = m.settings?.courses ?? 5;
+  if (tut) { if (m.status !== 'waiting') tut.friend = true; render(); return; }
   if (m.status === 'waiting') { screen = 'wait'; render(); return; }
   if (prev && m.view) {
     for (const c of (m.view.courses ?? COURSES)) {
@@ -670,7 +893,11 @@ app.addEventListener('click', (e) => {
   const t = e.target.closest('[data-act],[data-card],[data-lane],[data-drop],[data-draw],[data-detail]');
   if (!t || t.disabled) return;
   const d = t.dataset;
+  if (tut) { tutorialClick(t); return; }
   switch (d.act) {
+    case 'tut-start': startTutorial(); return;
+    case 'tut-ask-yes': startTutorial(); return;
+    case 'tut-ask-no': askTut = false; store.set('tutorial', '1'); render(); return;
     case 'home': screen = 'home'; sheet = null; render(); return;
     case 'go-local': screen = 'local-setup'; render(); return;
     case 'go-online': net = null; screen = 'lobby'; render(); return;
@@ -727,6 +954,8 @@ window.__hansang = {
   get game() { return game; },
   get net() { return net; },
   get view() { return mode === 'online' ? net?.view : null; },
+  get tutStep() { return tut ? tut.step : null; },
+  get tutGame() { return tut?.game ?? null; },
   get myTurn() { return mode === 'online' && !!net?.view && net.view.turn === net.seat && !net.view.over; },
 };
 
@@ -740,6 +969,8 @@ window.__hansang = {
     if (savedToken && savedName) { enterOnline(code, savedName); return; } // 새로고침하면 같은 자리로 복귀
     net = { prefillCode: code };
     screen = 'lobby';
+  } else if (!store.get('tutorial')) {
+    askTut = true;
   }
   render();
 })();
