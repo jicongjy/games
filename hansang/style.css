@@ -280,3 +280,14 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 .extp{margin-top:calc(var(--u) * 14);max-width:calc(var(--u) * 380)}
 .extp p{font-size:max(13px,calc(var(--u) * 15));line-height:1.55;margin-top:calc(var(--u) * 6);word-break:keep-all}
 .extn{margin-top:calc(var(--u) * 12);color:var(--sub);font-size:var(--fs-s)}
+
+/* ---------- 턴 시간 ---------- */
+.seg.turn button{font-size:var(--fs-s);padding:calc(var(--u) * 8) 0}
+.clock{position:relative;width:calc(var(--u) * 64);height:calc(var(--u) * 24);border-radius:var(--r);background:rgba(255,241,220,.1);border:1px solid rgba(255,241,220,.3);overflow:hidden;flex:none}
+.clock.off{display:none}
+.clock i{position:absolute;inset:0;background:rgba(255,210,63,.45);transform-origin:left;transition:transform .25s linear}
+.clock b{position:relative;display:grid;place-items:center;height:100%;font-size:var(--fs-m);letter-spacing:-.02em;color:var(--cream)}
+.clock.low{border-color:var(--pink)}
+.clock.low i{background:rgba(255,120,150,.55)}
+.clock.low b{animation:wiggle 1s ease-in-out infinite}
+.tlabel{display:block;font-size:var(--fs-s);color:var(--sub);margin-bottom:calc(var(--u) * -4)}

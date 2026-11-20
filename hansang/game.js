@@ -1,6 +1,6 @@
 // 차려내라! 한 상: 밤 분위기, 가로형. 한 기기에서 번갈아 두기 + 온라인 2인
 import {
-  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, STAR_CARDS,
+  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, STAR_CARDS, timeoutPlan,
 } from './engine/rules.js';
 import { THEME, cardTitle, iconSvg, courseIcon, taskUi } from './cards-data.js';
 import { nightScene } from './scene.js';
@@ -45,6 +45,9 @@ let courseCount = Number(store.get('courses')) === 6 ? 6 : 5; // 코스 수 (5 �
 let intro = null; // 판 시작 때 과제 소개 { ids, leaving }
 let introTimer = null;
 let introThenCover = false; // 한 기기 모드: 과제 소개가 끝나면 첫 번째 플레이어 가림 화면
+const TURN_CHOICES = [0, 20, 30, 45, 60]; // 턴 제한(초), 0은 없음
+let turnSec = TURN_CHOICES.includes(Number(store.get('turnsec') ?? 30)) ? Number(store.get('turnsec') ?? 30) : 30;
+let localDeadline = null; // 한 기기 모드: 이번 차례 마감 시각(ms)
 let tut = null; // 연습 중이면 { game, step, ret, busy, note, friend, ext }
 let askTut = false; // 처음 방문: 연습할지 한 번 묻는다
 const draft = {}; // 입력 중인 값(화면이 다시 그려져도 유지)
@@ -232,6 +235,50 @@ const courseToggle = () => `<div class="seg" role="group" aria-label="코스 수
   <button class="${courseCount === 6 ? 'on' : ''}" data-act="set-courses" data-n="6" aria-pressed="${courseCount === 6}">6코스 · 확장</button>
 </div>`;
 
+const turnToggle = () => `<span class="tlabel">턴 시간</span><div class="seg turn" role="group" aria-label="턴 시간">
+  ${TURN_CHOICES.map((n) => `<button class="${turnSec === n ? 'on' : ''}" data-act="set-turn" data-n="${n}" aria-pressed="${turnSec === n}">${n ? `${n}초` : '없음'}</button>`).join('')}
+</div>`;
+
+// 남은 시간 표시. 숫자와 막대는 tick()이 1초에 몇 번씩 고쳐 쓴다.
+function clockInfo() {
+  if (tut || screen !== 'play') return null;
+  if (mode === 'online') {
+    if (!net?.deadline || net.view?.over) return null;
+    return { left: (net.deadline - (Date.now() + (net.offset || 0))) / 1000, total: net.turnSeconds };
+  }
+  if (!localDeadline || !game || game.over) return null;
+  return { left: (localDeadline - Date.now()) / 1000, total: turnSec };
+}
+const clockHtml = () => {
+  const c = clockInfo();
+  if (!c) return '<div class="clock off"><i></i><b></b></div>';
+  const left = Math.max(0, Math.ceil(c.left));
+  return `<div class="clock${left <= 10 ? ' low' : ''}" aria-label="남은 시간 ${left}초"><i style="transform:scaleX(${Math.max(0, Math.min(1, c.left / c.total))})"></i><b>${left}</b></div>`;
+};
+function tick() {
+  if (tut) return;
+  if (mode === 'local' && screen === 'play' && game && !game.over && turnSec > 0) {
+    if (cover || intro) localDeadline = null; // 가림 화면, 소개 중에는 시간이 흐르지 않는다
+    else if (localDeadline === null) localDeadline = Date.now() + turnSec * 1000;
+    else if (Date.now() >= localDeadline) {
+      localDeadline = null;
+      toast('시간이 다 돼서 자동으로 냈어요');
+      for (const a of timeoutPlan(game, game.turn)) { if (game.over) break; actLocal(a); }
+      return;
+    }
+  }
+  const el = document.querySelector('.clock');
+  const c = clockInfo();
+  if (!el) return;
+  if (!c) { if (!el.classList.contains('off')) el.outerHTML = clockHtml(); return; }
+  if (el.classList.contains('off')) { el.outerHTML = clockHtml(); return; }
+  const left = Math.max(0, Math.ceil(c.left));
+  el.classList.toggle('low', left <= 10);
+  el.querySelector('b').textContent = left;
+  el.querySelector('i').style.transform = `scaleX(${Math.max(0, Math.min(1, c.left / c.total))})`;
+}
+setInterval(tick, 250);
+
 function taskChipsHtml(ctx) {
   const { v, me } = ctx;
   return v.bonus.map((b) => {
@@ -284,7 +331,7 @@ function localSetupHtml() {
       <div class="form">
         <input id="n0" class="field" maxlength="10" value="${esc(draft.n0 ?? names[0])}" placeholder="먼저 시작하는 사람" aria-label="첫 번째 요리사 이름" autocomplete="off">
         <input id="n1" class="field" maxlength="10" value="${esc(draft.n1 ?? names[1])}" placeholder="다음 사람" aria-label="두 번째 요리사 이름" autocomplete="off">
-        ${courseToggle()}${courseNote()}
+        ${courseToggle()}${turnToggle()}${courseNote()}
         <button class="btn" data-act="start-local">시작</button>
       </div>
     </div>
@@ -298,7 +345,7 @@ function lobbyHtml() {
     <div class="side">
       <div class="form">
         <input id="oname" class="field" maxlength="10" value="${esc(draft.oname ?? (store.get('oname') || ''))}" placeholder="내 이름" aria-label="내 이름" autocomplete="off">
-        ${courseToggle()}${courseNote()}
+        ${courseToggle()}${turnToggle()}${courseNote()}
         <button class="btn" data-act="create-room">방 만들기</button>
         <span class="or">또는</span>
         <input id="ocode" class="field" maxlength="6" value="${esc(draft.ocode ?? code)}" placeholder="방 코드" aria-label="방 코드" autocomplete="off" style="text-transform:uppercase">
@@ -314,7 +361,7 @@ function waitHtml() {
     <div class="side">
       <p class="sub" style="margin:0">친구에게 코드를 알려 주세요</p>
       <div class="code">${esc(net.code)}</div>
-      <p class="note" style="margin:0 0 calc(var(--u) * 14)">${net.courses ?? courseCount}코스</p>
+      <p class="note" style="margin:0 0 calc(var(--u) * 14)">${net.courses ?? courseCount}코스 · ${(net.turnSeconds ?? turnSec) ? `턴 ${net.turnSeconds ?? turnSec}초` : '시간 제한 없음'}</p>
       <div class="menu">
         <button class="btn" data-act="copy-link" data-link="${esc(link)}">초대 링크 복사</button>
         <button class="btn ghost" data-act="tut-start">기다리는 동안 연습하기</button>
@@ -412,6 +459,7 @@ function playHtml() {
       ${deck}
       <div class="pips"><i class="pip${myTurn ? ' on' : ''}"></i><i class="pip${drawing ? ' go' : ''}"></i></div>
       <div class="turn">${turnText}</div>
+      ${tut ? '' : clockHtml()}
       <div class="tasks">${taskChipsHtml(ctx)}</div>
       <div class="grow"></div>
       <button class="rhelp" data-act="rules" aria-label="규칙 보기">?</button>
@@ -732,6 +780,7 @@ function runPendingFly() {
 function startLocal() {
   mode = 'local';
   game = newGame(Math.random, { courses: courseCount });
+  localDeadline = null;
   seenClaims = {};
   selected = null;
   sheet = null;
@@ -758,7 +807,7 @@ function actLocal(action) {
   selected = null;
   sheet = null;
   if (game.over) { screen = 'over'; render(); return; }
-  if (game.turn !== turnBefore) cover = true;
+  if (game.turn !== turnBefore) { cover = true; localDeadline = null; }
   if (action.type === 'play' && movedCard) {
     const after = game.lanes[turnBefore][movedCard.course].length;
     if (before < STAR_CARDS && after >= STAR_CARDS) starPop = movedCard.course;
@@ -780,7 +829,7 @@ function enterOnline(code, name) {
   store.set('oname', name);
   net = {
     code, name, token, ws: null, seat: null, names: [null, null], view: null, status: 'waiting',
-    connected: false, courses: courseCount, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
+    connected: false, courses: courseCount, turnSeconds: turnSec, deadline: null, offset: 0, autoSeq: undefined, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
   };
   try { history.replaceState(null, '', `?room=${code}`); } catch (e) { /* 무시 */ }
   screen = 'wait';
@@ -796,7 +845,7 @@ function openSocket() {
   ws.onopen = () => {
     net.connected = true;
     net.retry = 0;
-    ws.send(JSON.stringify({ t: 'join', name: net.name, token: net.token, courses: courseCount }));
+    ws.send(JSON.stringify({ t: 'join', name: net.name, token: net.token, courses: courseCount, turnSeconds: turnSec }));
     clearInterval(net.ping);
     net.ping = setInterval(() => { if (ws.readyState === 1) ws.send('{"t":"ping"}'); }, 25000);
     render();
@@ -828,6 +877,14 @@ function onState(m) {
   net.rematch = m.rematch;
   net.view = m.view;
   net.courses = m.settings?.courses ?? 5;
+  net.turnSeconds = m.settings?.turnSeconds ?? 0;
+  net.deadline = m.deadline ?? null;
+  net.offset = m.now ? m.now - Date.now() : 0;
+  const seq = m.auto?.seq ?? 0;
+  if (!tut && net.autoSeq !== undefined && seq > net.autoSeq) {
+    toast(m.auto.seat === m.seat ? '시간이 다 돼서 자동으로 냈어요' : `${net.names[m.auto.seat]}님 시간 초과`);
+  }
+  net.autoSeq = seq;
   if (tut) { if (m.status !== 'waiting') tut.friend = true; render(); return; }
   if (m.status === 'waiting') { screen = 'wait'; render(); return; }
   if (prev && m.view) {
@@ -929,6 +986,7 @@ app.addEventListener('click', (e) => {
       return;
     case 'rules': sheet = { type: 'rules' }; render(); return;
     case 'tasks': sheet = { type: 'tasks' }; render(); return;
+    case 'set-turn': turnSec = TURN_CHOICES.includes(Number(d.n)) ? Number(d.n) : 30; store.set('turnsec', String(turnSec)); render(); return;
     case 'set-courses': courseCount = Number(d.n) === 6 ? 6 : 5; store.set('courses', String(courseCount)); render(); return;
     case 'close': sheet = null; render(); return;
     default:
