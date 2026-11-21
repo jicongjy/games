@@ -1,6 +1,6 @@
 // Cloudflare Worker: 방 코드 하나가 Durable Object 하나. 규칙 판정은 모두 서버에서 한다.
 import { DurableObject } from 'cloudflare:workers';
-import { createRoom, join, act, rematch, setConnected, payload } from './room-logic.js';
+import { createRoom, join, act, rematch, setConnected, payload, timeout, GRACE_MS } from './room-logic.js';
 
 const CODE_RE = /^[A-Z2-9]{4,6}$/;
 const MAX_MESSAGE = 2048;
@@ -31,7 +31,7 @@ export class Room extends DurableObject {
 
     const att = ws.deserializeAttachment() || {};
     if (msg.t === 'join') {
-      const r = join(this.room, { token: msg.token, name: msg.name, courses: msg.courses });
+      const r = join(this.room, { token: msg.token, name: msg.name, courses: msg.courses, turnSeconds: msg.turnSeconds });
       if (!r.ok) { this.send(ws, { t: 'error', fatal: true, error: r.error }); return; }
       ws.serializeAttachment({ seat: r.seat });
       await this.save();
@@ -72,14 +72,27 @@ export class Room extends DurableObject {
   }
 
   async alarm() {
+    const now = Date.now();
+    // 알람은 하나뿐이라 "차례 마감"과 "방 정리"를 함께 쓴다
+    if (this.room.status === 'playing' && this.room.deadline) {
+      if (timeout(this.room, now)) { await this.save(); this.broadcast(); return; }
+      if (now < (this.room.idleAt ?? 0)) { await this.schedule(); return; }
+    }
     for (const ws of this.ctx.getWebSockets()) { try { ws.close(1000, 'room expired'); } catch { /* 이미 닫힘 */ } }
     await this.ctx.storage.deleteAll();
     this.room = createRoom();
   }
 
   async save() {
+    this.room.idleAt = Date.now() + IDLE_MS;
     await this.ctx.storage.put('room', this.room);
-    await this.ctx.storage.setAlarm(Date.now() + IDLE_MS);
+    await this.schedule();
+  }
+
+  async schedule() {
+    const r = this.room;
+    const at = r.status === 'playing' && r.deadline ? Math.min(r.deadline + GRACE_MS, r.idleAt) : r.idleAt;
+    await this.ctx.storage.setAlarm(at);
   }
 
   send(ws, obj) { try { ws.send(JSON.stringify(obj)); } catch { /* 끊긴 소켓 */ } }

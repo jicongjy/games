@@ -167,3 +167,19 @@ test('무작위로 끝까지 100판: 카드 수가 항상 60장, 패는 항상 8
     assert.equal(viewFor(s, 0).result.scores.length, 2);
   }
 });
+
+import { timeoutPlan } from './rules.js';
+test('시간 초과: 내려놓고 창고에서 가져와 차례가 넘어간다', () => {
+  let g = newGame(() => 0.3, { courses: 5 });
+  const who = g.turn;
+  const plan = timeoutPlan(g, who);
+  assert.equal(plan.length, 2);
+  for (const a of plan) { const r = apply(g, who, a); assert.ok(r.ok, r.error); g = r.state; }
+  assert.equal(g.turn, 1 - who);
+  assert.equal(g.hands[who].length, 8);
+  // 내는 단계가 끝난 뒤에는 가져오기만
+  let h = newGame(() => 0.3, { courses: 5 });
+  const r1 = apply(h, h.turn, { type: 'discard', cardId: h.hands[h.turn][0].id });
+  assert.deepEqual(timeoutPlan(r1.state, h.turn), [{ type: 'draw', from: 'deck' }]);
+  assert.deepEqual(timeoutPlan(r1.state, 1 - h.turn), []);
+});

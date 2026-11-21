@@ -353,3 +353,19 @@ export function viewFor(state, player) {
   }
   return view;
 }
+
+// 시간 초과 때 대신 두는 수: 낼 수 없는 카드 중 가장 낮은 숫자를 좌판에 내려놓고, 창고에서 한 장 가져온다.
+// (낼 수 없는 카드가 없으면 예약이 아닌 카드 중 가장 낮은 것, 그것도 없으면 아무거나)
+export function timeoutPlan(state, player) {
+  if (state.over || player !== state.turn) return [];
+  const plan = [];
+  if (state.phase === 'play') {
+    const hand = state.hands[player];
+    const pool = hand.filter((c) => !canPlayOnLane(state.lanes[player][c.course], c));
+    const cand = (pool.length ? pool : hand.filter((c) => c.step > 0)).slice();
+    const pick = (cand.length ? cand : hand).slice().sort((a, b) => (a.step || 99) - (b.step || 99) || (a.id < b.id ? -1 : 1))[0];
+    plan.push({ type: 'discard', cardId: pick.id });
+  }
+  plan.push({ type: 'draw', from: 'deck' });
+  return plan;
+}
