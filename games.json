@@ -12,5 +12,12 @@
     "description": "할머니의 노트를 들고 빈 땅에 조각을 놓아 마을을 지어 주는 배치 퍼즐 게임",
     "thumbnail": "small-town/img/og.png",
     "status": "공개"
+  },
+  {
+    "title": "차려내라! 한 상",
+    "folder": "hansang",
+    "description": "마감 직전 식당에서 두 요리사가 같은 재료로 한 상을 차려내는 2인 카드게임. 링크 하나로 친구와 온라인 대결",
+    "thumbnail": "hansang/og.png",
+    "status": "공개"
   }
 ]
