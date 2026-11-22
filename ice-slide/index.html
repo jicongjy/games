@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>빙판 마을의 배달부</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cstyle%3Epath{stroke:%23111}@media(prefers-color-scheme:dark){path{stroke:%23fff}}%3C/style%3E%3Cg fill='none' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 3v26M16 8.5l-3.6-3.6M16 8.5l3.6-3.6M16 23.5l-3.6 3.6M16 23.5l3.6 3.6'/%3E%3Cpath d='M16 3v26M16 8.5l-3.6-3.6M16 8.5l3.6-3.6M16 23.5l-3.6 3.6M16 23.5l3.6 3.6' transform='rotate(60 16 16)'/%3E%3Cpath d='M16 3v26M16 8.5l-3.6-3.6M16 8.5l3.6-3.6M16 23.5l-3.6 3.6M16 23.5l3.6 3.6' transform='rotate(120 16 16)'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,6 +138,56 @@ h3{font-family:var(--mono);font-size:13px;font-weight:500;color:#555;margin:30px
 .quest .qt{font-family:var(--sans);font-weight:600;font-size:19px}
 .quest .qd{font-size:14px;color:#333;margin-top:6px}
 .stamp{width:64px;height:64px}
+
+/* ---------- 모바일(터치, 가로 화면) ---------- */
+html{-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button,.card,.opt,.tool,#dlg{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#s-play,#board,#map{touch-action:none}
+body.touch .key,body.touch .keys{display:none}
+body.touch .tool:hover::after{display:none}
+@media (max-width:600px){#app{padding:12px 8px 150px}h1{font-size:30px}}
+@media (max-height:520px){
+ body{min-height:100dvh}
+ #app{padding:6px 12px 8px}
+ .over,.sub{display:none}
+ h1{font-size:26px}h2{font-size:22px}
+ .pill.big{padding:7px 18px;font-size:15px}
+ #demoWrap{margin:8px 0}
+ #proText{font-size:15px;min-height:0;margin:8px 0 6px}
+ #prog{margin-top:2px;justify-content:flex-start;font-size:12px}
+ #s-title .row{margin-top:2px}
+ /* 마을 */
+ #s-town h2{display:none}
+ #tools{top:26px;right:4px;z-index:4;gap:6px}
+ .tool{font-size:10px;background:rgba(255,255,255,.88)}
+ .tool .ic{width:34px;height:34px}.tool .ic canvas{width:28px!important;height:28px!important}
+ #mapWrap{margin:4px 0 0}
+ #cap{position:fixed;left:50%;bottom:6px;transform:translateX(-50%);width:calc(100% - 24px);max-width:900px;min-height:0;padding:6px 10px;gap:10px;z-index:5;opacity:.95}
+ #capText{font-size:13px;line-height:1.4}#capHint{font-size:11px}#capFace canvas{width:32px!important;height:32px!important}
+ #capBtn{padding:6px 12px;font-size:13px}
+ /* 플레이: 왼쪽 정보, 가운데 판, 오른쪽 버튼 */
+ #s-play.on{display:flex;flex-wrap:wrap;align-items:center;align-content:center;justify-content:center;gap:0 12px;min-height:calc(100dvh - 14px)}
+ #hud{order:0;flex-direction:column;align-items:stretch;gap:8px;margin:0;width:148px}
+ #hud .pill{justify-content:center}
+ #boardWrap{order:1}
+ #acts{order:2;flex-direction:column;flex-wrap:nowrap;margin:0;width:148px}
+ #clearBar{display:none}
+ #coach{order:-1;flex:0 0 auto;max-width:100%;margin:0 0 6px;padding:5px 12px 5px 6px;font-size:13px;gap:10px}
+ #coachFace canvas{width:32px!important;height:32px!important}
+ /* 대화와 창 */
+ #dlg{bottom:8px;padding:10px 14px;gap:12px;width:calc(100% - 24px)}
+ #dlgText{font-size:15px;line-height:1.5}#dlgFace{padding:4px}#dlgFace canvas{width:56px!important;height:56px!important}
+ #dlgName{margin-bottom:4px}#dlgNext{margin-top:4px}
+ #modalIn,#resIn{padding:14px;gap:10px;max-height:100%;overflow:auto}
+ #mTitle{font-size:20px}#mStamp canvas{width:64px;height:64px}
+ #book{padding:10px 12px}.quest{padding:8px 0}h3{margin-top:14px}
+ .card{min-height:130px;padding:12px 4px 8px;gap:8px}
+ /* 꾸미기 */
+ #customWrap{margin-top:8px;gap:20px;grid-template-columns:200px 1fr}
+ #facePanel{height:200px}#faceBig{width:150px!important;height:150px!important}
+ .opt{padding:7px 10px}
+}
 </style>
 </head>
 <body>
@@ -374,6 +424,11 @@ const TUT=[{key:'ArrowRight',t:"오른쪽으로 가 보게. → 방향키를 누
  {key:'ArrowLeft',t:"저기 다홍색이 문 앞일세. ← 방향키로 가 보게."},
  {key:'z',t:"지나가는 건 배달이 아니야. 문 앞에 서야지. Z 키를 눌러 한 수 되돌리게."},
  {key:null,t:"이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 R 키로 처음부터. 참, 가장 빠르게 문 앞에 도착하면 별이 세 개일세."}];
+const TUT_T=["오른쪽으로 가 보게. 화면을 오른쪽으로 쓸어 넘기면 되네. 가고 싶은 쪽을 눌러도 되고.",
+ "봤지? 한번 미끄러지면 못 멈춰. 멈추려면 부딪혀야 하네. 이번엔 아래로 쓸어 보게.",
+ "저기 다홍색이 문 앞일세. 왼쪽으로 쓸어 보게.",
+ "지나가는 건 배달이 아니야. 문 앞에 서야지. '되돌리기' 버튼으로 한 수 되돌리게.",
+ "이제 혼자 해 보게. 우체통을 브레이크로 쓰는 걸세. 꼬이면 '처음부터' 버튼을 누르게. 참, 가장 빠르게 문 앞에 도착하면 별이 세 개일세."];
 const RATE=[["도착은 했군. 배달부는 도착이 반일세.","쓸 만하군. 두루 씨 첫날보다는 훨씬 낫네.","군더더기가 없군. 사십 년 차인 줄 알았네."],
  ["빵이 좀 식었지만 괜찮아요. 왔으니까!","제법 빨리 왔네요. 빵이 아직 따뜻해요.","어머, 갓 구운 그대로네. 오븐에서 바로 온 줄 알았어요."],
  ["눈사람을 다 치고 왔다!","눈사람을 몇 개만 쳤어요. 잘했어요.","하나도 안 헤맸어! 서른세 개 사이로!"],
@@ -465,7 +520,7 @@ const unlocked=k=>k===0||(k===7?S.best.slice(0,7).every(Boolean):(k===1||k===3||
 /* ---------- 화면 전환 ---------- */
 const $=id=>document.getElementById(id);
 let mode='title';
-function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));mode=id;window.scrollTo(0,0)}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));mode=id;window.scrollTo(0,0);if(typeof applyFit==='function')applyFit()}
 let guideT=0,guideTmp='';
 function guide(t,ms){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeout(()=>{guideTmp='';guide()},ms||4200)}
  const left=S.best.filter(b=>!b).length,roads=[['빵집 길',[1,2]],['가로등 길',[3,4]],['호수 길',[5,6]]].filter(r=>r[1].some(k=>!S.best[k])).map(r=>r[0]),NUM=['','한','두','세','네','다섯','여섯','일곱','여덟'];let txt,hint='',act=null;
@@ -475,6 +530,7 @@ function guide(t,ms){if(t!=null){guideTmp=t;clearTimeout(guideT);guideT=setTimeo
  else if(!roads.length){txt='주소 없는 소포 하나만 남았다. "다음 배달부에게"라니, 누구일까. 우체국 뒤편 눈더미가 치워져 있다.';hint='빈집 표지판을 누르거나 왼쪽 방향키'}
  else if(left===7){txt='가방에 소포가 일곱 개 남았다. 국장님 말로는 빵집 길, 가로등 길, 호수 길을 다 돌아야 한다는데. 주소 없는 소포는 맨 마지막에 생각하자. 어느 표지판부터 따라가 볼까.';hint='표지판을 누르거나 방향키를 누르면 출발합니다'}
  else{txt='소포가 '+NUM[left]+' 개 남았다. '+roads.join(', ')+'이 아직이다. 가방이 가벼워지는 만큼 마을이 밝아진다.';hint='표지판을 누르거나 방향키를 누르면 출발합니다'}
+ if(TOUCH)hint=hint.replace('표지판을 누르거나 방향키를 누르면 출발합니다','표지판을 누르면 출발합니다').replace('빈집 표지판을 누르거나 왼쪽 방향키','빈집 표지판을 누르세요');
  $('capText').textContent=guideTmp||txt;$('capHint').textContent=guideTmp?'':hint;const b=$('capBtn');CAPACT=guideTmp?null:act;b.style.display=CAPACT?'inline-flex':'none';if(CAPACT)b.textContent=CAPACT[0]}
 let CAPACT=null;
 let toastT;function toast(t){if(mode==='town'){guide(t);return}const el=$('toast');el.textContent=t;el.style.display='inline-flex';clearTimeout(toastT);toastT=setTimeout(()=>el.style.display='none',2600)}
@@ -495,7 +551,16 @@ $('dlg').onclick=()=>{if(D)nextLine()};
 const DEMO=["###################","#....o.......o....#","#.o.......o.....o.#","#......o..........#","#...o........o....#","#.........o.....o.#","#.o...o...........#","#............o....#","###################"];
 const PROMAP=DEMO.map((r,i)=>i===4?"#.................#":r);
 function scene(map,me){const g=map.map(r=>r.split(''));return{k:7,demo:true,L:{w:g[0].length,h:g.length,g,gx:-1,gy:-1},x:9,y:4,dx:9,dy:4,marks:[],happy:{},anim:null,shake:null,wait:0,last:null,me}}
-function fit(c,st){c.width=st.L.w*TS;c.height=st.L.h*TS;c.style.width=c.width+'px'}
+function fit(c,st){c.width=st.L.w*TS;c.height=st.L.h*TS;applyFit()}
+/* 화면에 맞춰 캔버스 크기 조정. 비율은 항상 유지한다. 낮은 화면(폰 가로)에서는 높이도 맞춘다. */
+const TOUCH=matchMedia('(pointer:coarse)').matches;if(TOUCH)document.body.classList.add('touch');
+const COMPACT=()=>matchMedia('(max-height:520px)').matches;
+function fitScale(c,scr){const app=$('app'),cs=getComputedStyle(app);let aw=app.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),ah=1e9;
+ if(COMPACT()){ah=innerHeight-({title:135,pro:145,town:56,play:20}[scr]||0);if(scr==='play'){aw-=2*148+24;if(typeof P!=='undefined'&&P&&P.tut!=null)ah-=48}}
+ return Math.min(1,aw/c.width,ah/c.height)}
+function applyFit(){if(COMPACT()){const app=$('app'),cs=getComputedStyle(app),aw=app.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),ah=innerHeight-56,t=TS*.8;VW=Math.max(9,Math.min(WW,Math.floor(aw/t)));VH=Math.max(5,Math.min(WH,Math.floor(ah/t)))}else{VW=19;VH=11}
+ [['demo','title'],['pro','pro'],['map','town'],['board','play']].forEach(([id,scr])=>{const c=$(id);if(!c.width)return;const s=fitScale(c,scr);c.style.width=Math.round(c.width*s)+'px';c.style.height=Math.round(c.height*s)+'px'})}
+addEventListener('resize',applyFit);addEventListener('orientationchange',applyFit);
 function tick(st,now){
  if(st.anim){const a=st.anim,t=Math.min(1,(now-a.t)/a.dur),e=t*(2-t);st.dx=a.fx+(a.tx-a.fx)*e;st.dy=a.fy+(a.ty-a.fy)*e;
   if(t>=1){st.anim=null;st.marks.push([a.fx,a.fy,a.tx,a.ty]);if(st.marks.length>9)st.marks.shift();st.shake={dx:a.dx,dy:a.dy,t:now};st.wait=now+420}}
@@ -554,7 +619,7 @@ $('btnCustomDone').onclick=customDone;$('bookClose').onclick=$('bookClose2').onc
 /* ---------- 마을 ---------- */
 let T={sel:1};
 const allFaces=()=>S.quests.master;
-const PLAZA=8,VW=19,VH=11,WW=32,WH=22,PL=[16,11];
+let VW=19,VH=11;const PLAZA=8,WW=32,WH=22,PL=[16,11];
 const HOUSE=[[10,11],[20,5],[26,5],[22,11],[28,11],[20,17],[26,17],[4,11]];
 const ROUTE=[[PL,[10,11]],[PL,[16,5],[20,5]],[PL,[16,5],[20,5],[26,5]],[PL,[22,11]],[PL,[22,11],[28,11]],[PL,[16,17],[20,17]],[PL,[16,17],[20,17],[26,17]],[PL,[10,11],[4,11]],[PL]];
 const DETOUR=[[22.1,17],[22.1,17.7],[23.8,17.7],[23.8,17]];
@@ -580,7 +645,7 @@ const camTarget=p=>[Math.max(0,Math.min(WW-VW,p[0]-VW/2)),Math.max(0,Math.min(WH
 const TIPS={snowman:"쌍둥이네 눈사람은 자꾸 부딪히면 좋아한다더군.",lost:"문 앞을 세 번 지나친 배달부도 있었지. 소문이 났어.",short:"지도 할머니는 지름길 아는 배달부를 좋아하네.",noundo:"낚시꾼은 뒤돌아보지 않는 사람을 높이 치지.",
  fountain:"빵집 앞 분수대 조심하게. 두루는 세 번 빠졌어.",thirtythree:"언덕 집 덤불 중에 코 달린 게 있다던데.",mayor:"이장님은 호수 아래쪽 눈더미 어디쯤 계실 걸세.",master:"두루는 어느 집에서도 한 수를 낭비하지 않았네."};
 function bubble(k,now){let L=WINDOW[k];if(k===0){const tips=QUESTS.filter(q=>!S.quests[q.id]).map(q=>TIPS[q.id]);if(tips.length&&Math.random()<0.75)L=tips}BUB=BUB.filter(b=>b.k!==k);BUB.push({k,t:L[Math.floor(Math.random()*L.length)],until:now+2400})}
-function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==VW*TS){c.width=VW*TS;c.height=VH*TS;c.style.width=c.width+'px'}
+function drawMap(now){HIT=[];const c=$('map'),x=c.getContext('2d');if(c.width!==VW*TS||c.height!==VH*TS){c.width=VW*TS;c.height=VH*TS;applyFit()}
  const tp=TOK||nodePos(S.loc),ct=camTarget(tp);if(!CAM)CAM=ct.slice();CAM[0]+=(ct[0]-CAM[0])*0.1;CAM[1]+=(ct[1]-CAM[1])*0.1;
  x.imageSmoothingEnabled=false;x.fillStyle='#ebebeb';x.fillRect(0,0,c.width,c.height);x.save();const sc=OVER?Math.min(VW/WW,VH/WH):1;if(OVER){x.translate(Math.round((VW-WW*sc)*TS/2),Math.round((VH-WH*sc)*TS/2));x.scale(sc,sc)}else x.translate(-Math.round(CAM[0]*TS),-Math.round(CAM[1]*TS));
  x.fillStyle='#fff';const road=(p,q)=>x.fillRect(Math.min(p[0],q[0])*TS-24,Math.min(p[1],q[1])*TS-24,Math.abs(q[0]-p[0])*TS+48,Math.abs(q[1]-p[1])*TS+48);
@@ -695,16 +760,22 @@ let P=null;
 function obstType(k,x,y){const sp=SPECIAL[k+':'+x+','+y];if(sp)return sp;const t=OBST[k];return t==='mix'?['snowman','lamp','mailbox'][(x*3+y)%3]:t}
 function play(k){const L=parse(k);P={k,L,x:L.sx,y:L.sy,dx:L.sx,dy:L.sy,moves:0,hist:[],undo:false,pass:0,hits:{},happy:{},marks:[],anim:null,queue:null,shake:null,done:false,
   me:toCanvas(face(S.courier),1)};
- cv.width=L.w*TS;cv.height=L.h*TS;cv.style.width=cv.width+'px';cv.style.height=cv.height+'px';
- S.loc=k;save();P.tut=(k===0&&!S.best[0])?0:null;coach();$('hudStage').textContent=(k+1)+' '+RES[k].place;$('clearBar').innerHTML='';show('play');hud();requestAnimationFrame(loop)}
-function coach(){const on=P.tut!=null;$('coach').classList.toggle('on',on);if(!on)return;const f=$('coachFace');f.innerHTML='';f.appendChild(toCanvas(face(RES[0].f[0]),3));$('coachText').textContent=TUT[P.tut].t}
+ cv.width=L.w*TS;cv.height=L.h*TS;
+ S.loc=k;save();P.tut=(k===0&&!S.best[0])?0:null;coach();$('hudStage').textContent=(k+1)+' '+RES[k].place;$('clearBar').innerHTML='';show('play');applyFit();hud();requestAnimationFrame(loop)}
+function coach(){const on=P.tut!=null;$('coach').classList.toggle('on',on);applyFit();if(!on)return;const f=$('coachFace');f.innerHTML='';f.appendChild(toCanvas(face(RES[0].f[0]),3));$('coachText').textContent=TOUCH?TUT_T[P.tut]:TUT[P.tut].t}
 function hud(){$('hudMoves').textContent='이동 '+P.moves+' · 목표 '+MIN[P.k];const g=P.tut!=null&&P.tut<4;$('aUndo').disabled=g?P.tut!==3:!P.hist.length;$('aRe').disabled=g||!P.hist.length;
  $('aUndo').classList.toggle('pulse',P.tut===3);$('acts').classList.toggle('off',!!P.done)}
 function actMove(dk){if(mode!=='play'||P.done)return;if(P.tut!=null&&P.tut<4){const w=TUT[P.tut].key;if(P.anim||w==='z'||DIRS[dk][0]!==DIRS[w][0]||DIRS[dk][1]!==DIRS[w][1])return;move(dk);P.tut++;coach();hud();return}move(dk)}
 function actUndo(){if(mode!=='play'||P.done)return;if(P.tut!=null&&P.tut<4){if(TUT[P.tut].key!=='z'||P.anim)return;undo();P.tut++;coach();hud();return}undo()}
 function actRestart(){if(mode!=='play'||P.done||(P.tut!=null&&P.tut<4))return;restart()}
 $('aUndo').onclick=()=>{$('aUndo').blur();actUndo()};$('aRe').onclick=()=>{$('aRe').blur();actRestart()};$('aTown').onclick=()=>{$('aTown').blur();if(mode==='play'||mode==='clear')town()};
-$('board').onclick=e=>{if(mode!=='play'||!P||P.anim)return;const c=$('board'),r=c.getBoundingClientRect(),dx=(e.clientX-r.left)*c.width/r.width/TS-(P.x+.5),dy=(e.clientY-r.top)*c.height/r.height/TS-(P.y+.5);
+/* 터치: 플레이 화면 어디서든 쓸어서 이동 */
+let SW=null,swiped=false;
+$('s-play').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||e.target.closest('button'))return;SW={x:e.clientX,y:e.clientY};swiped=false});
+$('s-play').addEventListener('pointerup',e=>{if(!SW)return;const dx=e.clientX-SW.x,dy=e.clientY-SW.y;SW=null;
+ if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;swiped=true;actMove(Math.abs(dx)>Math.abs(dy)?(dx>0?'ArrowRight':'ArrowLeft'):(dy>0?'ArrowDown':'ArrowUp'))});
+$('s-play').addEventListener('pointercancel',()=>{SW=null});
+$('board').onclick=e=>{if(swiped){swiped=false;return}if(mode!=='play'||!P||P.anim)return;const c=$('board'),r=c.getBoundingClientRect(),dx=(e.clientX-r.left)*c.width/r.width/TS-(P.x+.5),dy=(e.clientY-r.top)*c.height/r.height/TS-(P.y+.5);
  if(Math.abs(dx)<.5&&Math.abs(dy)<.5)return;actMove(Math.abs(dx)>Math.abs(dy)?(dx>0?'ArrowRight':'ArrowLeft'):(dy>0?'ArrowDown':'ArrowUp'))};
 function bump(bx,by,dx,dy){P.shake={dx,dy,t:performance.now()};const L=P.L;
  if(L.g[by][bx]==='o'&&!P.demo){const sp=SPECIAL[P.k+':'+bx+','+by];
