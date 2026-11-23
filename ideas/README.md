@@ -14,6 +14,7 @@
 
 | 아이디어 | 파일 | 상태 |
 |---|---|---|
+| 업무 기록형 게임 (업무 박물관 추천, 책상 위 화분, 서류 탑 쌓기) | `work-log-game.md` | 검토 중 (2026-11-23 사용자 제안) |
 | 우리 모닥불 | `v4-together.md` | 선택 대기 (추천) |
 | 한 뼘 섬 텃밭 | `v4-together.md` | 선택 대기 |
 | 우리 집 고양이 공동 육아 | `v4-together.md` | 선택 대기 |
@@ -25,7 +26,7 @@
 | 게으른 고양이 회사 (lazy-cat-company) | 없음 | 내용 유실, 이름만 남음 |
 | 도장 슬롯 (stamp-slot) | 없음 | 내용 유실, 이름만 남음 |
 
-레퍼런스: `_reference-rougether.md`
+레퍼런스: `_reference-rougether.md`, `_reference-winter-is-coming.md`
 
 ## 복구 기록 (2026-11-23)
 
