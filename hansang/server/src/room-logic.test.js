@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoom, join, act, rematch, payload, setConnected, startGame } from './room-logic.js';
+import { createRoom, join, act, rematch, forfeit, payload, setConnected, startGame } from './room-logic.js';
 import { legalActions } from '../../engine/rules.js';
 
 function seeded(seed) {
@@ -172,4 +172,45 @@ test('허용되지 않은 시간 값은 제한 없음', () => {
   const room = createRoom();
   join(room, { token: T1, name: 'a', turnSeconds: 7 });
   assert.equal(room.settings.turnSeconds, 0);
+});
+
+test('게임 끝내기: 끝낸 사람이 지고 상대가 이긴다', () => {
+  const room = twoPlayers();
+  assert.equal(room.status, 'playing');
+  assert.deepEqual(forfeit(room, 0), { ok: true });
+  assert.equal(room.status, 'over');
+  for (const seat of [0, 1]) {
+    const r = payload(room, seat).view.result;
+    assert.equal(r.forfeitBy, 0);
+    assert.equal(r.winner, 1);
+  }
+  // 끝난 뒤에는 둘 수 없고, 다시 끝낼 수도 없다
+  assert.equal(act(room, 1, { type: 'draw', from: 'deck' }).ok, false);
+  assert.equal(forfeit(room, 1).ok, false);
+});
+
+test('게임 끝내기: 점수가 앞서도 끝낸 쪽이 진다', () => {
+  const room = twoPlayers();
+  // 끝내기 전 점수와 관계없이 끝낸 사람이 지는지 보려고 양쪽을 모두 해 본다
+  const a = twoPlayers(seeded(2));
+  assert.deepEqual(forfeit(a, 1), { ok: true });
+  assert.equal(payload(a, 0).view.result.winner, 0);
+  assert.equal(payload(room, 0).view.result?.forfeitBy ?? null, null);
+});
+
+test('게임 끝내기: 끝난 뒤에도 같은 토큰으로 다시 들어오면 결과 화면이 유지되고, 한 판 더도 된다', () => {
+  const room = twoPlayers();
+  forfeit(room, 0);
+  setConnected(room, 0, false);
+  assert.deepEqual(join(room, { token: T1, name: '지영' }), { ok: true, seat: 0 });
+  assert.equal(payload(room, 0).status, 'over');
+  assert.equal(rematch(room, 0).ok, true);
+  assert.equal(rematch(room, 1, seeded(3)).ok, true);
+  assert.equal(room.status, 'playing');
+});
+
+test('게임 끝내기: 시작 전에는 할 수 없다', () => {
+  const room = createRoom();
+  join(room, { token: T1, name: '지영' });
+  assert.equal(forfeit(room, 0).ok, false);
 });

@@ -183,3 +183,14 @@ test('시간 초과: 내려놓고 창고에서 가져와 차례가 넘어간다'
   assert.deepEqual(timeoutPlan(r1.state, h.turn), [{ type: 'draw', from: 'deck' }]);
   assert.deepEqual(timeoutPlan(r1.state, 1 - h.turn), []);
 });
+
+import { forfeit as forfeitGame, winner as winnerOf } from './rules.js';
+test('forfeit: 점수와 관계없이 끝낸 사람이 진다', () => {
+  const s = newGame(() => 0.5);
+  const r = forfeitGame(s, 0);
+  assert.equal(r.ok, true);
+  assert.equal(r.state.over, true);
+  assert.equal(winnerOf(r.state), 1);
+  assert.equal(viewFor(r.state, 1).result.forfeitBy, 0);
+  assert.equal(forfeitGame(r.state, 1).ok, false);
+});

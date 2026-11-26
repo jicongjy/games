@@ -1,6 +1,6 @@
 // Cloudflare Worker: 방 코드 하나가 Durable Object 하나. 규칙 판정은 모두 서버에서 한다.
 import { DurableObject } from 'cloudflare:workers';
-import { createRoom, join, act, rematch, setConnected, payload, timeout, GRACE_MS } from './room-logic.js';
+import { createRoom, join, act, rematch, forfeit, setConnected, payload, timeout, GRACE_MS } from './room-logic.js';
 
 const CODE_RE = /^[A-Z2-9]{4,6}$/;
 const MAX_MESSAGE = 2048;
@@ -42,6 +42,9 @@ export class Room extends DurableObject {
 
     if (msg.t === 'act') {
       const r = act(this.room, att.seat, msg.action);
+      if (!r.ok) { this.send(ws, { t: 'error', error: r.error }); return; }
+    } else if (msg.t === 'forfeit') {
+      const r = forfeit(this.room, att.seat);
       if (!r.ok) { this.send(ws, { t: 'error', error: r.error }); return; }
     } else if (msg.t === 'rematch') {
       const r = rematch(this.room, att.seat);

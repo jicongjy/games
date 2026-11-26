@@ -1,6 +1,6 @@
 // 방 하나의 상태와 규칙 처리. Cloudflare 런타임에 의존하지 않아서 Node에서 테스트할 수 있다.
 // 상태는 JSON으로 저장 가능한 순수 객체다.
-import { newGame, apply, viewFor, timeoutPlan } from '../../engine/rules.js';
+import { newGame, apply, viewFor, timeoutPlan, forfeit as forfeitGame } from '../../engine/rules.js';
 
 export const MAX_NAME = 10;
 const ACTION_TYPES = new Set(['play', 'discard', 'draw']);
@@ -95,6 +95,17 @@ export function act(room, seat, action) {
   room.game = r.state;
   if (room.game.over) room.status = 'over';
   if (room.game.turn !== turnBefore || room.status !== 'playing') armTimer(room);
+  return { ok: true };
+}
+
+// 게임 끝내기: 진행 중인 판에서 한 사람이 끝내면 그 사람이 지고 상대가 이긴다.
+export function forfeit(room, seat) {
+  if (room.status !== 'playing') return { ok: false, error: '진행 중인 게임이 아니에요' };
+  const r = forfeitGame(room.game, seat);
+  if (!r.ok) return r;
+  room.game = r.state;
+  room.status = 'over';
+  armTimer(room);
   return { ok: true };
 }
 

@@ -11,6 +11,7 @@ const PREFIX = 'hansang:';
 const store = {
   get(k) { try { return localStorage.getItem(PREFIX + k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(PREFIX + k, v); } catch (e) { /* 저장 실패는 무시 */ } },
+  del(k) { try { localStorage.removeItem(PREFIX + k); } catch (e) { /* 무시 */ } },
 };
 
 const app = document.getElementById('app');
@@ -295,13 +296,13 @@ function tasksSheetHtml(ctx) {
     const cls = b.claimedBy === null ? '' : b.claimedBy === me ? ' me' : ' opp';
     const mine = b.progress[me];
     const theirs = b.progress[1 - me];
-    const sumTask = b.id === 'lowhand'; // 손패 숫자 합은 직접 계산
+    const sumTask = b.id === 'lowhand' && !v.over; // 손패 숫자 합은 판 중에는 숨기고, 끝나면 공개
     const fmt = (n) => (sumTask ? '' : b.id === 'bestplain' && n === null ? '-' : n === null || n === undefined ? '?' : String(b.kind === 'first' ? Math.min(n, b.target) : n));
     const prog = b.kind === 'first'
       ? `<span class="pg">${fmt(mine)}/${b.target}</span><span class="pg dim">${fmt(theirs)}/${b.target}</span>`
       : `<span class="pg">${fmt(mine)}</span><span class="pg dim">${fmt(theirs)}</span>`;
     const owner = b.claimedBy === null ? '<span class="own"></span>' : `<span class="own${b.claimedBy === me ? ' me' : ''}">✓ ${esc(nm[b.claimedBy])}</span>`;
-    return `<div class="trow"><span class="tchip static${cls}">${ui.chip}</span><span class="ttext">${esc(ui.text)}</span>${prog}${owner}</div>`;
+    return `<div class="trow${sheet?.focus === b.id ? ' focus' : ''}"><span class="tchip static${cls}">${ui.chip}</span><span class="ttext">${esc(ui.text)}</span>${prog}${owner}</div>`;
   }).join('');
   return `<div class="backdrop" data-act="close"></div>
   <div class="panel tasks" role="dialog" aria-label="심사위원 과제">
@@ -383,10 +384,22 @@ function coverHtml(ctx) {
   </div>`;
 }
 
+// 게임 끝내기 확인 창: 끝내면 내가 지고 상대가 이긴 것으로 기록된다
+function endSheetHtml() {
+  return `<div class="backdrop" data-act="close"></div>
+  <div class="panel ask" role="dialog" aria-label="게임 끝내기">
+    <h3>게임을 끝낼까요?</h3>
+    <p class="note" style="margin:0 0 calc(var(--u) * 16)">끝내면 패배로 기록되고 상대가 이긴 것으로 처리돼요. 끝내지 않고 나갔다면 같은 링크로 다시 들어올 수 있어요.</p>
+    <button class="btn" data-act="end-yes">게임 끝내기</button>
+    <button class="btn ghost" style="margin-top:calc(var(--u) * 10)" data-act="close">계속하기</button>
+  </div>`;
+}
+
 function sheetHtml(ctx) {
   if (!sheet) return '';
   if (sheet.type === 'rules') return rulesHtml();
   if (sheet.type === 'tasks') return tasksSheetHtml(ctx);
+  if (sheet.type === 'end') return endSheetHtml();
   const { v, me, nm } = ctx;
   const { player, course } = sheet;
   const lane = (player === me ? v.myLanes : v.opponentLanes)[course];
@@ -462,6 +475,7 @@ function playHtml() {
       ${tut ? '' : clockHtml()}
       <div class="tasks">${taskChipsHtml(ctx)}</div>
       <div class="grow"></div>
+      ${online && !tut ? '<button class="rend" data-act="end" aria-label="게임 끝내기">끝내기</button>' : ''}
       <button class="rhelp" data-act="rules" aria-label="규칙 보기">?</button>
     </aside>
     <main class="main">
@@ -473,12 +487,38 @@ function playHtml() {
   return html;
 }
 
-function review(result, nm) {
+// 결과 한 줄 평. 점수 차이(10점 이하 / 11~29 / 30 이상)와 보는 사람(이긴 쪽 / 진 쪽)에 따라 나눈다.
+// 한 기기 모드는 누구 화면인지 정해져 있지 않아서 이긴 사람을 기준으로 쓴다.
+const REVIEW_TEXT = {
+  win: ['한 접시 차이로 이겼어요. 아슬아슬했어요!', '차분하게 앞서 나간 판이었어요.', '오늘 밤 심사위원은 이 주방의 이름을 기억할 거예요.'],
+  lose: ['한 접시 차이로 아쉽게 졌어요. 한 판 더 가면 뒤집을 수 있어요.', '조금 뒤처졌어요. 다음 판에는 코스를 더 빨리 채워 봐요.', '이번 판은 크게 밀렸어요. 한 판 더 해 볼까요?'],
+  both: ['한 접시 차이로 승부가 갈렸어요.', '차분하게 앞서 나간 판이었어요.', '오늘 밤 심사위원은 이 주방의 이름을 기억할 거예요.'],
+};
+const gapTier = (gap) => (gap <= 10 ? 0 : gap <= 29 ? 1 : 2);
+
+function review(result, nm, me, online) {
   const w = result.winner;
   if (w === null) return '점수가 똑같아요. 심사위원이 한 입씩 더 먹어 보기로 했어요.';
-  return Math.abs(result.scores[0] - result.scores[1]) >= 30
-    ? '오늘 밤 심사위원은 이 주방의 이름을 기억할 거예요.'
-    : '한 접시 차이로 별이 갈렸어요.';
+  const f = result.forfeitBy;
+  if (f === 0 || f === 1) { // 한 사람이 게임을 끝냈다
+    if (!online) return `${esc(nm[f])}님이 게임을 끝냈어요.`;
+    return f === me ? '게임을 끝내서 패배로 기록됐어요.' : `${esc(nm[f])}님이 게임을 끝냈어요. 이번 판은 승리로 기록돼요.`;
+  }
+  const kind = !online ? 'both' : w === me ? 'win' : 'lose';
+  return REVIEW_TEXT[kind][gapTier(Math.abs(result.scores[0] - result.scores[1]))];
+}
+
+// 결과 화면: 각자 달성한 심사위원 과제 칩 (금색 = 달성, 흐린 점선 = 못 받음)
+function resultTasksHtml(r, p, nm) {
+  const list = r.bonus ?? [];
+  if (!list.length) return '';
+  const chips = list.map((b) => {
+    const got = b.claimedBy === p;
+    const ui = taskUi(b.id);
+    return `<button class="tchip static${got ? ' me' : ' opp'}" data-act="tasks" data-task="${esc(b.id)}" aria-label="${esc(ui.text)}: ${got ? '달성' : '못 받음'}">${ui.chip}</button>`;
+  }).join('');
+  const n = list.filter((b) => b.claimedBy === p).length;
+  return `<div class="rtk" aria-label="${esc(nm[p])} 과제 ${n}개 달성">${chips}</div>`;
 }
 
 function overHtml() {
@@ -508,10 +548,10 @@ function overHtml() {
   return `<div class="screen result">${nightScene()}${banner}
     <div class="side">
       <h2>${headline}</h2>
-      <p class="sub">${review(r, nm)}</p>
+      <p class="sub">${review(r, nm, me, online)}</p>
       <div class="tot">
-        <div class="${w === 0 ? 'win' : ''}"><span>${esc(nm[0])}</span><b>${minus(r.scores[0])}</b></div>
-        <div class="${w === 1 ? 'win' : ''}"><span>${esc(nm[1])}</span><b>${minus(r.scores[1])}</b></div>
+        <div class="${w === 0 ? 'win' : ''}"><span>${esc(nm[0])}</span><b>${minus(r.scores[0])}</b>${resultTasksHtml(r, 0, nm)}</div>
+        <div class="${w === 1 ? 'win' : ''}"><span>${esc(nm[1])}</span><b>${minus(r.scores[1])}</b>${resultTasksHtml(r, 1, nm)}</div>
       </div>
       ${hint}
       <div class="acts">${again}<button class="btn ghost" data-act="${online ? 'leave' : 'home'}">${online ? '나가기' : '처음으로'}</button></div>
@@ -535,6 +575,7 @@ function render() {
   else html = playHtml();
   // 규칙 창은 어느 화면에서나 열 수 있다 (대결 화면은 playHtml 안에서 처리)
   if (screen !== 'play' && sheet?.type === 'rules') html += rulesHtml();
+  if (screen === 'over' && sheet?.type === 'tasks') html += tasksSheetHtml(getCtx()); // 결과 화면에서 과제 칩을 누르면 과제 창
   if (askTut && screen === 'home') html += askTutHtml();
   app.innerHTML = html;
 }
@@ -931,6 +972,7 @@ function actOnline(action) {
 
 function leaveOnline(rerender = true) {
   if (net) {
+    if (net.code) store.del(`token:${net.code}`); // 나가기를 누르면 이 방으로 자동 복귀하지 않는다
     net.closing = true;
     clearTimeout(net.timer);
     clearInterval(net.ping);
@@ -979,13 +1021,15 @@ app.addEventListener('click', (e) => {
       return;
     }
     case 'leave': leaveOnline(); return;
+    case 'end': sheet = { type: 'end' }; render(); return;
+    case 'end-yes': sheet = null; if (mode === 'online') sendOnline({ t: 'forfeit' }); render(); return;
     case 'reveal': cover = false; render(); return;
     case 'intro-go': dismissIntro(); return;
     case 'again':
       if (mode === 'online') sendOnline({ t: 'rematch' }); else startLocal();
       return;
     case 'rules': sheet = { type: 'rules' }; render(); return;
-    case 'tasks': sheet = { type: 'tasks' }; render(); return;
+    case 'tasks': sheet = { type: 'tasks', focus: d.task || null }; render(); return;
     case 'set-turn': turnSec = TURN_CHOICES.includes(Number(d.n)) ? Number(d.n) : 30; store.set('turnsec', String(turnSec)); render(); return;
     case 'set-courses': courseCount = Number(d.n) === 6 ? 6 : 5; store.set('courses', String(courseCount)); render(); return;
     case 'close': sheet = null; render(); return;

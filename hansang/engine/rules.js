@@ -184,7 +184,18 @@ export function scores(state) {
   return [lanes[0] + bonus[0], lanes[1] + bonus[1]];
 }
 
+// 한 사람이 게임을 끝내면(포기) 점수와 관계없이 상대가 이긴다.
+export function forfeit(state, player) {
+  if (state.over) return fail('이미 끝난 게임입니다');
+  const next = structuredClone(state);
+  next.over = true;
+  next.forfeitBy = player;
+  settleEnd(next);
+  return { ok: true, state: next };
+}
+
 export function winner(state) {
+  if (state.forfeitBy === 0 || state.forfeitBy === 1) return 1 - state.forfeitBy;
   const [a, b] = scores(state);
   return a === b ? null : a > b ? 0 : 1;
 }
@@ -340,6 +351,7 @@ export function viewFor(state, player) {
       laneTotals: laneTotals(state),
       bonusPoints: bonusPoints(state),
       winner: winner(state),
+      forfeitBy: state.forfeitBy ?? null, // 게임을 끝낸 사람(없으면 null)
       lanes: [0, 1].map((p) =>
         Object.fromEntries(state.courses.map((c) => [c, laneDetail(state.lanes[p][c])])),
       ),
