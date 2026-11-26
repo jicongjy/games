@@ -69,7 +69,7 @@ test('5코스는 기본 규칙: 과제 점수가 없고 총점은 코스 점수�
   assert.deepEqual(viewFor(s, 0).bonus, []);
 });
 
-test('코스별 선착: 조리 카드 3장을 먼저 낸 사람이 받고, 뒤따른 사람은 못 받는다', () => {
+test('코스별 선착: 카드 3장을 먼저 낸 사람이 받고, 뒤따른 사람은 못 받는다', () => {
   let s = setup('first3:ban', { lanes0: { ban: [card('ban', 2), card('ban', 3)] }, hand0: [card('ban', 4)] });
   s = playCard(s, 0, card('ban', 4));
   assert.equal(s.bonus[0].claimedBy, 0);
@@ -82,10 +82,17 @@ test('코스별 선착: 조리 카드 3장을 먼저 낸 사람이 받고, 뒤�
   assert.equal(s.bonus[0].claimedBy, 0);
 });
 
-test('예약 카드는 코스별 선착의 조리 카드 3장에 세지 않는다', () => {
+test('예약 카드도 코스별 선착의 카드 3장에 센다', () => {
   let s = setup('first3:guk', { lanes0: { guk: [card('guk', 0, 1), card('guk', 0, 2)] }, hand0: [card('guk', 0, 3)] });
   s = playCard(s, 0, card('guk', 0, 3));
-  assert.equal(s.bonus[0].claimedBy, null);
+  assert.equal(s.bonus[0].claimedBy, 0);
+});
+
+test('예약만 놓인 코스도 시작한 코스로 센다(코스 3개 선착, 마감 비교)', () => {
+  let s = setup('wide3', { lanes0: { ban: [card('ban', 0, 1)], guk: [card('guk', 0, 1)] }, hand0: [card('fish', 0, 1)] });
+  s = playCard(s, 0, card('fish', 0, 1));
+  assert.equal(s.bonus[0].claimedBy, 0);
+  assert.equal(taskMeasure('mostcourses', s, 0), 3);
 });
 
 test('연속 과제: 이어지는 숫자 3장이어야 하고 띄엄띄엄은 안 된다', () => {
@@ -104,11 +111,7 @@ test('폭 과제: 코스 3개를 먼저 시작하면 받는다', () => {
   assert.equal(s.bonus[0].claimedBy, 0);
 });
 
-test('별 과제와 깊이 과제', () => {
-  const eight = [2, 3, 4, 5, 6, 7, 8].map((n) => card('meat', n));
-  let s = setup('star', { lanes0: { meat: eight }, hand0: [card('meat', 9)] });
-  s = playCard(s, 0, card('meat', 9));
-  assert.equal(s.bonus[0].claimedBy, 0);
+test('깊이 과제: 한 코스에 예약 포함 5장', () => {
   let d = setup('deep5', { lanes0: { sweet: [2, 3, 4, 5].map((n) => card('sweet', n)) }, hand0: [card('sweet', 6)] });
   d = playCard(d, 0, card('sweet', 6));
   assert.equal(d.bonus[0].claimedBy, 0);
@@ -147,15 +150,6 @@ test('마감 과제 동점이면 아무도 받지 못한다', () => {
   assert.equal(e.bonus[0].claimedBy, null);
   assert.deepEqual(bonusPoints(e), [0, 0]);
   assert.ok(e.bonus[0].settled);
-});
-
-test('마감 과제(예약, 카드 수): 더 많은 사람이 받는다', () => {
-  const a = setup('mostrsv', { lanes0: { ban: [card('ban', 0, 1)] }, lanes1: {} });
-  const ea = finish(a);
-  assert.equal(ea.bonus[0].claimedBy, 0);
-  const b = setup('mostcards', { lanes0: {}, lanes1: { ban: [card('ban', 2), card('ban', 3)] } });
-  const eb = finish(b);
-  assert.equal(eb.bonus[0].claimedBy, 1);
 });
 
 test('총점은 코스 점수와 과제 점수의 합', () => {
@@ -206,25 +200,51 @@ test('무작위로 끝까지 5코스, 6코스 각 60판: 카드 수 보존, 과�
   }
 });
 
-test('마감 과제(예약 없는 코스의 최고 합): 예약이 있는 코스는 합이 커도 세지 않는다', () => {
+test('마감 과제(예약 없는 코스의 최고 점수): 예약이 있는 코스는 점수가 커도 세지 않는다', () => {
   const s = setup('bestplain', {
-    lanes0: { ban: [card('ban', 2), card('ban', 3), card('ban', 4)] }, // 예약 없음, 합 9
-    lanes1: { guk: [card('guk', 0, 1), card('guk', 10), card('guk', 9)], fish: [card('fish', 3), card('fish', 4)] }, // 예약 코스(합 19)는 제외, 예약 없는 코스 합 7
+    lanes0: { ban: [card('ban', 2), card('ban', 3), card('ban', 4)] }, // 예약 없음, 합 9 → (9-20)×1 = -11
+    lanes1: { guk: [card('guk', 0, 1), card('guk', 10), card('guk', 9)], fish: [card('fish', 3), card('fish', 4)] }, // 예약 코스는 제외, 예약 없는 코스 합 7 → -13
   });
   const e = finish(s);
-  assert.deepEqual(e.bonus[0].values, [9, 7]);
+  assert.deepEqual(e.bonus[0].values, [-11, -13]);
   assert.equal(e.bonus[0].claimedBy, 0);
 });
 
-test('예약 없는 코스가 아예 없으면 0이고, 둘 다 0이면 아무도 받지 못한다', () => {
+test('최고 점수 과제는 별 보너스(+20)를 포함해서 비교한다', () => {
+  const seven = [10, 9, 8, 7, 6, 5, 4].map((n) => card('meat', n)); // 합 49 → 29점
+  const eight = [2, 3, 4, 5, 6, 7, 8, 9].map((n) => card('fish', n)); // 합 44 → 24 + 20 = 44점
+  const s = setup('bestplain', { lanes0: { meat: seven }, lanes1: { fish: eight } });
+  const e = finish(s);
+  assert.deepEqual(e.bonus[0].values, [29, 44]);
+  assert.equal(e.bonus[0].claimedBy, 1); // 숫자 합으로 비교했다면 0번이 이겼을 것
+});
+
+test('예약 없는 코스가 한쪽에만 없으면 있는 쪽이 받는다(마이너스 점수여도)', () => {
+  const s = setup('bestplain', {
+    lanes0: { ban: [card('ban', 0, 1), card('ban', 5)] }, // 예약 코스뿐 → 비교 대상 없음
+    lanes1: { fish: [card('fish', 2), card('fish', 3)] }, // 합 5 → -15
+  });
+  const e = finish(s);
+  assert.deepEqual(e.bonus[0].values, [null, -15]);
+  assert.equal(e.bonus[0].claimedBy, 1);
+  assert.deepEqual(bonusPoints(e), [0, TASK_BONUS]);
+});
+
+test('예약 없는 코스가 둘 다 없으면 아무도 받지 못한다', () => {
   const s = setup('bestplain', {
     lanes0: { ban: [card('ban', 0, 1), card('ban', 5)] },
     lanes1: {},
   });
   const e = finish(s);
-  assert.deepEqual(e.bonus[0].values, [0, 0]);
+  assert.deepEqual(e.bonus[0].values, [null, null]);
   assert.equal(e.bonus[0].claimedBy, null);
-  assert.ok(taskPool(COURSES_5).includes('bestplain'));
-  assert.equal(taskPool(COURSES_5).length, 16);
-  assert.equal(taskPool(COURSES_6).length, 17);
+});
+
+test('과제 풀은 원작 목표 카드 11종 기준: 5코스 11장, 6코스 12장(코스별 3장 6개)', () => {
+  assert.equal(taskPool(COURSES_5).length, 11);
+  assert.equal(taskPool(COURSES_6).length, 12);
+  const six = taskPool(COURSES_6);
+  for (const id of ['seq5', 'wide4', 'star', 'mostrsv', 'mostcards']) assert.ok(!six.includes(id), id);
+  for (const id of ['deep5', 'wide3', 'seq3', 'mostcourses', 'bestplain', 'lowhand']) assert.ok(six.includes(id), id);
+  assert.equal(six.filter((id) => id.startsWith('first3:')).length, 6);
 });

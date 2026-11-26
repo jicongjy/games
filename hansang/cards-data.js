@@ -51,18 +51,13 @@ export function taskUi(id) {
   const [base, course] = id.split(':');
   const name = course ? THEME[course].name : '';
   switch (base) {
-    case 'first3': return { chip: `<i class="dot" style="background:${THEME[course].color}"></i>3`, text: `${name}에 조리 카드 3장을 먼저`, unit: '장' };
+    case 'first3': return { chip: `<i class="dot" style="background:${THEME[course].color}"></i>3`, text: `${name}에 카드 3장을 먼저 (예약 포함)`, unit: '장' };
     case 'seq3': return { chip: '123', text: '한 코스에 숫자 3장 연속을 먼저 (예: 4·5·6)', unit: '장' };
-    case 'seq5': return { chip: '5연속', text: '한 코스에 숫자 5장 연속을 먼저', unit: '장' };
-    case 'wide3': return { chip: DOTS(3), text: '코스 3개를 먼저 시작', unit: '코스' };
-    case 'wide4': return { chip: DOTS(4), text: '코스 4개를 먼저 시작', unit: '코스' };
-    case 'deep5': return { chip: '5장', text: '한 코스에 카드 5장을 먼저', unit: '장' };
-    case 'star': return { chip: '★', text: '별을 먼저 받기 (한 코스 8장)', unit: '장' };
+    case 'wide3': return { chip: DOTS(3), text: '카드가 1장 이상 놓인 코스 3개를 먼저', unit: '코스' };
+    case 'deep5': return { chip: '5장', text: '한 코스에 카드 5장을 먼저 (예약 포함)', unit: '장' };
     case 'lowhand': return { chip: '패↓', text: '마감 때 손패 숫자 합이 가장 작은 사람', unit: '' };
-    case 'mostcourses': return { chip: '코스↑', text: '마감 때 시작한 코스가 가장 많은 사람', unit: '코스' };
-    case 'mostrsv': return { chip: '손님↑', text: '마감 때 예약 손님을 가장 많이 받은 사람', unit: '명' };
-    case 'bestplain': return { chip: '합↑', text: '마감 때 예약 손님 없는 코스 중 숫자 합이 가장 큰 사람', unit: '' };
-    case 'mostcards': return { chip: '카드↑', text: '마감 때 코스에 낸 카드가 가장 많은 사람', unit: '장' };
+    case 'mostcourses': return { chip: '코스↑', text: '마감 때 카드가 1장 이상 놓인 코스가 더 많은 사람', unit: '코스' };
+    case 'bestplain': return { chip: '점↑', text: '마감 때 예약 손님 없는 코스의 최고 점수가 더 높은 사람', unit: '점' };
     default: return { chip: '?', text: id, unit: '' };
   }
 }
