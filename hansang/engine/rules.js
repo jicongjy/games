@@ -28,15 +28,13 @@ export const TASKS_PER_GAME = 5; // 한 판에 공개하는 과제 수
 // ---------- 심사위원 과제 ----------
 // kind 'first': 조건을 먼저 채운 사람이 그 자리에서 받는다.
 // kind 'end'  : 마감 때 비교해서 가장 앞선 사람이 받는다. 동점이면 아무도 받지 못한다.
+// 원작 목표 카드 11종(2026-11-26 사용자 확인). 카드 N장은 모두 예약 손님 포함.
 const FIRST_TASKS = {
   seq3: 3, // 한 코스에 연속 숫자 3장
-  seq5: 5, // 한 코스에 연속 숫자 5장
-  wide3: 3, // 코스 3개 시작
-  wide4: 4, // 코스 4개 시작
-  deep5: 5, // 한 코스에 카드 5장
-  star: STAR_CARDS, // 별을 먼저 받기(한 코스 8장)
+  wide3: 3, // 카드가 1장 이상인 코스 3개
+  deep5: 5, // 한 코스에 카드 5장(예약 포함)
 };
-const END_TASKS = ['lowhand', 'mostcourses', 'mostrsv', 'mostcards', 'bestplain'];
+const END_TASKS = ['lowhand', 'mostcourses', 'bestplain'];
 
 export function taskPool(courses) {
   return [
@@ -61,7 +59,7 @@ export function taskMeasure(id, state, p) {
   const info = taskInfo(id);
   const lanes = state.courses.map((c) => state.lanes[p][c]);
   switch (info.base) {
-    case 'first3': return stepsOf(state.lanes[p][info.course]).length;
+    case 'first3': return state.lanes[p][info.course].length; // 예약 포함
     case 'seq3':
     case 'seq5': {
       let best = 0;
@@ -76,16 +74,12 @@ export function taskMeasure(id, state, p) {
       return best;
     }
     case 'wide3':
-    case 'wide4':
     case 'mostcourses': return startedCount(state, p);
-    case 'deep5':
-    case 'star': return Math.max(...lanes.map((l) => l.length));
+    case 'deep5': return Math.max(...lanes.map((l) => l.length));
     case 'lowhand': return state.hands[p].reduce((s, c) => s + c.step, 0);
-    case 'mostrsv': return lanes.reduce((n, l) => n + l.filter((c) => c.step === 0).length, 0);
-    case 'mostcards': return lanes.reduce((n, l) => n + l.length, 0);
-    case 'bestplain': { // 예약 손님이 없는 코스 중 숫자 합이 가장 큰 코스의 합 (없으면 0)
-      const sums = lanes.filter((l) => l.length > 0 && !l.some((c) => c.step === 0)).map((l) => l.reduce((s, c) => s + c.step, 0));
-      return sums.length ? Math.max(...sums) : 0;
+    case 'bestplain': { // 예약 손님이 없는 코스 중 최고 코스 점수(별 보너스 포함). 그런 코스가 없으면 null = 비교 대상 없음
+      const plain = lanes.filter((l) => l.length > 0 && !l.some((c) => c.step === 0)).map(scoreLane);
+      return plain.length ? Math.max(...plain) : null;
     }
     default: return 0;
   }
@@ -212,6 +206,7 @@ function settleEnd(state) {
     const v = [taskMeasure(b.id, state, 0), taskMeasure(b.id, state, 1)];
     b.values = v;
     if (v[0] === v[1]) b.claimedBy = null;
+    else if (v[0] === null || v[1] === null) b.claimedBy = v[0] === null ? 1 : 0; // 비교 대상 없음: 있는 쪽이 받는다
     else if (info.lowerIsBetter) b.claimedBy = v[0] < v[1] ? 0 : 1;
     else b.claimedBy = v[0] > v[1] ? 0 : 1;
     b.settled = true;

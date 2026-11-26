@@ -295,8 +295,8 @@ function tasksSheetHtml(ctx) {
     const cls = b.claimedBy === null ? '' : b.claimedBy === me ? ' me' : ' opp';
     const mine = b.progress[me];
     const theirs = b.progress[1 - me];
-    const sumTask = b.id === 'lowhand' || b.id === 'bestplain'; // 숫자 합은 직접 계산
-    const fmt = (n) => (sumTask ? '' : n === null || n === undefined ? '?' : String(b.kind === 'first' ? Math.min(n, b.target) : n));
+    const sumTask = b.id === 'lowhand'; // 손패 숫자 합은 직접 계산
+    const fmt = (n) => (sumTask ? '' : b.id === 'bestplain' && n === null ? '-' : n === null || n === undefined ? '?' : String(b.kind === 'first' ? Math.min(n, b.target) : n));
     const prog = b.kind === 'first'
       ? `<span class="pg">${fmt(mine)}/${b.target}</span><span class="pg dim">${fmt(theirs)}/${b.target}</span>`
       : `<span class="pg">${fmt(mine)}</span><span class="pg dim">${fmt(theirs)}</span>`;
