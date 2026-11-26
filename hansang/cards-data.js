@@ -58,6 +58,6 @@ export function taskUi(id) {
     case 'lowhand': return { chip: '패↓', text: '마감 때 손패 숫자 합이 가장 작은 사람', unit: '' };
     case 'mostcourses': return { chip: '코스↑', text: '마감 때 카드가 1장 이상 놓인 코스가 더 많은 사람', unit: '코스' };
     case 'bestplain': return { chip: '점↑', text: '마감 때 예약 손님 없는 코스의 최고 점수가 더 높은 사람', unit: '점' };
-    default: return { chip: '?', text: id, unit: '' };
+    default: return { chip: '?', text: '이전 규칙에서 온 과제예요. 새 방에서 다시 시작하면 정상으로 보여요', unit: '' };
   }
 }
