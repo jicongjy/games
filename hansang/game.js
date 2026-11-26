@@ -90,7 +90,7 @@ function laneHtml(lanes, course, { target, player }) {
   if (!d.started) cls.push('empty');
   cls.push(target ? 'target' : 'dim');
   const star = d.star ? `<span class="star${starPop === course ? ' pop' : ''}" aria-label="별">★</span>` : '';
-  const inner = `${target ? '<span class="tag">↑</span>' : ''}${star}
+  const inner = `${target ? '<span class="tag">올리기</span>' : ''}${star}
     <div class="ic">${courseIcon(course)}</div>
     <span class="big">${big}</span>
     <span class="mul">${mul}</span>
@@ -302,7 +302,7 @@ function tasksSheetHtml(ctx) {
       ? `<span class="pg">${fmt(mine)}/${b.target}</span><span class="pg dim">${fmt(theirs)}/${b.target}</span>`
       : `<span class="pg">${fmt(mine)}</span><span class="pg dim">${fmt(theirs)}</span>`;
     const owner = b.claimedBy === null ? '<span class="own"></span>' : `<span class="own${b.claimedBy === me ? ' me' : ''}">✓ ${esc(nm[b.claimedBy])}</span>`;
-    return `<div class="trow${sheet?.focus === b.id ? ' focus' : ''}"><span class="tchip static${cls}">${ui.chip}</span><span class="ttext">${esc(ui.text)}</span>${prog}${owner}</div>`;
+    return `<div class="trow${sheet?.focus === b.id ? ' focus' : ''}"><span class="tchip static${cls}">${ui.chip}</span><span class="ttext">${esc(ui.text)}${b.id === 'bestplain' && (mine === null || theirs === null) ? '<small class="tnote">예약 손님이 있는 코스는 빼고 비교해요. 해당하는 코스가 없으면 "-"로 보여요</small>' : ''}</span>${prog}${owner}</div>`;
   }).join('');
   return `<div class="backdrop" data-act="close"></div>
   <div class="panel tasks" role="dialog" aria-label="심사위원 과제">
@@ -395,11 +395,31 @@ function endSheetHtml() {
   </div>`;
 }
 
+// 좌판(버린 카드 더미) 전체 보기: 맨 위 카드부터 아래로
+function pileSheetHtml(ctx) {
+  const { v } = ctx;
+  const course = sheet.course;
+  const t = THEME[course];
+  const pile = (v.market[course] ?? []).slice().reverse();
+  const rows = pile.map((c, i) => (c.step === 0
+    ? `<div class="row"><span class="no" style="--c:#F1EDE6;--k:#1a1a1a">×2</span>${i === 0 ? '<span class="n">맨 위</span>' : ''}</div>`
+    : `<div class="row"><span class="no" style="--c:${t.color};--k:${t.ink}">${c.step}</span>${cardTitle(c)}${i === 0 ? '<span class="n">맨 위</span>' : ''}</div>`)).join('');
+  return `<div class="backdrop" data-act="close"></div>
+  <div class="panel narrow" role="dialog" aria-label="${t.name} 좌판">
+    <button class="x" data-act="close" aria-label="닫기">✕</button>
+    <div class="detail"><div class="list">
+      <div class="who"><span class="ib" style="--c:${t.color}">${courseIcon(course)}</span>좌판<span class="n">${pile.length}장</span></div>
+      ${rows || '<p class="note">비어 있어요</p>'}
+    </div></div>
+  </div>`;
+}
+
 function sheetHtml(ctx) {
   if (!sheet) return '';
   if (sheet.type === 'rules') return rulesHtml();
   if (sheet.type === 'tasks') return tasksSheetHtml(ctx);
   if (sheet.type === 'end') return endSheetHtml();
+  if (sheet.type === 'pile') return pileSheetHtml(ctx);
   const { v, me, nm } = ctx;
   const { player, course } = sheet;
   const lane = (player === me ? v.myLanes : v.opponentLanes)[course];
@@ -441,10 +461,11 @@ function playHtml() {
     const canDrop = playing && selCard && selCard.course === course;
     const body = top ? cardHtml(top) : `<div class="none" style="--c:${t.color}"></div>`;
     const base = `data-pile="${course}"`;
+    const cnt = pile.length > 1 ? `<span class="pcnt" data-pilelist="${course}" role="button" aria-label="좌판 카드 ${pile.length}장 모두 보기">${pile.length}</span>` : '';
     let pileHtml;
-    if (canDraw) pileHtml = `<button class="pile target" ${base} data-draw="${course}" aria-label="${t.name} 좌판에서 가져오기"><span class="tag">+</span>${body}</button>`;
-    else if (canDrop) pileHtml = `<button class="pile target" ${base} data-drop="${course}" aria-label="${t.name} 좌판에 내려놓기"><span class="tag">↓</span>${body}</button>`;
-    else pileHtml = `<div class="pile ${aim ? 'dim' : ''}" ${base}>${body}</div>`;
+    if (canDraw) pileHtml = `<button class="pile target" ${base} data-draw="${course}" aria-label="${t.name} 좌판에서 가져오기"><span class="tag">가져오기</span>${body}${cnt}</button>`;
+    else if (canDrop) pileHtml = `<button class="pile target" ${base} data-drop="${course}" aria-label="${t.name} 좌판에 내려놓기"><span class="tag">버리기</span>${body}${cnt}</button>`;
+    else pileHtml = `<div class="pile ${aim ? 'dim' : ''}" ${base}>${body}${cnt}</div>`;
     const laneTarget = playing && selCard && selCard.course === course && canPlayOnLane(v.myLanes[course], selCard);
     return `<div class="col">${oppChipHtml(ctx, course)}${pileHtml}${laneHtml(v.myLanes, course, { target: laneTarget, player: me })}</div>`;
   }).join('');
@@ -622,7 +643,7 @@ function coachHtml() {
   const next = st.kind === 'info' && !tut.busy ? '<button class="cnext" data-act="tut-next">다음</button>' : '';
   return `<div class="tuttop"><div class="coach${tut.busy ? ' wait' : ''}" role="status">
     <span class="cstep">${Math.min(tut.step + 1, tutTotal)}/${tutTotal}</span><span class="ctext">${text}</span>${next}
-    <button class="cskip" data-act="tut-skip">건너뛰기</button>
+    <button class="cskip" data-act="tut-skip">튜토리얼 종료</button>
   </div>${friend}</div>`;
 }
 
@@ -989,9 +1010,10 @@ function act(action) {
 
 // ---------- 입력 처리 ----------
 app.addEventListener('click', (e) => {
-  const t = e.target.closest('[data-act],[data-card],[data-lane],[data-drop],[data-draw],[data-detail]');
+  const t = e.target.closest('[data-act],[data-card],[data-lane],[data-drop],[data-draw],[data-detail],[data-pilelist]');
   if (!t || t.disabled) return;
   const d = t.dataset;
+  if (d.pilelist) { if (!tut) { sheet = { type: 'pile', course: d.pilelist }; render(); } return; }
   if (tut) { tutorialClick(t); return; }
   switch (d.act) {
     case 'tut-start': startTutorial(); return;
