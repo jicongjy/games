@@ -297,6 +297,8 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .clock.off{display:none}
 .clock i{position:absolute;inset:0;background:rgba(255,210,63,.45);transform-origin:left;transition:transform .25s linear}
 .clock b{position:relative;display:grid;place-items:center;height:100%;font-size:var(--fs-m);letter-spacing:-.02em;color:var(--cream)}
+.clock.timeup{border-color:var(--pink);background:rgba(255,120,150,.25)}
+.clock.timeup b{color:var(--pink)}
 .clock.low{border-color:var(--pink)}
 .clock.low i{background:rgba(255,120,150,.55)}
 .clock.low b{animation:wiggle 1s ease-in-out infinite}

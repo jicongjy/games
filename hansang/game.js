@@ -1,6 +1,6 @@
 // 차려내라! 한 상: 밤 분위기, 가로형. 한 기기에서 번갈아 두기 + 온라인 2인
 import {
-  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, STAR_CARDS, timeoutPlan,
+  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, STAR_CARDS,
 } from './engine/rules.js';
 import { THEME, cardTitle, iconSvg, courseIcon, taskUi } from './cards-data.js';
 import { nightScene } from './scene.js';
@@ -254,19 +254,13 @@ const clockHtml = () => {
   const c = clockInfo();
   if (!c) return '<div class="clock off"><i></i><b></b></div>';
   const left = Math.max(0, Math.ceil(c.left));
-  return `<div class="clock${left <= 10 ? ' low' : ''}" aria-label="남은 시간 ${left}초"><i style="transform:scaleX(${Math.max(0, Math.min(1, c.left / c.total))})"></i><b>${left}</b></div>`;
+  return `<div class="clock${left <= 0 ? ' timeup' : left <= 10 ? ' low' : ''}" aria-label="${left <= 0 ? '시간이 지났어요' : `남은 시간 ${left}초`}"><i style="transform:scaleX(${Math.max(0, Math.min(1, c.left / c.total))})"></i><b>${left}</b></div>`;
 };
 function tick() {
   if (tut) return;
   if (mode === 'local' && screen === 'play' && game && !game.over && turnSec > 0) {
     if (cover || intro) localDeadline = null; // 가림 화면, 소개 중에는 시간이 흐르지 않는다
     else if (localDeadline === null) localDeadline = Date.now() + turnSec * 1000;
-    else if (Date.now() >= localDeadline) {
-      localDeadline = null;
-      toast('시간이 다 돼서 자동으로 냈어요');
-      for (const a of timeoutPlan(game, game.turn)) { if (game.over) break; actLocal(a); }
-      return;
-    }
   }
   const el = document.querySelector('.clock');
   const c = clockInfo();
@@ -274,7 +268,8 @@ function tick() {
   if (!c) { if (!el.classList.contains('off')) el.outerHTML = clockHtml(); return; }
   if (el.classList.contains('off')) { el.outerHTML = clockHtml(); return; }
   const left = Math.max(0, Math.ceil(c.left));
-  el.classList.toggle('low', left <= 10);
+  el.classList.toggle('low', left > 0 && left <= 10);
+  el.classList.toggle('timeup', left <= 0);
   el.querySelector('b').textContent = left;
   el.querySelector('i').style.transform = `scaleX(${Math.max(0, Math.min(1, c.left / c.total))})`;
 }
@@ -891,7 +886,7 @@ function enterOnline(code, name) {
   store.set('oname', name);
   net = {
     code, name, token, ws: null, seat: null, names: [null, null], view: null, status: 'waiting',
-    connected: false, courses: courseCount, turnSeconds: turnSec, deadline: null, offset: 0, autoSeq: undefined, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
+    connected: false, courses: courseCount, turnSeconds: turnSec, deadline: null, offset: 0, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
   };
   try { history.replaceState(null, '', `?room=${code}`); } catch (e) { /* 무시 */ }
   screen = 'wait';
@@ -942,11 +937,6 @@ function onState(m) {
   net.turnSeconds = m.settings?.turnSeconds ?? 0;
   net.deadline = m.deadline ?? null;
   net.offset = m.now ? m.now - Date.now() : 0;
-  const seq = m.auto?.seq ?? 0;
-  if (!tut && net.autoSeq !== undefined && seq > net.autoSeq) {
-    toast(m.auto.seat === m.seat ? '시간이 다 돼서 자동으로 냈어요' : `${net.names[m.auto.seat]}님 시간 초과`);
-  }
-  net.autoSeq = seq;
   if (tut) { if (m.status !== 'waiting') tut.friend = true; render(); return; }
   if (m.status === 'waiting') { screen = 'wait'; render(); return; }
   if (prev && m.view) {
