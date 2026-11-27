@@ -194,3 +194,18 @@ test('forfeit: 점수와 관계없이 끝낸 사람이 진다', () => {
   assert.equal(viewFor(r.state, 1).result.forfeitBy, 0);
   assert.equal(forfeitGame(r.state, 1).ok, false);
 });
+
+import { skipTurn } from './rules.js';
+test('skipTurn: 차례만 넘어가고 카드는 그대로다', () => {
+  const s = newGame(() => 0.5);
+  const who = s.turn;
+  const r = skipTurn(s, who);
+  assert.equal(r.ok, true);
+  assert.equal(r.state.turn, 1 - who);
+  assert.equal(r.state.phase, 'play');
+  assert.deepEqual(r.state.hands, s.hands);
+  assert.deepEqual(r.state.lanes, s.lanes);
+  assert.deepEqual(r.state.market, s.market);
+  assert.equal(r.state.deck.length, s.deck.length);
+  assert.equal(skipTurn(s, 1 - who).ok, false); // 내 차례가 아니면 안 된다
+});
