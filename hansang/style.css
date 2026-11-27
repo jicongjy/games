@@ -83,11 +83,24 @@ button.card.sel{transform:translateY(calc(var(--u) * -10));box-shadow:0 calc(var
 .pips{display:flex;gap:calc(var(--u) * 6);align-items:center}
 .pip{width:calc(var(--u) * 6);height:calc(var(--u) * 6);min-width:5px;min-height:5px;border-radius:50%;border:1px solid var(--cream)}
 .pip.on{background:var(--cream)}.pip.go{background:var(--gold);border-color:var(--gold)}
+.turn.mine{background:var(--gold);color:var(--ink);border-radius:var(--r);padding:calc(var(--u) * 4) calc(var(--u) * 10);font-weight:700;line-height:1.5;overflow:visible}
+.thint{font-size:max(10px, calc(var(--u) * 11));color:var(--gold);text-align:center;white-space:nowrap}
+.board.myturn{box-shadow:inset 0 0 0 calc(var(--u) * 3) rgba(255,210,63,.8);animation:turnglow 1.8s ease-in-out infinite}
+@keyframes turnglow{0%,100%{box-shadow:inset 0 0 0 calc(var(--u) * 3) rgba(255,210,63,.8)}50%{box-shadow:inset 0 0 0 calc(var(--u) * 3) rgba(255,210,63,.35)}}
 .turn{font-size:var(--fs-s);text-align:center;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .grow{flex:1}
 .rhelp{width:calc(var(--u) * 26);height:calc(var(--u) * 26);min-width:24px;min-height:24px;border-radius:50%;border:1px solid rgba(255,241,220,.4);display:grid;place-items:center;font-size:var(--fs-s);color:var(--cream);flex:none}
 html,body,#app,button,.card,.lane,.pile{touch-action:manipulation;-webkit-user-select:none;user-select:none}
 input,textarea{-webkit-user-select:text;user-select:text}
+.rmenu{border-color:rgba(255,241,220,.45) !important;color:var(--cream) !important}
+.lane .nums{flex:none;font-size:max(10px, calc(var(--u) * 12));line-height:1.2;letter-spacing:-.01em;max-width:96%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:1.2em}
+.lane .cnt{display:none}
+.lane .nums b{font-weight:700;margin-right:.25em}
+.hand .card[data-fresh]{box-shadow:0 0 0 calc(var(--u) * 3) var(--gold),0 0 calc(var(--u) * 16) rgba(255,210,63,.65);transform:translateY(calc(var(--u) * -8))}
+.hand .card[data-fresh]::after{content:'NEW';position:absolute;top:calc(var(--u) * -12);left:50%;transform:translateX(-50%);background:var(--gold);color:var(--ink);font-size:max(10px, calc(var(--u) * 11));font-weight:700;line-height:1.3;border-radius:calc(var(--u) * 4);padding:0 calc(var(--u) * 6);z-index:2}
+.panel.menu .mrow{display:flex;gap:calc(var(--u) * 8)}
+.panel.menu .mrow .btn{flex:1;width:auto;white-space:nowrap;padding-left:calc(var(--u) * 8);padding-right:calc(var(--u) * 8)}
+.mcode{letter-spacing:.12em;color:var(--gold);font-size:1.3em}
 .rend{min-width:24px;min-height:24px;height:calc(var(--u) * 24);padding:0 calc(var(--u) * 8);margin-bottom:calc(var(--u) * 6);border-radius:calc(var(--u) * 12);border:1px solid rgba(255,150,150,.55);color:#ffb8b8;font-size:max(10px, calc(var(--u) * 11));flex:none}
 .rtk{display:flex;flex-wrap:wrap;gap:calc(var(--u) * 3);margin-top:calc(var(--u) * 8);max-width:calc(var(--u) * 168)}
 .rtk .tchip.static{width:auto;min-width:calc(var(--u) * 28);height:calc(var(--u) * 22);min-height:20px;padding:0 calc(var(--u) * 4);white-space:nowrap}
@@ -140,7 +153,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .panel .x{position:absolute;top:calc(var(--u) * 10);right:calc(var(--u) * 10);width:calc(var(--u) * 28);height:calc(var(--u) * 28);min-width:26px;min-height:26px;border-radius:50%;border:1px solid rgba(255,241,220,.4);display:grid;place-items:center;font-size:var(--fs-s);color:var(--cream)}
 .detail{display:flex;gap:calc(var(--u) * 28)}
 .detail .list{flex:1;min-width:0}
-.detail .who{display:flex;align-items:center;gap:calc(var(--u) * 10);margin-bottom:calc(var(--u) * 14);color:var(--sub);font-size:var(--fs-s)}
+.detail .who{display:flex;align-items:center;gap:calc(var(--u) * 10);margin-bottom:calc(var(--u) * 14);padding-right:calc(var(--u) * 44);color:var(--sub);font-size:var(--fs-s)}
 .detail .who .ib{width:calc(var(--u) * 34);height:calc(var(--u) * 34);border-radius:var(--r);background:var(--c);display:grid;place-items:center}
 .detail .who .ib svg{width:70%;height:70%}
 .detail .row{display:flex;align-items:center;gap:calc(var(--u) * 12);padding:calc(var(--u) * 8) 0;border-top:1px solid rgba(255,241,220,.14);font-size:max(13px, calc(var(--u) * 15))}
@@ -189,6 +202,10 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .tchip{display:flex;align-items:center;justify-content:center;gap:calc(var(--u) * 3);width:100%;height:calc(var(--u) * 22);min-height:18px;border-radius:var(--r);border:1px solid rgba(255,241,220,.35);background:rgba(255,241,220,.05);color:var(--cream);font-size:max(10px, calc(var(--u) * 11));line-height:1;letter-spacing:-.02em}
 .tchip.me{background:var(--gold);color:var(--ink);border-color:var(--gold)}
 .tchip.opp{opacity:.38;border-style:dashed}
+/* 게임 중 과제 칩: 누가 달성했든 점선, 내가 달성한 것은 금색 + 체크로 더 크게 */
+.rail .tchip.opp,.trow .tchip.opp{opacity:.6;border:2px dashed rgba(255,241,220,.7)}
+.rail .tchip.me,.trow .tchip.me{border:2px dashed rgba(26,26,26,.75);box-shadow:0 0 0 2px var(--gold),0 0 calc(var(--u) * 10) rgba(255,210,63,.6)}
+.rail .tchip.me::after,.trow .tchip.me::after{content:'✓';font-weight:700;margin-left:calc(var(--u) * 2)}
 .tchip .dot{display:inline-block;width:calc(var(--u) * 8);height:calc(var(--u) * 8);min-width:6px;min-height:6px;border-radius:2px}
 .tchip .dots{display:inline-flex;gap:2px}
 .tchip .dots b{display:block;width:calc(var(--u) * 5);height:calc(var(--u) * 5);min-width:4px;min-height:4px;border-radius:1px;background:currentColor}
@@ -297,6 +314,8 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .clock.off{display:none}
 .clock i{position:absolute;inset:0;background:rgba(255,210,63,.45);transform-origin:left;transition:transform .25s linear}
 .clock b{position:relative;display:grid;place-items:center;height:100%;font-size:var(--fs-m);letter-spacing:-.02em;color:var(--cream)}
+.clock.timeup{border-color:var(--pink);background:rgba(255,120,150,.25)}
+.clock.timeup b{color:var(--pink)}
 .clock.low{border-color:var(--pink)}
 .clock.low i{background:rgba(255,120,150,.55)}
 .clock.low b{animation:wiggle 1s ease-in-out infinite}

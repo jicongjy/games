@@ -141,32 +141,32 @@ test('재대결해도 코스 수 설정이 유지되고 과제는 새로 뽑힌�
   assert.ok(room.game.bonus.every((b) => b.claimedBy === null));
 });
 
-import { timeout, armTimer } from './room-logic.js';
-test('턴 제한: 시간이 지나면 대신 두고 차례가 넘어간다', () => {
+import * as logic from './room-logic.js';
+test('턴 제한: 시계는 표시만 하고, 시간이 지나도 서버는 대신 두지 않는다', () => {
   const room = createRoom();
   join(room, { token: T1, name: '지영', turnSeconds: 30 }, seeded(3));
   join(room, { token: T2, name: '민수' }, seeded(3));
   assert.equal(room.settings.turnSeconds, 30);
   assert.ok(room.deadline > Date.now());
   assert.equal(payload(room, 0).deadline, room.deadline);
-  const t0 = room.deadline;
-  assert.equal(timeout(room, t0), false); // 여유 시간 안
-  assert.equal(timeout(room, t0 + 1100), true);
-  assert.equal(room.game.turn, 1);
+  assert.equal(logic.timeout, undefined); // 대신 두는 함수가 없다
+  assert.equal('auto' in payload(room, 0), false);
+  // 마감이 한참 지나도 상태는 그대로이고, 차례인 사람은 그대로 둘 수 있다
+  room.deadline = Date.now() - 60000;
+  assert.equal(room.game.turn, 0);
   assert.equal(room.game.hands[0].length, 8);
-  assert.ok(room.deadline > t0);
-  assert.deepEqual(payload(room, 1).auto, { seq: 1, seat: 0 });
-  // 직접 둔 뒤에는 새 마감
-  const before = room.deadline;
-  const a = legalActions(room.game, 1).find((x) => x.type === 'discard');
-  act(room, 1, a);
-  assert.equal(room.deadline, before); // 가져오기 전에는 그대로
+  const d = legalActions(room.game, 0).find((x) => x.type === 'discard'); // 차례는 카드 내기 → 가져오기 순서
+  assert.deepEqual(act(room, 0, d), { ok: true });
+  assert.equal(room.game.hands[0].length, 7);
+  assert.deepEqual(act(room, 0, { type: 'draw', from: 'deck' }), { ok: true });
+  assert.equal(room.game.hands[0].length, 8);
+  assert.equal(room.game.turn, 1);
+  assert.ok(room.deadline > Date.now()); // 차례가 넘어가면 새 시계
 });
 test('턴 제한 없음이면 마감도 없다', () => {
   const room = twoPlayers();
   assert.equal(room.settings.turnSeconds, 0);
   assert.equal(room.deadline, null);
-  assert.equal(timeout(room, Date.now() + 999999), false);
 });
 test('허용되지 않은 시간 값은 제한 없음', () => {
   const room = createRoom();
