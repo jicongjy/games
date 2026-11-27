@@ -53,6 +53,7 @@ let tut = null; // 연습 중이면 { game, step, ret, busy, note, friend, ext }
 let askTut = false; // 처음 방문: 연습할지 한 번 묻는다
 const draft = {}; // 입력 중인 값(화면이 다시 그려져도 유지)
 let seenClaims = {}; // 이미 알린 과제 달성
+let fresh = [null, null]; // 자리별로 방금 가져온 카드 id (다음에 카드를 낼 때까지 표시)
 
 function toast(msg) {
   document.querySelector('.toast')?.remove();
@@ -64,6 +65,36 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.remove(), 2800);
 }
+
+// ---------- 효과음 (소리 파일 없이 브라우저가 직접 만든다) ----------
+const sound = { ctx: null, on: store.get('sound') !== '0' };
+function unlockSound() {
+  try {
+    if (sound.ctx) { sound.ctx.resume?.(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) sound.ctx = new AC();
+  } catch (e) { /* 소리 없이 진행 */ }
+}
+function beep(freqs = [660, 880]) {
+  if (!sound.on || !sound.ctx || sound.ctx.state !== 'running') return;
+  const t0 = sound.ctx.currentTime;
+  freqs.forEach((f, i) => {
+    const o = sound.ctx.createOscillator();
+    const g = sound.ctx.createGain();
+    const s = t0 + i * 0.14;
+    o.type = 'sine';
+    o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, s);
+    g.gain.exponentialRampToValueAtTime(0.25, s + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, s + 0.18);
+    o.connect(g).connect(sound.ctx.destination);
+    o.start(s);
+    o.stop(s + 0.2);
+  });
+}
+// 브라우저는 사람이 화면을 한 번 만져야 소리를 허용한다
+document.addEventListener('pointerdown', unlockSound, { passive: true });
+document.addEventListener('click', unlockSound, { passive: true });
 
 // ---------- 카드와 코스 그리기 ----------
 function cardHtml(card, { tag = 'div', extra = '', sel = false } = {}) {
@@ -83,6 +114,14 @@ function laneSummary(lane) {
   return { d, big: steps.length ? steps[steps.length - 1].step : '', mul: d.reservations ? `×${1 + d.reservations}` : '' };
 }
 
+// 낸 카드: "3장 4 6 9 예약1" (장수, 숫자 오름차순, 예약 손님 수)
+function laneNums(lane) {
+  if (!lane.length) return '';
+  const steps = lane.filter((c) => c.step > 0).map((c) => c.step).sort((a, b) => a - b);
+  const rsv = lane.length - steps.length;
+  return `<b>${lane.length}장</b> ${steps.join(' ')}${rsv ? `${steps.length ? ' ' : ''}예약${rsv}` : ''}`;
+}
+
 function laneHtml(lanes, course, { target, player }) {
   const t = THEME[course];
   const { d, big, mul } = laneSummary(lanes[course]);
@@ -94,7 +133,8 @@ function laneHtml(lanes, course, { target, player }) {
     <div class="ic">${courseIcon(course)}</div>
     <span class="big">${big}</span>
     <span class="mul">${mul}</span>
-    <span class="cnt">${pips(lanes[course])}</span>`;
+    <span class="cnt">${pips(lanes[course])}</span>
+    <span class="nums">${laneNums(lanes[course])}</span>`;
   const attrs = `data-mylane="${course}" style="--c:${t.color};--k:${t.ink}"`;
   if (target) return `<button class="${cls.join(' ')}" ${attrs} data-lane="${course}" aria-label="${t.name} 줄에 올리기">${inner}</button>`;
   return `<button class="${cls.join(' ')}" ${attrs} data-detail="${player}:${course}" ${d.started ? '' : 'disabled'} aria-label="${t.name} 낸 카드 보기">${inner}</button>`;
@@ -146,14 +186,24 @@ const rulesHtml = () => `
     <button class="btn ghost" data-act="close">닫기</button>
   </div>`;
 
+// 나갔던 방으로 돌아갈 수 있으면 방 코드. 서버는 6시간 동안 아무 일 없으면 방을 지운다.
+function resumableRoom() {
+  const code = store.get('lastroom');
+  if (!code || !store.get(`token:${code}`) || !store.get('oname') || !serverUrl()) return null;
+  if (Date.now() - Number(store.get('lastroom_at') || 0) > 6 * 60 * 60 * 1000) return null;
+  return code;
+}
+
 function homeHtml() {
   const online = !!serverUrl();
+  const resume = resumableRoom();
   return `<div class="screen">${nightScene()}
     <button class="help" data-act="rules" aria-label="규칙 보기">?</button>
     <div class="side">
       <h1 class="logo">차려내라!<br>한 상</h1>
       <p class="sub">마감 전에 한 상</p>
       <div class="menu">
+        ${resume ? `<button class="btn" data-act="resume" aria-label="진행 중인 게임으로 돌아가기, 방 코드 ${esc(resume)}">진행 중인 게임으로 돌아가기<small style="display:block;font-size:.7em;opacity:.8">방 코드 ${esc(resume)}</small></button>` : ''}
         <button class="btn" data-act="go-online" ${online ? '' : 'disabled'}>온라인으로</button>
         <button class="btn ghost" data-act="go-local">한 기기에서</button>
         <button class="link" data-act="tut-start">처음이세요? 연습하기</button>
@@ -379,6 +429,23 @@ function coverHtml(ctx) {
   </div>`;
 }
 
+// 메뉴: 방 코드, 초대 링크, 효과음, 게임 끝내기
+function menuSheetHtml() {
+  const code = net?.code ?? '';
+  const link = `${location.origin}${location.pathname}?room=${code}`;
+  return `<div class="backdrop" data-act="close"></div>
+  <div class="panel ask menu" role="dialog" aria-label="메뉴">
+    <button class="x" data-act="close" aria-label="닫기">✕</button>
+    <h3>메뉴</h3>
+    <p class="note" style="margin:0 0 calc(var(--u) * 12)">방 코드 <b class="mcode">${esc(code)}</b></p>
+    <div class="mrow">
+      <button class="btn ghost" data-act="copy-link" data-link="${esc(link)}">링크 복사</button>
+      <button class="btn ghost" data-act="toggle-sound" aria-pressed="${sound.on}">효과음 ${sound.on ? '켜짐' : '꺼짐'}</button>
+    </div>
+    <button class="btn" style="margin-top:calc(var(--u) * 10)" data-act="end">게임 끝내기</button>
+  </div>`;
+}
+
 // 게임 끝내기 확인 창: 끝내면 내가 지고 상대가 이긴 것으로 기록된다
 function endSheetHtml() {
   return `<div class="backdrop" data-act="close"></div>
@@ -414,6 +481,7 @@ function sheetHtml(ctx) {
   if (sheet.type === 'rules') return rulesHtml();
   if (sheet.type === 'tasks') return tasksSheetHtml(ctx);
   if (sheet.type === 'end') return endSheetHtml();
+  if (sheet.type === 'menu') return menuSheetHtml();
   if (sheet.type === 'pile') return pileSheetHtml(ctx);
   const { v, me, nm } = ctx;
   const { player, course } = sheet;
@@ -465,14 +533,15 @@ function playHtml() {
     return `<div class="col">${oppChipHtml(ctx, course)}${pileHtml}${laneHtml(v.myLanes, course, { target: laneTarget, player: me })}</div>`;
   }).join('');
 
+  const freshId = tut ? null : fresh[me]; // 방금 가져온 카드
   const hand = v.myHand.slice().sort((a, b) => courses.indexOf(a.course) - courses.indexOf(b.course) || a.step - b.step)
     .map((card) => cardHtml(card, {
       tag: 'button',
-      extra: `data-card="${card.id}" aria-pressed="${card.id === selected}" ${playing ? '' : 'disabled'}`,
+      extra: `data-card="${card.id}" aria-pressed="${card.id === selected}" ${playing ? '' : 'disabled'}${card.id === freshId ? ' data-fresh="1"' : ''}`,
       sel: card.id === selected,
     })).join('');
 
-  const turnText = tut ? (myTurn ? '내 차례' : '상대') : online ? (myTurn ? '내 차례' : esc(nm[opp])) : `${esc(nm[me])} 차례`;
+  const turnText = tut ? (myTurn ? '내 차례' : '상대') : online ? (myTurn ? '내 차례' : `${esc(nm[opp])} 차례`) : `${esc(nm[me])} 차례`;
   const banner = online && !net.connected
     ? '<div class="banner bad">연결이 끊겼어요. 다시 연결하는 중…</div>'
     : online && !net.opponentConnected
@@ -483,15 +552,15 @@ function playHtml() {
     ? `<button class="deck deckbtn target${urgent ? ' urgent' : ''}" data-draw="deck" aria-label="식재료 창고에서 가져오기"><span class="tag">+</span>${v.deckCount}</button>`
     : `<div class="deck deckbtn${urgent ? ' urgent' : ''}" aria-label="마감까지 ${v.deckCount}장">${v.deckCount}</div>`;
 
-  const html = `<div class="board${aim ? ' aim' : ''}${intro && !online ? ' shield' : ''}">${banner}
+  const html = `<div class="board${aim ? ' aim' : ''}${intro && !online ? ' shield' : ''}${online && myTurn && !tut ? ' myturn' : ''}">${banner}
     <aside class="rail">
       ${deck}
       <div class="pips"><i class="pip${myTurn ? ' on' : ''}"></i><i class="pip${drawing ? ' go' : ''}"></i></div>
-      <div class="turn">${turnText}</div>
+      <div class="turn${myTurn ? ' mine' : ''}">${turnText}</div>${myTurn && !tut ? `<div class="thint">${v.phase === 'play' ? '카드 내기' : '카드 가져오기'}</div>` : ''}
       ${tut ? '' : clockHtml()}
       <div class="tasks">${taskChipsHtml(ctx)}</div>
       <div class="grow"></div>
-      ${online && !tut ? '<button class="rend" data-act="end" aria-label="게임 끝내기">끝내기</button>' : ''}
+      ${online && !tut ? '<button class="rend rmenu" data-act="menu" aria-label="메뉴">메뉴</button>' : ''}
       <button class="rhelp" data-act="rules" aria-label="규칙 보기">?</button>
     </aside>
     <main class="main">
@@ -839,6 +908,7 @@ function startLocal() {
   game = newGame(Math.random, { courses: courseCount });
   localDeadline = null;
   seenClaims = {};
+  fresh = [null, null];
   selected = null;
   sheet = null;
   screen = 'play';
@@ -857,10 +927,13 @@ function actLocal(action) {
   const movedCard = action.cardId ? game.hands[game.turn].find((c) => c.id === action.cardId) : null;
   const before = movedCard ? game.lanes[game.turn][movedCard.course].length : 0;
 
+  const handBefore = new Set(game.hands[game.turn].map((c) => c.id));
   const r = apply(game, game.turn, action);
   if (!r.ok) { toast(r.error); return; }
   const turnBefore = game.turn;
   game = r.state;
+  if (action.type === 'draw') fresh[turnBefore] = game.hands[turnBefore].find((c) => !handBefore.has(c.id))?.id ?? null;
+  else fresh[turnBefore] = null;
   selected = null;
   sheet = null;
   if (game.over) { screen = 'over'; render(); return; }
@@ -884,6 +957,8 @@ function enterOnline(code, name) {
   const token = store.get(`token:${code}`) || makeToken();
   store.set(`token:${code}`, token);
   store.set('oname', name);
+  store.set('lastroom', code);
+  store.set('lastroom_at', String(Date.now()));
   net = {
     code, name, token, ws: null, seat: null, names: [null, null], view: null, status: 'waiting',
     connected: false, courses: courseCount, turnSeconds: turnSec, deadline: null, offset: 0, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
@@ -927,6 +1002,8 @@ function openSocket() {
 function onState(m) {
   net.last = m;
   const prev = net.view;
+  const mineBefore = !!(prev && !prev.over && prev.turn === m.seat);
+  store.set('lastroom_at', String(Date.now()));
   net.seat = m.seat;
   net.names = m.names.map((n, i) => n || `요리사 ${i + 1}`);
   net.status = m.status;
@@ -945,13 +1022,23 @@ function onState(m) {
     }
   }
   const wasPlaying = screen === 'play';
-  if (m.view && (!wasPlaying || (prev && prev.over && !m.view.over))) seenClaims = {};
+  if (m.view && (!wasPlaying || (prev && prev.over && !m.view.over))) { seenClaims = {}; fresh = [null, null]; }
+  if (prev && m.view && !m.view.over) { // 방금 가져온 카드 찾기
+    const had = new Set(prev.myHand.map((c) => c.id));
+    const added = m.view.myHand.filter((c) => !had.has(c.id));
+    if (added.length === 1) fresh[m.seat] = added[0].id;
+  }
   if (m.view) notifyBonus(m.view, m.seat, net.names, true);
   screen = m.status === 'over' ? 'over' : 'play';
   if (screen === 'play' && !wasPlaying) { selected = null; sheet = null; if (m.view && isFresh(m.view)) startIntro(); }
   if (screen === 'over') sheet = null;
   render();
   if (screen === 'play') runPendingFly();
+  // 내 차례가 되면 소리와 진동으로 알린다 (새로고침으로 돌아온 경우는 제외)
+  if (screen === 'play' && m.view && !m.view.over && m.view.turn === m.seat && !mineBefore && (prev || isFresh(m.view))) {
+    beep();
+    try { navigator.vibrate?.(120); } catch (e) { /* 지원하지 않는 기기 */ }
+  }
 }
 
 function onServerError(m) {
@@ -976,6 +1063,7 @@ function actOnline(action) {
   const srcEl = action.cardId ? document.querySelector(`[data-card="${action.cardId}"]`) : null;
   const card = action.cardId ? net.view.myHand.find((c) => c.id === action.cardId) : null;
   if (!sendOnline({ t: 'act', action })) return;
+  if (action.type === 'play' || action.type === 'discard') fresh[net.seat] = null;
   pendingFly = card ? { card, fromRect: srcEl?.getBoundingClientRect(), type: action.type } : null;
   selected = null;
   sheet = null;
@@ -984,6 +1072,8 @@ function actOnline(action) {
 function leaveOnline(rerender = true) {
   if (net) {
     if (net.code) store.del(`token:${net.code}`); // 나가기를 누르면 이 방으로 자동 복귀하지 않는다
+    store.del('lastroom');
+    store.del('lastroom_at');
     net.closing = true;
     clearTimeout(net.timer);
     clearInterval(net.ping);
@@ -1033,6 +1123,9 @@ app.addEventListener('click', (e) => {
       return;
     }
     case 'leave': leaveOnline(); return;
+    case 'menu': sheet = { type: 'menu' }; render(); return;
+    case 'toggle-sound': sound.on = !sound.on; store.set('sound', sound.on ? '1' : '0'); if (sound.on) beep(); render(); return;
+    case 'resume': { const c = resumableRoom(); if (c) enterOnline(c, store.get('oname')); return; }
     case 'end': sheet = { type: 'end' }; render(); return;
     case 'end-yes': sheet = null; if (mode === 'online') sendOnline({ t: 'forfeit' }); render(); return;
     case 'reveal': cover = false; render(); return;
