@@ -153,7 +153,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .panel .x{position:absolute;top:calc(var(--u) * 10);right:calc(var(--u) * 10);width:calc(var(--u) * 28);height:calc(var(--u) * 28);min-width:26px;min-height:26px;border-radius:50%;border:1px solid rgba(255,241,220,.4);display:grid;place-items:center;font-size:var(--fs-s);color:var(--cream)}
 .detail{display:flex;gap:calc(var(--u) * 28)}
 .detail .list{flex:1;min-width:0}
-.detail .who{display:flex;align-items:center;gap:calc(var(--u) * 10);margin-bottom:calc(var(--u) * 14);color:var(--sub);font-size:var(--fs-s)}
+.detail .who{display:flex;align-items:center;gap:calc(var(--u) * 10);margin-bottom:calc(var(--u) * 14);padding-right:calc(var(--u) * 44);color:var(--sub);font-size:var(--fs-s)}
 .detail .who .ib{width:calc(var(--u) * 34);height:calc(var(--u) * 34);border-radius:var(--r);background:var(--c);display:grid;place-items:center}
 .detail .who .ib svg{width:70%;height:70%}
 .detail .row{display:flex;align-items:center;gap:calc(var(--u) * 12);padding:calc(var(--u) * 8) 0;border-top:1px solid rgba(255,241,220,.14);font-size:max(13px, calc(var(--u) * 15))}
@@ -202,6 +202,10 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .tchip{display:flex;align-items:center;justify-content:center;gap:calc(var(--u) * 3);width:100%;height:calc(var(--u) * 22);min-height:18px;border-radius:var(--r);border:1px solid rgba(255,241,220,.35);background:rgba(255,241,220,.05);color:var(--cream);font-size:max(10px, calc(var(--u) * 11));line-height:1;letter-spacing:-.02em}
 .tchip.me{background:var(--gold);color:var(--ink);border-color:var(--gold)}
 .tchip.opp{opacity:.38;border-style:dashed}
+/* 게임 중 과제 칩: 누가 달성했든 점선, 내가 달성한 것은 금색 + 체크로 더 크게 */
+.rail .tchip.opp,.trow .tchip.opp{opacity:.6;border:2px dashed rgba(255,241,220,.7)}
+.rail .tchip.me,.trow .tchip.me{border:2px dashed rgba(26,26,26,.75);box-shadow:0 0 0 2px var(--gold),0 0 calc(var(--u) * 10) rgba(255,210,63,.6)}
+.rail .tchip.me::after,.trow .tchip.me::after{content:'✓';font-weight:700;margin-left:calc(var(--u) * 2)}
 .tchip .dot{display:inline-block;width:calc(var(--u) * 8);height:calc(var(--u) * 8);min-width:6px;min-height:6px;border-radius:2px}
 .tchip .dots{display:inline-flex;gap:2px}
 .tchip .dots b{display:block;width:calc(var(--u) * 5);height:calc(var(--u) * 5);min-width:4px;min-height:4px;border-radius:1px;background:currentColor}
