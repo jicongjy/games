@@ -1,6 +1,6 @@
 // 차려내라! 한 상: 밤 분위기, 가로형. 한 기기에서 번갈아 두기 + 온라인 2인
 import {
-  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, STAR_CARDS,
+  COURSES, apply, newGame, viewFor, canPlayOnLane, laneDetail, STAR_CARDS, skipTurn,
 } from './engine/rules.js';
 import { THEME, cardTitle, iconSvg, courseIcon, taskUi } from './cards-data.js';
 import { nightScene } from './scene.js';
@@ -311,6 +311,12 @@ function tick() {
   if (mode === 'local' && screen === 'play' && game && !game.over && turnSec > 0) {
     if (cover || intro) localDeadline = null; // 가림 화면, 소개 중에는 시간이 흐르지 않는다
     else if (localDeadline === null) localDeadline = Date.now() + turnSec * 1000;
+    else if (Date.now() >= localDeadline) { // 시간이 지나면 카드는 그대로 두고 차례만 넘긴다
+      localDeadline = null;
+      const r = skipTurn(game, game.turn);
+      if (r.ok) { game = r.state; selected = null; sheet = null; cover = true; toast('시간이 지나 차례가 넘어갔어요'); render(); }
+      return;
+    }
   }
   const el = document.querySelector('.clock');
   const c = clockInfo();
@@ -961,7 +967,7 @@ function enterOnline(code, name) {
   store.set('lastroom_at', String(Date.now()));
   net = {
     code, name, token, ws: null, seat: null, names: [null, null], view: null, status: 'waiting',
-    connected: false, courses: courseCount, turnSeconds: turnSec, deadline: null, offset: 0, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
+    connected: false, courses: courseCount, turnSeconds: turnSec, deadline: null, offset: 0, skipSeq: undefined, opponentConnected: true, rematch: [false, false], retry: 0, closing: false, timer: null, ping: null,
   };
   try { history.replaceState(null, '', `?room=${code}`); } catch (e) { /* 무시 */ }
   screen = 'wait';
@@ -1014,6 +1020,11 @@ function onState(m) {
   net.turnSeconds = m.settings?.turnSeconds ?? 0;
   net.deadline = m.deadline ?? null;
   net.offset = m.now ? m.now - Date.now() : 0;
+  const sseq = m.skip?.seq ?? 0;
+  if (!tut && net.skipSeq !== undefined && sseq > net.skipSeq) {
+    toast(m.skip.seat === m.seat ? '시간이 지나 차례가 넘어갔어요' : `${net.names[m.skip.seat]}님이 시간이 지나 차례가 넘어왔어요`);
+  }
+  net.skipSeq = sseq;
   if (tut) { if (m.status !== 'waiting') tut.friend = true; render(); return; }
   if (m.status === 'waiting') { screen = 'wait'; render(); return; }
   if (prev && m.view) {

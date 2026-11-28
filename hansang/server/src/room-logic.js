@@ -1,10 +1,12 @@
 // 방 하나의 상태와 규칙 처리. Cloudflare 런타임에 의존하지 않아서 Node에서 테스트할 수 있다.
 // 상태는 JSON으로 저장 가능한 순수 객체다.
-import { newGame, apply, viewFor, forfeit as forfeitGame } from '../../engine/rules.js';
+import { newGame, apply, viewFor, skipTurn, forfeit as forfeitGame } from '../../engine/rules.js';
 
 export const MAX_NAME = 10;
 const ACTION_TYPES = new Set(['play', 'discard', 'draw']);
 export const TURN_CHOICES = [0, 20, 30, 45, 60]; // 턴 제한 시간(초). 0은 제한 없음
+export const GRACE_MS = 1000; // 통신 지연을 봐주는 여유
+const MAX_SKIPS = 6; // 아무도 두지 않고 차례만 이만큼 넘어가면 시계를 멈춘다(밤새 반복 방지)
 const INTRO_MS = 7000; // 6코스 판 시작 때 과제 소개를 보는 시간
 
 export function createRoom() {
@@ -15,7 +17,10 @@ export function createRoom() {
     rematch: [false, false],
     games: 0, // 지금까지 시작한 판 수 (선공 번갈아 정하는 데 씀)
     settings: { courses: 5, turnSeconds: 0 }, // 방장이 정한 코스 수(5 또는 6)와 턴 제한(초)
-    deadline: null, // 이번 차례 시계가 0이 되는 시각(ms). 화면 표시용이고 지나도 아무 일도 일어나지 않는다. 제한이 없으면 null
+    deadline: null, // 이번 차례 마감 시각(ms). 제한이 없으면 null
+    skipSeq: 0, // 시간이 지나 차례가 넘어간 횟수
+    skipSeat: null, // 마지막으로 차례가 넘어간 자리
+    skips: 0, // 직접 둔 것 없이 연속으로 넘어간 횟수
   };
 }
 
@@ -30,13 +35,29 @@ export function startGame(room, rng = Math.random) {
   room.games += 1;
   room.status = 'playing';
   room.rematch = [false, false];
+  room.skips = 0;
   armTimer(room, Date.now(), room.game.bonus.length ? INTRO_MS : 0);
 }
 
-// 차례가 시작될 때 시계 마감 시각을 정한다 (시간이 지나도 대신 두지 않는다)
+// 차례가 시작될 때 마감 시각을 정한다
 export function armTimer(room, now = Date.now(), extra = 0) {
   const sec = room.settings?.turnSeconds ?? 0;
-  room.deadline = room.status === 'playing' && sec > 0 ? now + sec * 1000 + extra : null;
+  const stopped = (room.skips ?? 0) >= MAX_SKIPS;
+  room.deadline = room.status === 'playing' && sec > 0 && !stopped ? now + sec * 1000 + extra : null;
+}
+
+// 시간이 지났으면 차례만 넘긴다. 카드는 아무것도 내거나 가져오지 않는다. 넘겼으면 true
+export function timeout(room, now = Date.now()) {
+  if (room.status !== 'playing' || !room.deadline || now < room.deadline + GRACE_MS - 50) return false;
+  const seat = room.game.turn;
+  const r = skipTurn(room.game, seat);
+  if (!r.ok) return false;
+  room.game = r.state;
+  room.skipSeq = (room.skipSeq ?? 0) + 1;
+  room.skipSeat = seat;
+  room.skips = (room.skips ?? 0) + 1;
+  armTimer(room, now);
+  return true;
 }
 
 // courses는 방을 처음 만드는 사람(첫 입장)만 정할 수 있다.
@@ -73,6 +94,7 @@ export function act(room, seat, action) {
   const r = apply(room.game, seat, clean);
   if (!r.ok) return r;
   const turnBefore = room.game.turn;
+  room.skips = 0;
   room.game = r.state;
   if (room.game.over) room.status = 'over';
   if (room.game.turn !== turnBefore || room.status !== 'playing') armTimer(room);
@@ -110,6 +132,7 @@ export function payload(room, seat) {
     settings: room.settings ?? { courses: 5, turnSeconds: 0 },
     deadline: room.status === 'playing' ? room.deadline ?? null : null,
     now: Date.now(),
+    skip: room.skipSeq ? { seq: room.skipSeq, seat: room.skipSeat } : null,
     view: room.game ? viewFor(room.game, seat) : null,
   };
 }

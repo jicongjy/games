@@ -142,31 +142,60 @@ test('재대결해도 코스 수 설정이 유지되고 과제는 새로 뽑힌�
 });
 
 import * as logic from './room-logic.js';
-test('턴 제한: 시계는 표시만 하고, 시간이 지나도 서버는 대신 두지 않는다', () => {
+function timedRoom() {
   const room = createRoom();
   join(room, { token: T1, name: '지영', turnSeconds: 30 }, seeded(3));
   join(room, { token: T2, name: '민수' }, seeded(3));
+  return room;
+}
+test('턴 제한: 시간이 지나면 카드는 그대로 두고 차례만 넘어간다', () => {
+  const room = timedRoom();
   assert.equal(room.settings.turnSeconds, 30);
   assert.ok(room.deadline > Date.now());
   assert.equal(payload(room, 0).deadline, room.deadline);
-  assert.equal(logic.timeout, undefined); // 대신 두는 함수가 없다
-  assert.equal('auto' in payload(room, 0), false);
-  // 마감이 한참 지나도 상태는 그대로이고, 차례인 사람은 그대로 둘 수 있다
-  room.deadline = Date.now() - 60000;
-  assert.equal(room.game.turn, 0);
-  assert.equal(room.game.hands[0].length, 8);
-  const d = legalActions(room.game, 0).find((x) => x.type === 'discard'); // 차례는 카드 내기 → 가져오기 순서
-  assert.deepEqual(act(room, 0, d), { ok: true });
-  assert.equal(room.game.hands[0].length, 7);
-  assert.deepEqual(act(room, 0, { type: 'draw', from: 'deck' }), { ok: true });
-  assert.equal(room.game.hands[0].length, 8);
+  const t0 = room.deadline;
+  const snap = JSON.stringify([room.game.hands, room.game.lanes, room.game.market, room.game.deck.length]);
+  assert.equal(logic.timeout(room, t0), false); // 여유 시간 안
+  assert.equal(logic.timeout(room, t0 + 1100), true);
   assert.equal(room.game.turn, 1);
-  assert.ok(room.deadline > Date.now()); // 차례가 넘어가면 새 시계
+  assert.equal(room.game.phase, 'play');
+  // 손패, 코스, 좌판, 창고는 하나도 바뀌지 않는다 (대신 내거나 가져오지 않는다)
+  assert.equal(JSON.stringify([room.game.hands, room.game.lanes, room.game.market, room.game.deck.length]), snap);
+  assert.ok(room.deadline > t0); // 상대 차례의 새 시계
+  assert.deepEqual(payload(room, 1).skip, { seq: 1, seat: 0 });
+  // 넘어온 사람은 정상적으로 둘 수 있다
+  const a = legalActions(room.game, 1).find((x) => x.type === 'discard');
+  assert.deepEqual(act(room, 1, a), { ok: true });
+});
+test('턴 제한: 카드를 내고 가져오기 전에 시간이 지나면 가져오지 않은 채 차례만 넘어간다', () => {
+  const room = timedRoom();
+  const d = legalActions(room.game, 0).find((x) => x.type === 'discard');
+  assert.deepEqual(act(room, 0, d), { ok: true }); // 이제 가져올 차례(phase draw)
+  assert.equal(room.game.phase, 'draw');
+  assert.equal(logic.timeout(room, room.deadline + 1100), true);
+  assert.equal(room.game.turn, 1);
+  assert.equal(room.game.phase, 'play');
+  assert.equal(room.game.hands[0].length, 7); // 가져오지 않았으므로 7장 그대로
+  assert.equal(room.game.justDiscarded, null);
+});
+test('턴 제한: 직접 두면 연속 넘김 횟수가 0으로 돌아가고, 계속 아무도 안 두면 시계가 멈춘다', () => {
+  const room = timedRoom();
+  for (let i = 0; i < 3; i++) assert.equal(logic.timeout(room, room.deadline + 1100), true);
+  assert.equal(room.skips, 3);
+  const a = legalActions(room.game, room.game.turn).find((x) => x.type === 'discard');
+  assert.deepEqual(act(room, room.game.turn, a), { ok: true });
+  assert.equal(room.skips, 0);
+  // 연속 6번 넘어가면 시계가 멈춰서 더는 저절로 넘어가지 않는다
+  const room2 = timedRoom();
+  for (let i = 0; i < 6; i++) assert.equal(logic.timeout(room2, room2.deadline + 1100), true);
+  assert.equal(room2.deadline, null);
+  assert.equal(logic.timeout(room2, Date.now() + 999999), false);
 });
 test('턴 제한 없음이면 마감도 없다', () => {
   const room = twoPlayers();
   assert.equal(room.settings.turnSeconds, 0);
   assert.equal(room.deadline, null);
+  assert.equal(logic.timeout(room, Date.now() + 999999), false);
 });
 test('허용되지 않은 시간 값은 제한 없음', () => {
   const room = createRoom();

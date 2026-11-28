@@ -286,6 +286,17 @@ export function apply(state, player, action) {
   return fail('알 수 없는 행동입니다');
 }
 
+// 시간이 지나 차례를 넘긴다. 카드를 내거나 가져오지 않고, 손패·코스·좌판은 그대로다.
+export function skipTurn(state, player) {
+  if (state.over) return fail('이미 끝난 게임입니다');
+  if (player !== state.turn) return fail('상대 차례입니다');
+  const next = structuredClone(state);
+  next.turn = 1 - player;
+  next.phase = 'play';
+  next.justDiscarded = null;
+  return { ok: true, state: next };
+}
+
 // 가능한 모든 행동 (자동 테스트와 봇에 쓴다)
 export function legalActions(state, player) {
   if (state.over || player !== state.turn) return [];
