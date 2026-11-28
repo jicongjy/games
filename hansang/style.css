@@ -226,16 +226,10 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .scoresheet small{display:block;font-size:var(--fs-s);color:var(--gold);margin-top:2px}
 
 /* ---------- 세로로 든 폰: 가로 디자인을 그대로 눕혀서 화면 전체에 보여 준다 ---------- */
-@media (orientation:portrait) and (max-width:1000px){
-  :root{--u:min(calc(100vh / 844), calc(100vw / 390))}
-  #stage{inset:auto;top:0;left:0;width:100vh;height:100vw;transform-origin:0 0;transform:translateX(100vw) rotate(90deg)}
-}
-@supports (height:100dvh){
-  @media (orientation:portrait) and (max-width:1000px){
-    :root{--u:min(calc(100dvh / 844), calc(100vw / 390))}
-    #stage{width:100dvh}
-  }
-}
+/* data-rot는 index.html의 스크립트가 기기를 든 방향으로 정한다(키보드로 화면 높이가 줄어도 그대로).
+   --svh, --svw는 글자를 치기 전의 화면 크기다. */
+html[data-rot="1"]{--u:min(calc(var(--svh, 100vh) / 844), calc(var(--svw, 100vw) / 390))}
+html[data-rot="1"] #stage{inset:auto;top:0;left:0;width:var(--svh, 100vh);height:var(--svw, 100vw);transform-origin:0 0;transform:translateX(var(--svw, 100vw)) rotate(90deg)}
 
 /* ---------- 판 시작 때 심사위원 과제 소개 ---------- */
 .intro{position:fixed;inset:0;z-index:25;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u) * 22);cursor:pointer}

@@ -19,7 +19,7 @@ const stage = document.getElementById('stage');
 const esc = (s) => String(s).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 // 세로로 든 폰에서는 화면 전체를 눕혀서 보여 준다(style.css). 이때는 화면 좌표 계산이 필요한 연출을 건너뛴다.
-const rotatedStage = () => window.matchMedia?.('(orientation: portrait) and (max-width: 1000px)').matches;
+const rotatedStage = () => document.documentElement.getAttribute('data-rot') === '1';
 const minus = (n) => (n < 0 ? `−${-n}` : String(n));
 // 점수는 직접 계산한다. 화면에는 카드 장수만 칸으로 보여 준다(예약 손님은 속이 빈 칸).
 const pips = (lane) => lane.map((c) => `<i${c.step === 0 ? ' class="r"' : ''}></i>`).join('');
@@ -91,6 +91,26 @@ function beep(freqs = [660, 880]) {
     o.start(s);
     o.stop(s + 0.2);
   });
+}
+// 진동. 안드로이드는 navigator.vibrate로 울린다. 아이폰 사파리는 이 기능이 없어서,
+// iOS 17.4 이상의 "스위치 체크박스" 햅틱을 시도한다(사용자가 방금 화면을 만진 경우에만 울릴 수 있다).
+function haptic() {
+  if (!sound.on) return;
+  try {
+    if (navigator.vibrate) { navigator.vibrate([120, 60, 120]); return; }
+  } catch (e) { /* 아래로 */ }
+  try {
+    const l = document.createElement('label');
+    l.setAttribute('aria-hidden', 'true');
+    l.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;pointer-events:none';
+    const i = document.createElement('input');
+    i.type = 'checkbox';
+    i.setAttribute('switch', '');
+    l.appendChild(i);
+    document.body.appendChild(l);
+    l.click();
+    setTimeout(() => l.remove(), 200);
+  } catch (e) { /* 지원하지 않는 기기 */ }
 }
 // 브라우저는 사람이 화면을 한 번 만져야 소리를 허용한다
 document.addEventListener('pointerdown', unlockSound, { passive: true });
@@ -446,7 +466,7 @@ function menuSheetHtml() {
     <p class="note" style="margin:0 0 calc(var(--u) * 12)">방 코드 <b class="mcode">${esc(code)}</b></p>
     <div class="mrow">
       <button class="btn ghost" data-act="copy-link" data-link="${esc(link)}">링크 복사</button>
-      <button class="btn ghost" data-act="toggle-sound" aria-pressed="${sound.on}">효과음 ${sound.on ? '켜짐' : '꺼짐'}</button>
+      <button class="btn ghost" data-act="toggle-sound" aria-pressed="${sound.on}">소리·진동 ${sound.on ? '켜짐' : '꺼짐'}</button>
     </div>
     <button class="btn" style="margin-top:calc(var(--u) * 10)" data-act="end">게임 끝내기</button>
   </div>`;
@@ -1048,7 +1068,7 @@ function onState(m) {
   // 내 차례가 되면 소리와 진동으로 알린다 (새로고침으로 돌아온 경우는 제외)
   if (screen === 'play' && m.view && !m.view.over && m.view.turn === m.seat && !mineBefore && (prev || isFresh(m.view))) {
     beep();
-    try { navigator.vibrate?.(120); } catch (e) { /* 지원하지 않는 기기 */ }
+    haptic();
   }
 }
 
@@ -1135,7 +1155,7 @@ app.addEventListener('click', (e) => {
     }
     case 'leave': leaveOnline(); return;
     case 'menu': sheet = { type: 'menu' }; render(); return;
-    case 'toggle-sound': sound.on = !sound.on; store.set('sound', sound.on ? '1' : '0'); if (sound.on) beep(); render(); return;
+    case 'toggle-sound': sound.on = !sound.on; store.set('sound', sound.on ? '1' : '0'); if (sound.on) { beep(); haptic(); } render(); return;
     case 'resume': { const c = resumableRoom(); if (c) enterOnline(c, store.get('oname')); return; }
     case 'end': sheet = { type: 'end' }; render(); return;
     case 'end-yes': sheet = null; if (mode === 'online') sendOnline({ t: 'forfeit' }); render(); return;
